@@ -237,8 +237,9 @@ function vStock(){
   return `<div class="head"><div><h2>Stock de ${esc(locName(loc))}</h2><p class="sub">Suma solo cuando se recibe un pedido. Hacé un conteo para corregirlo.${t?` Último cambio: ${fecha(t)} ${hora(t)}.`:''}</p></div>
   <button class="pri" data-act="guardarConteo">Guardar conteo</button></div>
   ${S.local==='todos'?`<p class="note">Mostrando ${esc(locName(loc))}. Elegí el local arriba para ver el otro.</p>`:''}
-  ${groups.map(g=>`<h3 style="margin:18px 0 6px">${esc(g.pv.nombre)}</h3><table class="stack"><thead><tr><th>Producto</th><th class="n">Hay</th><th class="n">Mínimo</th><th>Conteo</th></tr></thead><tbody>
-  ${g.list.map(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc),low=mn>0&&st<mn;return `<tr><td>${esc(p.nombre)}${low?' <span class="lowtag">bajo</span>':''}</td><td class="n q">${fmt(st)} ${esc(p.unidad)}</td><td class="n q">${mn?fmt(mn):'·'}</td><td><input inputmode="decimal" aria-label="Conteo ${esc(p.nombre)}" data-c="${p.id}" value="${esc(S.conteo[p.id]??'')}" placeholder="${fmt(st)}"></td></tr>`}).join('')}</tbody></table>`).join('')||'<p class="empty">Cargá productos en Catálogo.</p>'}`;
+  <input type="search" data-filtro="st" placeholder="Buscar producto…" aria-label="Buscar producto" style="margin-bottom:6px">
+  ${groups.map(g=>`<div class="grp"><h3 style="margin:18px 0 6px">${esc(g.pv.nombre)}</h3><table class="stack"><thead><tr><th>Producto</th><th class="n">Hay</th><th class="n">Mínimo</th><th>Conteo</th></tr></thead><tbody>
+  ${g.list.map(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc),low=mn>0&&st<mn;return `<tr data-n="${esc(p.nombre.toLowerCase())}"><td>${esc(p.nombre)}${low?' <span class="lowtag">bajo</span>':''}</td><td class="n q">${fmt(st)} ${esc(p.unidad)}</td><td class="n q">${mn?fmt(mn):'·'}</td><td><input inputmode="decimal" aria-label="Conteo ${esc(p.nombre)}" data-c="${p.id}" value="${esc(S.conteo[p.id]??'')}" placeholder="${fmt(st)}"></td></tr>`}).join('')}</tbody></table></div>`).join('')||'<p class="empty">Cargá productos en Catálogo.</p>'}`;
 }
 
 function vCatalogo(){
@@ -250,8 +251,8 @@ function vCatalogo(){
   <div class="panel"><h3>Proveedores</h3><p class="meta">WhatsApp con código de país: 549 + característica + número, por ejemplo 5492235551234.</p>
   <table class="stack"><thead><tr><th>Sector</th><th>Nombre</th><th>WhatsApp</th><th></th></tr></thead><tbody>${d.proveedores.map((p,k)=>`<tr><td><input ${dis} aria-label="Sector" data-pv="${k}" data-f="sector" value="${esc(p.sector||'')}" placeholder="Verdulería…"></td><td><input ${dis} aria-label="Nombre" data-pv="${k}" data-f="nombre" value="${esc(p.nombre)}"></td><td><input ${dis} inputmode="tel" aria-label="WhatsApp" data-pv="${k}" data-f="tel" value="${esc(p.tel||'')}" placeholder="549…"></td><td>${ed?`<button data-act="delPv" data-id="${k}" aria-label="Borrar proveedor">Quitar</button>`:''}</td></tr>`).join('')}</tbody></table>
   ${ed?'<button style="margin-top:10px" data-act="addPv">+ Proveedor</button>':''}</div>
-  <div class="panel"><h3>Productos</h3><table class="stack"><thead><tr><th>Producto</th><th>Unidad</th><th>Proveedor</th><th class="n">Precio ($)</th>${locales().map(l=>`<th class="n">Mín. ${esc(l.nombre)}</th>`).join('')}<th></th></tr></thead><tbody>
-  ${d.productos.map((p,k)=>`<tr><td><input ${dis} aria-label="Producto" data-pr="${k}" data-f="nombre" value="${esc(p.nombre)}"></td><td><input ${dis} aria-label="Unidad" data-pr="${k}" data-f="unidad" value="${esc(p.unidad)}" style="max-width:90px"></td>
+  <div class="panel"><h3>Productos</h3><input type="search" data-filtro="cat" placeholder="Buscar producto…" aria-label="Buscar producto" style="margin:10px 0"><table class="stack"><thead><tr><th>Producto</th><th>Unidad</th><th>Proveedor</th><th class="n">Precio ($)</th>${locales().map(l=>`<th class="n">Mín. ${esc(l.nombre)}</th>`).join('')}<th></th></tr></thead><tbody>
+  ${d.productos.map((p,k)=>`<tr data-n="${esc((p.nombre||'').toLowerCase())}"><td><input ${dis} aria-label="Producto" data-pr="${k}" data-f="nombre" value="${esc(p.nombre)}"></td><td><input ${dis} aria-label="Unidad" data-pr="${k}" data-f="unidad" value="${esc(p.unidad)}" style="max-width:90px"></td>
   <td><select ${dis} aria-label="Proveedor" data-pr="${k}" data-f="prov">${d.proveedores.map(v=>`<option value="${v.id}" ${v.id===p.prov?'selected':''}>${esc(v.nombre)}</option>`).join('')}</select></td>
   <td><input ${dis} inputmode="decimal" aria-label="Precio" data-pr="${k}" data-f="precio" value="${esc(p.precio??'')}" style="text-align:right"></td>
   ${locales().map(l=>`<td><input ${dis} inputmode="decimal" aria-label="Mínimo ${esc(l.nombre)}" data-pr="${k}" data-min="${l.id}" value="${esc(p.min?.[l.id]??'')}" style="text-align:right"></td>`).join('')}
@@ -423,6 +424,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{
   const t=e.target,ds=t.dataset;
+  if(ds.filtro!==undefined){const q=t.value.trim().toLowerCase();document.querySelectorAll('#main tr[data-n]').forEach(r=>r.hidden=!!q&&!r.dataset.n.includes(q));document.querySelectorAll('#main .grp').forEach(g=>g.hidden=!!q&&!g.querySelector('tr[data-n]:not([hidden])'));return}
   if(ds.buscar!==undefined){S.pedir.buscar=t.value;const q=t.value.trim().toLowerCase();document.querySelectorAll('#main .pitem').forEach(el=>{const inp=el.querySelector('input');el.hidden=!!q&&!el.dataset.n.includes(q)&&!(num(inp.value)>0)});document.querySelectorAll('#main h4.rubro').forEach(h=>h.hidden=!!q)}
   else if(ds.q!==undefined){S.pedir.qty[ds.q]=t.value;const c=$('#pcount');if(c)c.textContent=countPedido()}
   else if(ds.pnota!==undefined)S.pedir.nota=t.value;
