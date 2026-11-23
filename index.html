@@ -344,7 +344,7 @@ async function guardarPedido(){
   const p={local:loc,prov:S.pedir.prov,items,nota:S.pedir.nota.trim(),por:S.uid,creado:t,estado:'pendiente',hist:[{t,uid:S.uid,a:'armó un pedido'}]};
   let ref;await w(async()=>{ref=await addDoc(collection(db,'pedidos'),p)});
   p.id=ref.id;S.pedir={prov:S.pedir.prov,qty:{},extra:[],nota:''};
-  if(!S.owner){const tot=items.reduce((a,i)=>a+(i.precio||0)*i.cant,0);push(`🛒 Pedido nuevo · ${locName(loc)}`,`${nameOf(S.uid)} armó un pedido a ${prov(p.prov)?.nombre||'proveedor'}:\n${items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join('\n')}${tot?`\nEstimado: ${money(tot)}`:''}`,['shopping_cart'])}
+  {const tot=items.reduce((a,i)=>a+(i.precio||0)*i.cant,0);push(`🛒 Pedido nuevo · ${locName(loc)}`,`${nameOf(S.uid)} armó un pedido a ${prov(p.prov)?.nombre||'proveedor'}:\n${items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join('\n')}${tot?`\nEstimado: ${money(tot)}`:''}`,['shopping_cart'])}
   $('#sheet').innerHTML=`<div class="sheet"><div><h3>Pedido guardado</h3><p class="sub">Ahora mandalo. Se abre WhatsApp con el mensaje listo.</p><pre>${esc(msgText(p))}</pre>
   <div class="row"><a class="btn wa" style="flex:1" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">Abrir WhatsApp</a><button data-act="copy" data-id="${p.id}">Copiar texto</button></div>
   <button style="margin-top:10px;width:100%" data-act="closeSheet" data-go="pedidos">Lo mando después</button></div></div>`;
@@ -361,7 +361,7 @@ async function guardarRec(id){
   const add={};p.items.forEach((i,k)=>{if(i.pid&&items[k].rec>0)add[i.pid]=stockOf(p.local,i.pid)+items[k].rec});
   if(Object.keys(add).length)await w(()=>setDoc(doc(db,'stock',p.local),{items:add,t},{merge:true}));
   S.recOpen=null;delete S.rec[id];render(true);
-  if(!S.owner)push(`${dif?'⚠️ Llegó con diferencias':'✅ Pedido recibido'} · ${locName(p.local)}`,`${prov(p.prov)?.nombre||'Proveedor'}: recibió ${nameOf(S.uid)}${num(d.monto)?` · remito ${money(num(d.monto))}`:''}${dif?'\n'+p.items.map((i,k)=>{const x=items[k],df=x.rec-num(i.cant);return df!==0||x.cal!=='bien'?`• ${i.nombre}: ${df<0?'faltó '+fmt(-df)+' '+i.unidad:df>0?'sobró '+fmt(df)+' '+i.unidad:''}${x.cal!=='bien'?' calidad '+x.cal:''}`:''}).filter(Boolean).join('\n'):''}`,[dif?'warning':'white_check_mark']);
+  push(`${dif?'⚠️ Llegó con diferencias':'✅ Pedido recibido'} · ${locName(p.local)}`,`${prov(p.prov)?.nombre||'Proveedor'}: recibió ${nameOf(S.uid)}${num(d.monto)?` · remito ${money(num(d.monto))}`:''}${dif?'\n'+p.items.map((i,k)=>{const x=items[k],df=x.rec-num(i.cant);return df!==0||x.cal!=='bien'?`• ${i.nombre}: ${df<0?'faltó '+fmt(-df)+' '+i.unidad:df>0?'sobró '+fmt(df)+' '+i.unidad:''}${x.cal!=='bien'?' calidad '+x.cal:''}`:''}).filter(Boolean).join('\n'):''}`,[dif?'warning':'white_check_mark']);
   const av=S.cat?.avisos||{},tel=String(av.tel||'').replace(/\D/g,'');
   if(tel&&!S.owner&&(av.modo!=='diferencias'||dif)){
     const L=[`${dif?'⚠️ *Recepción con diferencias*':'✅ *Recepción OK*'}`,`${prov(p.prov)?.nombre||'Proveedor'} → ${locName(p.local)} · ${fecha(t)} ${hora(t)}`,`Recibió: ${nameOf(S.uid)}`,''];
