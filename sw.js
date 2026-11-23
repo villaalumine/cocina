@@ -9,3 +9,8 @@ self.addEventListener('notificationclick',e=>{
   e.notification.close();const url=new URL(e.notification.data?.url||'./',self.registration.scope).href;
   e.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(ws=>{for(const w of ws){if(w.url.startsWith(self.registration.scope)){w.navigate(url);return w.focus()}}return self.clients.openWindow(url)}));
 });
+// Siempre buscar la versión más nueva de la app (sin quedarse con una vieja guardada)
+self.addEventListener('fetch',e=>{
+  const r=e.request;
+  if(r.method==='GET'&&new URL(r.url).origin===self.location.origin)e.respondWith(fetch(r,{cache:'no-store'}).catch(()=>caches.match(r)));
+});
