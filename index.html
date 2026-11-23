@@ -271,6 +271,8 @@ function vEquipo(){
   <label for="av-t" style="margin-top:10px">WhatsApp del dueño</label><input id="av-t" name="tel" inputmode="tel" value="${esc(S.cat?.avisos?.tel||'')}" placeholder="549…">
   <label for="av-m" style="margin-top:10px">Avisar</label><select id="av-m" name="modo"><option value="siempre" ${S.cat?.avisos?.modo!=='diferencias'?'selected':''}>En cada recepción</option><option value="diferencias" ${S.cat?.avisos?.modo==='diferencias'?'selected':''}>Solo si llegó con diferencias</option></select>
   <button class="pri" style="width:100%;margin-top:14px" type="submit">Guardar avisos</button></form>
+  <div class="panel"><h3>Notificaciones en tu celu</h3><p class="meta">Te llega un aviso cuando alguien del equipo arma un pedido o recibe mercadería.</p>
+  ${S.cat?.avisos?.ntfy?`<ol class="meta" style="padding-left:18px"><li>Instalá la app gratis <b>ntfy</b> (App Store o Play Store).</li><li>Tocá <b>+</b> y suscribite a este tema:</li></ol><p class="q" style="font-size:15px;word-break:break-all;background:var(--bg);padding:8px;border-radius:8px">${esc(S.cat.avisos.ntfy)}</p><div class="row"><button data-act="copyTopic">Copiar tema</button><button class="dark" data-act="probarPush">Probar</button></div>`:'<p class="empty">Todavía no están activadas.</p>'}</div>
   <form class="panel" data-form="alta"><h3>Dar de alta</h3>
   <label for="e-n" style="margin-top:10px">Nombre</label><input id="e-n" name="nombre" required placeholder="Como le dicen en la cocina">
   <label for="e-e" style="margin-top:10px">Mail</label><input id="e-e" name="email" type="email" required>
@@ -308,6 +310,7 @@ const ERR={'permission-denied':'No tenés permiso para hacer esto.','unavailable
 const errMsg=e=>ERR[e?.code]||'No se pudo guardar, probá de nuevo.';
 async function w(fn,ok){try{await fn();S.note='';if(ok)toast(ok)}catch(e){console.error(e);S.note=errMsg(e);render(true);throw e}}
 function toast(t){$('#sheet').innerHTML=`<div class="sheet" data-act="closeSheet"><div><h3>${esc(t)}</h3><button class="dark" style="margin-top:14px;width:100%" data-act="closeSheet">Listo</button></div></div>`}
+async function push(title,message,tags){const tp=S.cat?.avisos?.ntfy;if(!tp)return;try{await fetch('https://ntfy.sh/',{method:'POST',body:JSON.stringify({topic:tp,title,message,tags,click:location.href.split('#')[0]+'#pedidos'})})}catch(e){console.warn('aviso',e)}}
 const hist=(p,a)=>[...(p.hist||[]),{t:Date.now(),uid:S.uid,a}].slice(-30);
 
 async function guardarPedido(){
@@ -316,6 +319,7 @@ async function guardarPedido(){
   const p={local:loc,prov:S.pedir.prov,items,nota:S.pedir.nota.trim(),por:S.uid,creado:t,estado:'pendiente',hist:[{t,uid:S.uid,a:'armó un pedido'}]};
   let ref;await w(async()=>{ref=await addDoc(collection(db,'pedidos'),p)});
   p.id=ref.id;S.pedir={prov:S.pedir.prov,qty:{},extra:[],nota:''};
+  if(!S.owner){const tot=items.reduce((a,i)=>a+(i.precio||0)*i.cant,0);push(`🛒 Pedido nuevo · ${locName(loc)}`,`${nameOf(S.uid)} armó un pedido a ${prov(p.prov)?.nombre||'proveedor'}:\n${items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join('\n')}${tot?`\nEstimado: ${money(tot)}`:''}`,['shopping_cart'])}
   $('#sheet').innerHTML=`<div class="sheet"><div><h3>Pedido guardado</h3><p class="sub">Ahora mandalo. Se abre WhatsApp con el mensaje listo.</p><pre>${esc(msgText(p))}</pre>
   <div class="row"><a class="btn wa" style="flex:1" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">Abrir WhatsApp</a><button data-act="copy" data-id="${p.id}">Copiar texto</button></div>
   <button style="margin-top:10px;width:100%" data-act="closeSheet" data-go="pedidos">Lo mando después</button></div></div>`;
@@ -332,6 +336,7 @@ async function guardarRec(id){
   const add={};p.items.forEach((i,k)=>{if(i.pid&&items[k].rec>0)add[i.pid]=stockOf(p.local,i.pid)+items[k].rec});
   if(Object.keys(add).length)await w(()=>setDoc(doc(db,'stock',p.local),{items:add,t},{merge:true}));
   S.recOpen=null;delete S.rec[id];render(true);
+  if(!S.owner)push(`${dif?'⚠️ Llegó con diferencias':'✅ Pedido recibido'} · ${locName(p.local)}`,`${prov(p.prov)?.nombre||'Proveedor'}: recibió ${nameOf(S.uid)}${num(d.monto)?` · remito ${money(num(d.monto))}`:''}${dif?'\n'+p.items.map((i,k)=>{const x=items[k],df=x.rec-num(i.cant);return df!==0||x.cal!=='bien'?`• ${i.nombre}: ${df<0?'faltó '+fmt(-df)+' '+i.unidad:df>0?'sobró '+fmt(df)+' '+i.unidad:''}${x.cal!=='bien'?' calidad '+x.cal:''}`:''}).filter(Boolean).join('\n'):''}`,[dif?'warning':'white_check_mark']);
   const av=S.cat?.avisos||{},tel=String(av.tel||'').replace(/\D/g,'');
   if(tel&&!S.owner&&(av.modo!=='diferencias'||dif)){
     const L=[`${dif?'⚠️ *Recepción con diferencias*':'✅ *Recepción OK*'}`,`${prov(p.prov)?.nombre||'Proveedor'} → ${locName(p.local)} · ${fecha(t)} ${hora(t)}`,`Recibió: ${nameOf(S.uid)}`,''];
@@ -384,6 +389,8 @@ document.addEventListener('click',e=>{
   if(a==='addPr')S.catDraft.productos.push({id:rid('p'),nombre:'',unidad:'kg',prov:S.catDraft.proveedores[0]?.id||'',min:{}});
   if(a==='delPr')S.catDraft.productos.splice(+id,1);
   if(a==='guardarCat'){guardarCat().catch(()=>{});return}
+  if(a==='copyTopic'){navigator.clipboard?.writeText(S.cat.avisos.ntfy).then(()=>{b.textContent='Copiado'},()=>{});return}
+  if(a==='probarPush'){push('🔔 Prueba de la cocina','Si ves esto, las notificaciones funcionan.',['bell']).then(()=>toast('Notificación de prueba enviada. Fijate en el celu.'));return}
   if(a==='activo'){const m=S.equipo[id];w(()=>updateDoc(doc(db,'equipo',id),{activo:!m.activo})).catch(()=>{});return}
   if(a==='reset'){const m=S.equipo[id];sendPasswordResetEmail(auth,m.email).then(()=>toast(`Le mandamos a ${m.nombre} un mail para cambiar la clave.`),er=>{S.note=errMsg(er);render(true)});return}
   render(true);
@@ -413,7 +420,7 @@ document.addEventListener('submit',async e=>{
   const f=e.target;e.preventDefault();const fd=new FormData(f);
   if(f.dataset.form==='rec'){guardarRec(f.dataset.id).catch(()=>{});return}
   if(f.dataset.form==='alta'){await darAlta(f);return}
-  if(f.dataset.form==='avisos'){let tel=String(fd.get('tel')).replace(/\D/g,'');if(tel&&!tel.startsWith('54'))tel='549'+tel;w(()=>updateDoc(doc(db,'cfg','catalogo'),{avisos:{tel,modo:fd.get('modo')}}),'Avisos guardados').catch(()=>{});return}
+  if(f.dataset.form==='avisos'){let tel=String(fd.get('tel')).replace(/\D/g,'');if(tel&&!tel.startsWith('54'))tel='549'+tel;w(()=>updateDoc(doc(db,'cfg','catalogo'),{avisos:{...(S.cat?.avisos||{}),tel,modo:fd.get('modo')}}),'Avisos guardados').catch(()=>{});return}
   if(f.dataset.form==='login'){try{await signInWithEmailAndPassword(auth,String(fd.get('email')).trim(),String(fd.get('clave')))}catch(er){S.note=errMsg(er);render(true)}return}
   if(f.dataset.form==='signup'){S.claimName=String(fd.get('nombre')).trim();try{await createUserWithEmailAndPassword(auth,String(fd.get('email')).trim(),String(fd.get('clave')))}catch(er){S.note=errMsg(er);render(true)}return}
 });
