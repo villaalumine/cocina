@@ -111,7 +111,7 @@ try{S.local=localStorage.getItem('cocina.local')||'todos'}catch(e){}
 const locales=()=>S.cat?.locales?.length?S.cat.locales:SEED.locales;
 const locName=id=>locales().find(l=>l.id===id)?.nombre||id;
 const provs=()=>S.cat?.proveedores||[];const prods=()=>S.cat?.productos||[];
-const prov=id=>provs().find(p=>p.id===id);const prod=id=>prods().find(p=>p.id===id);
+const prov=id=>provs().find(p=>p.id===id);const provsFor=loc=>provs().filter(p=>!p.local||p.local==='ambos'||p.local===loc);const prod=id=>prods().find(p=>p.id===id);
 const me=()=>S.equipo[S.uid]||null;
 const nameOf=uid=>S.equipo[uid]?.nombre||'Alguien';
 const canAdmin=()=>S.owner||['Encargado/a','Jefe/a de cocina'].includes(me()?.rol);
@@ -195,13 +195,14 @@ function stLabel(ped,rec,u){const d=num(rec)-num(ped);return d===0?'Llegó justo
 
 function vPedir(){
   const loc=workLocal(),d=S.pedir;
-  if(!provs().length)return `<div class="head"><h2>Nuevo pedido</h2></div><p class="empty">Primero cargá proveedores y productos en Catálogo.</p>`;
-  if(!d.prov||!prov(d.prov))d.prov=provs()[0].id;
+  const pvs=provsFor(loc);
+  if(!pvs.length)return `<div class="head"><h2>Nuevo pedido para ${esc(locName(loc))}</h2></div><p class="empty">${esc(locName(loc))} todavía no tiene proveedores. Cargalos en Catálogo.</p>`;
+  if(!d.prov||!pvs.some(p=>p.id===d.prov)){d.prov=pvs[0].id;d.qty={};d.unit={}}
   const list=prods().filter(p=>p.prov===d.prov);
   const lowN=list.filter(p=>minOf(p,loc)>0&&stockOf(loc,p.id)<minOf(p,loc)).length;
   return `<div class="head"><div><h2>Nuevo pedido para ${esc(locName(loc))}</h2><p class="sub">Elegí el proveedor, cargá cantidades y mandalo por WhatsApp.</p></div></div>
   ${S.local==='todos'?`<p class="note">Estás pidiendo para ${esc(locName(loc))}. Cambiá el local arriba si es para otro.</p>`:''}
-  <div class="chips" style="margin-bottom:16px">${provs().map(p=>`<button class="chip ${p.id===d.prov?'on':''}" data-act="prov" data-id="${p.id}">${p.sector?`${esc(p.sector)} · `:''}${esc(p.nombre)}</button>`).join('')}</div>
+  <div class="chips" style="margin-bottom:16px">${pvs.map(p=>`<button class="chip ${p.id===d.prov?'on':''}" data-act="prov" data-id="${p.id}">${p.sector?`${esc(p.sector)} · `:''}${esc(p.nombre)}</button>`).join('')}</div>
   <input type="search" data-buscar placeholder="Buscar producto…" value="${esc(d.buscar||'')}" style="margin-bottom:6px" aria-label="Buscar producto">
   <div class="cols"><section>
   ${lowN?`<div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="lowtag">${lowN} producto${lowN>1?'s':''} bajo el mínimo</span><button data-act="sugerir">Completar con lo que falta</button></div>`:''}
@@ -232,7 +233,7 @@ function vPedidos(){
 }
 
 function vStock(){
-  const loc=workLocal(),groups=provs().map(pv=>({pv,list:prods().filter(p=>p.prov===pv.id)})).filter(g=>g.list.length);
+  const loc=workLocal(),groups=provsFor(loc).map(pv=>({pv,list:prods().filter(p=>p.prov===pv.id)})).filter(g=>g.list.length);
   const t=S.stock[loc]?.t;
   return `<div class="head"><div><h2>Stock de ${esc(locName(loc))}</h2><p class="sub">Suma solo cuando se recibe un pedido. Hacé un conteo para corregirlo.${t?` Último cambio: ${fecha(t)} ${hora(t)}.`:''}</p></div>
   <button class="pri" data-act="guardarConteo">Guardar conteo</button></div>
@@ -249,14 +250,14 @@ function vCatalogo(){
   ${ed?`<button class="pri" data-act="guardarCat">Guardar catálogo</button>`:''}</div>
   ${ed?'':'<p class="note">Solo encargados, jefe de cocina y el dueño pueden cambiar el catálogo.</p>'}
   <div class="panel"><h3>Proveedores</h3><p class="meta">WhatsApp con código de país: 549 + característica + número, por ejemplo 5492235551234.</p>
-  <table class="stack"><thead><tr><th>Sector</th><th>Nombre</th><th>WhatsApp</th><th></th></tr></thead><tbody>${d.proveedores.map((p,k)=>`<tr><td><input ${dis} aria-label="Sector" data-pv="${k}" data-f="sector" value="${esc(p.sector||'')}" placeholder="Verdulería…"></td><td><input ${dis} aria-label="Nombre" data-pv="${k}" data-f="nombre" value="${esc(p.nombre)}"></td><td><input ${dis} inputmode="tel" aria-label="WhatsApp" data-pv="${k}" data-f="tel" value="${esc(p.tel||'')}" placeholder="549…"></td><td>${ed?`<button data-act="delPv" data-id="${k}" aria-label="Borrar proveedor">Quitar</button>`:''}</td></tr>`).join('')}</tbody></table>
+  <table class="stack"><thead><tr><th>Local</th><th>Sector</th><th>Nombre</th><th>WhatsApp</th><th></th></tr></thead><tbody>${d.proveedores.map((p,k)=>`<tr ${S.local!=='todos'&&p.local&&p.local!=='ambos'&&p.local!==S.local?'hidden':''}><td><select ${dis} aria-label="Local" data-pv="${k}" data-f="local">${[...locales().map(l=>[l.id,l.nombre]),['ambos','Los dos']].map(([v,n])=>`<option value="${v}" ${(p.local||'ambos')===v?'selected':''}>${esc(n)}</option>`).join('')}</select></td><td><input ${dis} aria-label="Sector" data-pv="${k}" data-f="sector" value="${esc(p.sector||'')}" placeholder="Verdulería…"></td><td><input ${dis} aria-label="Nombre" data-pv="${k}" data-f="nombre" value="${esc(p.nombre)}"></td><td><input ${dis} inputmode="tel" aria-label="WhatsApp" data-pv="${k}" data-f="tel" value="${esc(p.tel||'')}" placeholder="549…"></td><td>${ed?`<button data-act="delPv" data-id="${k}" aria-label="Borrar proveedor">Quitar</button>`:''}</td></tr>`).join('')}</tbody></table>
   ${ed?'<button style="margin-top:10px" data-act="addPv">+ Proveedor</button>':''}</div>
   <div class="panel"><h3>Productos</h3><input type="search" data-filtro="cat" placeholder="Buscar producto…" aria-label="Buscar producto" style="margin:10px 0"><table class="stack"><thead><tr><th>Producto</th><th>Unidad</th><th>Proveedor</th><th class="n">Precio ($)</th>${locales().map(l=>`<th class="n">Mín. ${esc(l.nombre)}</th>`).join('')}<th></th></tr></thead><tbody>
-  ${d.productos.map((p,k)=>`<tr data-n="${esc((p.nombre||'').toLowerCase())}"><td><input ${dis} aria-label="Producto" data-pr="${k}" data-f="nombre" value="${esc(p.nombre)}"></td><td><input ${dis} aria-label="Unidad" data-pr="${k}" data-f="unidad" value="${esc(p.unidad)}" style="max-width:90px"></td>
+  ${d.productos.map((p,k)=>{const pv=d.proveedores.find(v=>v.id===p.prov);const off=S.local!=='todos'&&pv?.local&&pv.local!=='ambos'&&pv.local!==S.local;return `<tr data-n="${esc((p.nombre||'').toLowerCase())}" ${off?'hidden data-off="1"':''}><td><input ${dis} aria-label="Producto" data-pr="${k}" data-f="nombre" value="${esc(p.nombre)}"></td><td><input ${dis} aria-label="Unidad" data-pr="${k}" data-f="unidad" value="${esc(p.unidad)}" style="max-width:90px"></td>
   <td><select ${dis} aria-label="Proveedor" data-pr="${k}" data-f="prov">${d.proveedores.map(v=>`<option value="${v.id}" ${v.id===p.prov?'selected':''}>${esc(v.nombre)}</option>`).join('')}</select></td>
   <td><input ${dis} inputmode="decimal" aria-label="Precio" data-pr="${k}" data-f="precio" value="${esc(p.precio??'')}" style="text-align:right"></td>
   ${locales().map(l=>`<td><input ${dis} inputmode="decimal" aria-label="Mínimo ${esc(l.nombre)}" data-pr="${k}" data-min="${l.id}" value="${esc(p.min?.[l.id]??'')}" style="text-align:right"></td>`).join('')}
-  <td>${ed?`<button data-act="delPr" data-id="${k}" aria-label="Borrar producto">Quitar</button>`:''}</td></tr>`).join('')}</tbody></table>
+  <td>${ed?`<button data-act="delPr" data-id="${k}" aria-label="Borrar producto">Quitar</button>`:''}</td></tr>`}).join('')}</tbody></table>
   ${ed?'<button style="margin-top:10px" data-act="addPr">+ Producto</button>':''}</div>`;
 }
 
@@ -410,7 +411,7 @@ document.addEventListener('click',e=>{
   if(a==='cancelRec'){S.recOpen=null}
   if(a==='fEstado'){S.fEstado=id}
   if(a==='guardarConteo'){guardarConteo().catch(()=>{});return}
-  if(a==='addPv')S.catDraft.proveedores.push({id:rid('v'),nombre:'',tel:''});
+  if(a==='addPv')S.catDraft.proveedores.push({id:rid('v'),nombre:'',tel:'',local:S.local==='todos'?'ambos':S.local});
   if(a==='delPv')S.catDraft.proveedores.splice(+id,1);
   if(a==='addPr')S.catDraft.productos.push({id:rid('p'),nombre:'',unidad:'kg',prov:S.catDraft.proveedores[0]?.id||'',min:{}});
   if(a==='delPr')S.catDraft.productos.splice(+id,1);
@@ -424,7 +425,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{
   const t=e.target,ds=t.dataset;
-  if(ds.filtro!==undefined){const q=t.value.trim().toLowerCase();document.querySelectorAll('#main tr[data-n]').forEach(r=>r.hidden=!!q&&!r.dataset.n.includes(q));document.querySelectorAll('#main .grp').forEach(g=>g.hidden=!!q&&!g.querySelector('tr[data-n]:not([hidden])'));return}
+  if(ds.filtro!==undefined){const q=t.value.trim().toLowerCase();document.querySelectorAll('#main tr[data-n]').forEach(r=>r.hidden=!!r.dataset.off||(!!q&&!r.dataset.n.includes(q)));document.querySelectorAll('#main .grp').forEach(g=>g.hidden=!!q&&!g.querySelector('tr[data-n]:not([hidden])'));return}
   if(ds.buscar!==undefined){S.pedir.buscar=t.value;const q=t.value.trim().toLowerCase();document.querySelectorAll('#main .pitem').forEach(el=>{const inp=el.querySelector('input');el.hidden=!!q&&!el.dataset.n.includes(q)&&!(num(inp.value)>0)});document.querySelectorAll('#main h4.rubro').forEach(h=>h.hidden=!!q)}
   else if(ds.q!==undefined){S.pedir.qty[ds.q]=t.value;const c=$('#pcount');if(c)c.textContent=countPedido()}
   else if(ds.pnota!==undefined)S.pedir.nota=t.value;
