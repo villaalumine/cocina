@@ -57,9 +57,9 @@ label{font-size:14px;color:var(--mute);display:block;margin-bottom:4px}
 .list{border-top:1px solid var(--line)}.li{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .li small{color:var(--mute);display:block}
 .lowtag{color:var(--redink);font-weight:700}
-.pitem{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.pitem{display:grid;grid-template-columns:minmax(0,1fr) 168px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .pitem small{color:var(--mute);display:block}.pitem.low small{color:var(--redink)}
-.qbox{display:flex;align-items:center;gap:6px}.qbox input{text-align:right}.qbox span{font-size:14px;color:var(--mute);width:28px}
+.qbox{display:flex;align-items:center;gap:6px}.qbox input{text-align:right}.qbox span{font-size:14px;color:var(--mute);width:28px}.qbox .usel{width:76px;flex:none;padding:6px 4px;font-size:15px}
 .recrow{display:grid;grid-template-columns:minmax(0,1fr) 100px 110px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
 .recrow .st{font-size:13px;font-weight:700}.st.ok{color:var(--ok)}.st.bad{color:var(--redink)}
 @media(max-width:480px){.recrow{grid-template-columns:minmax(0,1fr) 92px}.recrow select{grid-column:1/-1}}
@@ -111,7 +111,7 @@ try{S.local=localStorage.getItem('cocina.local')||'todos'}catch(e){}
 const locales=()=>S.cat?.locales?.length?S.cat.locales:SEED.locales;
 const locName=id=>locales().find(l=>l.id===id)?.nombre||id;
 const provs=()=>S.cat?.proveedores||[];const prods=()=>S.cat?.productos||[];
-const prov=id=>provs().find(p=>p.id===id);
+const prov=id=>provs().find(p=>p.id===id);const prod=id=>prods().find(p=>p.id===id);
 const me=()=>S.equipo[S.uid]||null;
 const nameOf=uid=>S.equipo[uid]?.nombre||'Alguien';
 const canAdmin=()=>S.owner||['Encargado/a','Jefe/a de cocina'].includes(me()?.rol);
@@ -209,7 +209,7 @@ function vPedir(){
     const vis=list.filter(p=>!q||p.nombre.toLowerCase().includes(q)||num(d.qty[p.id])>0);
     return vis.map(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc),low=mn>0&&st<mn;const h=p.cat&&p.cat!==last?`<h4 class="rubro">${esc(p.cat)}</h4>`:'';last=p.cat||last;
     return `${h}<div class="pitem ${low?'low':''}" data-n="${esc(p.nombre.toLowerCase())}"><div>${esc(p.nombre)}<small>Hay ${fmt(st)} ${esc(p.unidad)}${mn?` · mínimo ${fmt(mn)}`:''}${p.precio?` · ${money(p.precio)}/${esc(p.unidad)}`:''}</small></div>
-  <div class="qbox"><input inputmode="decimal" aria-label="Cantidad ${esc(p.nombre)}" data-q="${p.id}" value="${esc(d.qty[p.id]||'')}" placeholder="0"><span>${esc(p.unidad)}</span></div></div>`}).join('')||(q?'<p class="empty">No hay productos con ese nombre.</p>':'<p class="empty">Este proveedor no tiene productos cargados.</p>')})()}</div>
+  <div class="qbox"><input inputmode="decimal" aria-label="Cantidad ${esc(p.nombre)}" data-q="${p.id}" value="${esc(d.qty[p.id]||'')}" placeholder="0"><select class="usel" data-u="${p.id}" aria-label="Unidad ${esc(p.nombre)}">${[...new Set([p.unidad,'kg','u'])].map(u=>`<option ${(d.unit?.[p.id]||p.unidad)===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div></div>`}).join('')||(q?'<p class="empty">No hay productos con ese nombre.</p>':'<p class="empty">Este proveedor no tiene productos cargados.</p>')})()}</div>
   <h3 style="margin:22px 0 8px;font-size:19px">Algo que no está en la lista</h3>
   ${d.extra.map((x,k)=>`<div class="row" style="margin-bottom:8px"><input style="flex:3 1 150px" placeholder="Producto" data-xn="${k}" value="${esc(x.n)}"><input style="flex:1 1 70px" inputmode="decimal" placeholder="Cant." data-xq="${k}" value="${esc(x.q)}"><input style="flex:1 1 60px" placeholder="kg, u…" data-xu="${k}" value="${esc(x.u)}"></div>`).join('')}
   <button data-act="addExtra">+ Agregar otro</button></section>
@@ -219,7 +219,7 @@ function vPedir(){
   ${prov(d.prov)?.tel?'':`<p class="sample">Este proveedor no tiene WhatsApp cargado: vas a poder elegir el contacto al abrir WhatsApp.</p>`}</div></aside></div>`;
 }
 function pedidoItems(){const d=S.pedir;
-  return [...prods().filter(p=>p.prov===d.prov&&num(d.qty[p.id])>0).map(p=>({pid:p.id,nombre:p.nombre,unidad:p.unidad,cant:num(d.qty[p.id]),...(p.precio?{precio:p.precio}:{})})),
+  return [...prods().filter(p=>p.prov===d.prov&&num(d.qty[p.id])>0).map(p=>{const u=d.unit?.[p.id]||p.unidad;return {pid:p.id,nombre:p.nombre,unidad:u,cant:num(d.qty[p.id]),...(p.precio&&u===p.unidad?{precio:p.precio}:{})}}),
     ...d.extra.filter(x=>x.n.trim()&&num(x.q)>0).map(x=>({pid:null,nombre:x.n.trim(),unidad:x.u.trim()||'u',cant:num(x.q)}))]}
 function countPedido(){const its=pedidoItems(),n=its.length,tot=its.reduce((a,i)=>a+(i.precio||0)*i.cant,0);return n?`${n} producto${n>1?'s':''} en el pedido${tot?` · estimado ${money(tot)} según lista`:''}`:'Todavía no cargaste cantidades'}
 
@@ -344,7 +344,7 @@ async function guardarPedido(){
   const loc=workLocal(),t=Date.now();
   const p={local:loc,prov:S.pedir.prov,items,nota:S.pedir.nota.trim(),por:S.uid,creado:t,estado:'pendiente',hist:[{t,uid:S.uid,a:'armó un pedido'}]};
   let ref;await w(async()=>{ref=await addDoc(collection(db,'pedidos'),p)});
-  p.id=ref.id;S.pedir={prov:S.pedir.prov,qty:{},extra:[],nota:''};
+  p.id=ref.id;S.pedir={prov:S.pedir.prov,qty:{},unit:{},extra:[],nota:''};
   {const tot=items.reduce((a,i)=>a+(i.precio||0)*i.cant,0);push(`🛒 Pedido nuevo · ${locName(loc)}`,`${nameOf(S.uid)} armó un pedido a ${prov(p.prov)?.nombre||'proveedor'}:\n${items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join('\n')}${tot?`\nEstimado: ${money(tot)}`:''}`,['shopping_cart'])}
   $('#sheet').innerHTML=`<div class="sheet"><div><h3>Pedido guardado</h3><p class="sub">Ahora mandalo. Se abre WhatsApp con el mensaje listo.</p><pre>${esc(msgText(p))}</pre>
   <div class="row"><a class="btn wa" style="flex:1" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">Abrir WhatsApp</a><button data-act="copy" data-id="${p.id}">Copiar texto</button></div>
@@ -359,7 +359,7 @@ async function guardarRec(id){
   const dif=items.some((x,k)=>x.rec!==num(p.items[k].cant)||x.cal!=='bien');
   const t=Date.now();
   await w(()=>updateDoc(doc(db,'pedidos',id),{estado:dif?'diferencias':'recibido',recepcion:{t,por:S.uid,items,monto:num(d.monto),nota:d.nota.trim()},hist:hist(p,dif?'recibió con diferencias':'recibió todo OK')}));
-  const add={};p.items.forEach((i,k)=>{if(i.pid&&items[k].rec>0)add[i.pid]=stockOf(p.local,i.pid)+items[k].rec});
+  const add={};p.items.forEach((i,k)=>{if(i.pid&&items[k].rec>0&&(!prod(i.pid)||prod(i.pid).unidad===i.unidad))add[i.pid]=stockOf(p.local,i.pid)+items[k].rec});
   if(Object.keys(add).length)await w(()=>setDoc(doc(db,'stock',p.local),{items:add,t},{merge:true}));
   S.recOpen=null;delete S.rec[id];render(true);
   push(`${dif?'⚠️ Llegó con diferencias':'✅ Pedido recibido'} · ${locName(p.local)}`,`${prov(p.prov)?.nombre||'Proveedor'}: recibió ${nameOf(S.uid)}${num(d.monto)?` · remito ${money(num(d.monto))}`:''}${dif?'\n'+p.items.map((i,k)=>{const x=items[k],df=x.rec-num(i.cant);return df!==0||x.cal!=='bien'?`• ${i.nombre}: ${df<0?'faltó '+fmt(-df)+' '+i.unidad:df>0?'sobró '+fmt(df)+' '+i.unidad:''}${x.cal!=='bien'?' calidad '+x.cal:''}`:''}).filter(Boolean).join('\n'):''}`,[dif?'warning':'white_check_mark']);
@@ -402,7 +402,7 @@ document.addEventListener('click',e=>{
   if(a==='reintentar'){location.reload();return}
   if(a==='modo'){S.authMode=id;S.note=''}
   if(a==='olvide'){const em=$('#l-e')?.value.trim();if(!em){S.note='Escribí tu mail arriba y tocá de nuevo "Me olvidé la clave".'}else{sendPasswordResetEmail(auth,em).then(()=>{S.note='Te mandamos un mail para cambiar la clave. Fijate en spam si no llega.';render(true)},er=>{S.note=errMsg(er);render(true)});return}}
-  if(a==='prov'){S.pedir.prov=id;S.pedir.qty={};S.pedir.buscar=''}
+  if(a==='prov'){S.pedir.prov=id;S.pedir.qty={};S.pedir.unit={};S.pedir.buscar=''}
   if(a==='sugerir'){const loc=workLocal();prods().filter(p=>p.prov===S.pedir.prov).forEach(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc);if(mn>0&&st<mn)S.pedir.qty[p.id]=String(Math.ceil((mn-st)*10)/10)})}
   if(a==='addExtra')S.pedir.extra.push({n:'',q:'',u:''});
   if(a==='guardarPedido'){guardarPedido().catch(()=>{});return}
@@ -441,6 +441,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',e=>{
   const t=e.target;
+  if(t.matches('select[data-u]')){S.pedir.unit={...(S.pedir.unit||{}),[t.dataset.u]:t.value};const c=$('#pcount');if(c)c.textContent=countPedido()}
   if(t.matches('select[data-cal],select[data-pr]'))t.dispatchEvent(new Event('input',{bubbles:true}));
   if(t.matches('select[data-eq]'))w(()=>updateDoc(doc(db,'equipo',t.dataset.eq),{[t.dataset.f]:t.value})).catch(()=>{});
 });
