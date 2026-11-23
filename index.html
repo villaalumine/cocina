@@ -259,6 +259,27 @@ function vCatalogo(){
   ${ed?'<button style="margin-top:10px" data-act="addPr">+ Producto</button>':''}</div>`;
 }
 
+const VAPID_PUB='BDPbN4AIJ5alSbcrTeO6QL_sNMsPKOcM4UFuLEPgPhHKsJODm_DW5fovLbdBLrXGWcebUrmK20puCAMCliEJ2po';
+const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent),standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+function pushInfo(){
+  const n=(S.cat?.avisos?.subs||[]).length;
+  if(!('serviceWorker' in navigator)||!('PushManager' in window))return isIOS&&!standalone?'<p class="note">En iPhone primero anclá la app: en Safari tocá Compartir → <b>Agregar a inicio</b>, y abrila desde ese ícono. Ahí vas a poder activar los avisos.</p>':'<p class="note">Este navegador no permite notificaciones. Probá desde el celu con Chrome o desde la app anclada.</p>';
+  const perm=Notification.permission;
+  return `<p class="meta">${n?`Activadas en ${n} dispositivo${n>1?'s':''}.`:'Todavía no las activaste en ningún celu.'}</p>
+  ${perm==='denied'?'<p class="note">Bloqueaste las notificaciones para esta app. Activalas desde la configuración del celu (Notificaciones → Cocina) y volvé a intentar.</p>':''}
+  <div class="row"><button class="pri" data-act="activarPush">Activar en este celu</button>${n?'<button class="dark" data-act="probarPush">Probar</button>':''}</div>`;
+}
+async function activarPush(){
+  const av=S.cat?.avisos||{};if(!av.worker){S.note='Falta terminar de configurar el cartero de avisos.';render(true);return}
+  try{
+    const perm=await Notification.requestPermission();if(perm!=='granted'){S.note='No diste permiso para notificaciones.';render(true);return}
+    const reg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;
+    const b=Uint8Array.from(atob(VAPID_PUB.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-VAPID_PUB.length%4)%4)),c=>c.charCodeAt(0));
+    let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b});
+    const j=sub.toJSON(),subs=(av.subs||[]).filter(x=>x.endpoint!==j.endpoint).concat([{endpoint:j.endpoint,keys:j.keys,alta:Date.now()}]).slice(-5);
+    await w(()=>updateDoc(doc(db,'cfg','catalogo'),{avisos:{...av,subs}}),'Notificaciones activadas en este celu. Tocá Probar.');
+  }catch(e){console.error(e);S.note='No se pudieron activar: '+(e.message||e);render(true)}
+}
 function vEquipo(){
   if(!S.owner)return '<p class="empty">Solo el dueño administra el equipo.</p>';
   const ms=Object.entries(S.equipo).filter(([id])=>id!==S.uid).sort((a,b)=>(b[1].activo?1:0)-(a[1].activo?1:0)||a[1].nombre.localeCompare(b[1].nombre));
@@ -271,9 +292,8 @@ function vEquipo(){
   <label for="av-t" style="margin-top:10px">WhatsApp del dueño</label><input id="av-t" name="tel" inputmode="tel" value="${esc(S.cat?.avisos?.tel||'')}" placeholder="549…">
   <label for="av-m" style="margin-top:10px">Avisar</label><select id="av-m" name="modo"><option value="siempre" ${S.cat?.avisos?.modo!=='diferencias'?'selected':''}>En cada recepción</option><option value="diferencias" ${S.cat?.avisos?.modo==='diferencias'?'selected':''}>Solo si llegó con diferencias</option></select>
   <button class="pri" style="width:100%;margin-top:14px" type="submit">Guardar avisos</button></form>
-  <form class="panel" data-form="cmb"><h3>WhatsApp automático</h3><p class="meta">Te llega un WhatsApp solo, sin que nadie toque nada, cada vez que alguien arma un pedido o recibe mercadería. Va al número de "Avisos de recepción".</p>
-  <label for="cmb-k" style="margin-top:10px">Clave de CallMeBot (apikey)</label><input id="cmb-k" name="cmb" value="${esc(S.cat?.avisos?.cmb||'')}" placeholder="Ej: 1234567" autocomplete="off">
-  <div class="row" style="margin-top:12px"><button class="pri" type="submit">Guardar</button>${S.cat?.avisos?.cmb?'<button type="button" class="dark" data-act="probarPush">Probar</button>':''}</div></form>
+  <div class="panel"><h3>Notificaciones en tu celu</h3><p class="meta">Te llega un aviso con el ícono de Cocina cuando alguien arma un pedido o recibe mercadería, aunque la app esté cerrada.</p>
+  ${pushInfo()}</div>
   <form class="panel" data-form="alta"><h3>Dar de alta</h3>
   <label for="e-n" style="margin-top:10px">Nombre</label><input id="e-n" name="nombre" required placeholder="Como le dicen en la cocina">
   <label for="e-e" style="margin-top:10px">Mail</label><input id="e-e" name="email" type="email" required>
@@ -314,6 +334,7 @@ function toast(t){$('#sheet').innerHTML=`<div class="sheet" data-act="closeSheet
 async function push(title,message,tags){const av=S.cat?.avisos||{};
   const tel=String(av.tel||'').replace(/\D/g,''),key=String(av.cmb||'').trim();
   if(tel&&key){try{await fetch(`https://api.callmebot.com/whatsapp.php?phone=%2B${tel}&apikey=${encodeURIComponent(key)}&text=${encodeURIComponent('*'+title+'*\n'+message)}`,{mode:'no-cors'})}catch(e){console.warn('aviso wa',e)}}
+  if(av.worker&&av.pushKey&&av.subs?.length){try{await fetch(av.worker,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:av.pushKey,subs:av.subs,title,body:message,url:location.href.split('#')[0]+'#panel'})})}catch(e){console.warn('aviso push',e)}}
   if(av.ntfy){try{await fetch('https://ntfy.sh/',{method:'POST',body:JSON.stringify({topic:av.ntfy,title,message,tags})})}catch(e){}}}
 const hist=(p,a)=>[...(p.hist||[]),{t:Date.now(),uid:S.uid,a}].slice(-30);
 
@@ -394,7 +415,8 @@ document.addEventListener('click',e=>{
   if(a==='delPr')S.catDraft.productos.splice(+id,1);
   if(a==='guardarCat'){guardarCat().catch(()=>{});return}
   if(a==='copyTopic'){navigator.clipboard?.writeText(S.cat.avisos.ntfy).then(()=>{b.textContent='Copiado'},()=>{});return}
-  if(a==='probarPush'){push('🔔 Prueba de la cocina','Si ves esto, las notificaciones funcionan.',['bell']).then(()=>toast('Prueba enviada. En unos segundos te tiene que llegar un WhatsApp.'));return}
+  if(a==='activarPush'){activarPush();return}
+  if(a==='probarPush'){push('🔔 Prueba de la cocina','Si ves esto, las notificaciones funcionan.',['bell']).then(()=>toast('Prueba enviada. En unos segundos te tiene que llegar la notificación.'));return}
   if(a==='activo'){const m=S.equipo[id];w(()=>updateDoc(doc(db,'equipo',id),{activo:!m.activo})).catch(()=>{});return}
   if(a==='reset'){const m=S.equipo[id];sendPasswordResetEmail(auth,m.email).then(()=>toast(`Le mandamos a ${m.nombre} un mail para cambiar la clave.`),er=>{S.note=errMsg(er);render(true)});return}
   render(true);
@@ -446,6 +468,7 @@ function subscribe(){
   S.subs.push(onSnapshot(collection(db,'equipo'),s=>{S.equipo={};s.docs.forEach(d=>S.equipo[d.id]=d.data());
     const m=S.equipo[S.uid];if(!S.owner&&(!m||!m.activo)){S.stage='blocked'}render()},err));
 }
+try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 onAuthStateChanged(auth,async u=>{
   S.subs.forEach(f=>f());S.subs=[];S.cat=null;S.equipo={};S.pedidos=[];S.stock={};S.note='';
   S.uid=u?.uid||null;
