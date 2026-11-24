@@ -6,7 +6,7 @@ self.addEventListener('push',e=>{
   e.waitUntil(self.registration.showNotification(d.title||'Cocina',{body:d.body||'',icon:'icon.png?v=2',badge:'icon.png?v=2',data:{url:d.url||'./#panel'},tag:d.tag||undefined}));
 });
 self.addEventListener('notificationclick',e=>{
-  e.notification.close();const url=new URL(e.notification.data?.url||'./',self.registration.scope).href;
+  e.notification.close();const u0=new URL(e.notification.data?.url||'./',self.registration.scope);u0.searchParams.set('aviso','1');const url=u0.href;
   e.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(ws=>{for(const w of ws){if(w.url.startsWith(self.registration.scope)){w.navigate(url);return w.focus()}}return self.clients.openWindow(url)}));
 });
 // Siempre buscar la versión más nueva de la app (sin quedarse con una vieja guardada)

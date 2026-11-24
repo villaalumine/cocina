@@ -955,6 +955,15 @@ function subscribe(){
     const m=S.equipo[S.uid];if(!S.owner&&(!m||!m.activo)){S.stage='blocked'}render()},err));
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
+// Al abrir la app: siempre al Panel, salvo que venga de tocar una notificación
+const DESDE_AVISO=new URLSearchParams(location.search).has('aviso');
+if(DESDE_AVISO)history.replaceState(null,'',location.pathname+location.hash);
+let ocultaDesde=0;
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){ocultaDesde=Date.now();return}
+  if(ocultaDesde&&Date.now()-ocultaDesde>3*60e3&&S.stage==='app'&&S.local&&location.hash!=='#panel'&&!$('#sheet').innerHTML){location.hash='panel'}
+  ocultaDesde=0;
+});
 onAuthStateChanged(auth,async u=>{
   S.subs.forEach(f=>f());S.subs=[];Object.keys(chatSubs).forEach(k=>{chatSubs[k]();delete chatSubs[k]});S.chat={};S.sols=[];S.cat=null;S.equipo={};S.pedidos=[];S.stock={};S.note='';
   S.uid=u?.uid||null;
@@ -968,7 +977,7 @@ onAuthStateChanged(auth,async u=>{
     }
     S.owner=o.data().uid===u.uid;S.ownerUid=o.data().uid;
     if(!S.owner){const m=await getDoc(doc(db,'equipo',u.uid));if(!m.exists()||!m.data().activo){S.stage='blocked';render(true);return}}
-    S.stage='app';if(!location.hash||location.hash==='#')history.replaceState(null,'','#inicio');subscribe();render(true);setTimeout(limpiarFotosViejas,8000);
+    S.stage='app';if(!DESDE_AVISO||!location.hash||location.hash==='#')history.replaceState(null,'',S.local?'#panel':'#inicio');subscribe();render(true);setTimeout(limpiarFotosViejas,8000);
   }catch(e){console.error(e);if(e.code==='permission-denied'){S.stage='blocked'}else{S.stage='error';S.note=errMsg(e)+(e.code?` (${e.code})`:'')}render(true)}
 });
 </script></body></html>
