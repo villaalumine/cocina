@@ -172,8 +172,8 @@ const ESTADOS={pendiente:'Sin enviar',enviado:'Esperando',recibido:'Recibido',di
 const SOPORTE='5492236918566';
 const sopLink=()=>'https://wa.me/'+SOPORTE+'?text='+encodeURIComponent(`Hola Matías, soy ${me()?.nombre||''}. Tengo una consulta sobre la app de cocina: `);
 const UNIDADES=['kg','u','bolsa','cajón','bulto'];
-const ROLES=['Encargado/a','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
-const NIVEL={'Encargado/a':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
+const ROLES=['Encargado/a','Administración','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
+const NIVEL={'Encargado/a':2,'Administración':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
 const lvl=()=>S.owner?1:(NIVEL[me()?.rol]||4);
 const myLocs=()=>S.owner||!me()?.local||me().local==='todos'?locales().map(l=>l.id):[me().local];
 const S={chat:{},agr:{},addOpen:null,fotos:{},fProv:'',fDia:'',stage:'boot',authMode:'login',cat:null,pedidos:[],stock:{},equipo:{},uid:null,owner:false,local:'todos',view:'',subs:[],
@@ -185,7 +185,7 @@ const locName=id=>locales().find(l=>l.id===id)?.nombre||id;
 const provs=()=>S.cat?.proveedores||[];const prods=()=>S.cat?.productos||[];
 const prov=id=>provs().find(p=>p.id===id);const provsFor=loc=>provs().filter(p=>!p.local||p.local==='ambos'||p.local===loc);const prod=id=>prods().find(p=>p.id===id);
 const me=()=>S.equipo[S.uid]||null;
-const ENVIA=['Jefe/a de cocina','Jefe/a de pedidos'];
+const ENVIA=['Jefe/a de cocina','Jefe/a de pedidos','Encargado/a','Administración'];
 const canSend=()=>S.owner||ENVIA.includes(me()?.rol);
 const jefeTxt=loc=>loc==='mara'?'jefe de pedidos':'jefe de cocina';
 const solsPend=(loc,pv)=>(S.sols||[]).filter(x=>x.local===loc&&x.estado==='pendiente'&&(!pv||x.prov===pv));
@@ -665,8 +665,8 @@ function vEquipo(){
   const locOpts=v=>locales().map(l=>`<option value="${l.id}" ${v===l.id?'selected':''}>Solo ${esc(l.nombre)}</option>`).join('')+`<option value="todos" ${v==='todos'?'selected':''}>Los dos locales</option>`;
   return `<div class="head"><div><h2>Equipo</h2><p class="sub">Vos das de alta a cada persona con su mail y una clave inicial, le elegís el puesto y a qué local entra. Si alguien se va, lo desactivás y no entra más.</p></div></div>
   <details class="panel" style="margin-bottom:16px"><summary><b>Qué puede hacer cada puesto</b></summary><ul class="meta" style="margin:8px 0 0;padding-left:18px">
-  <li><b>Administrador (vos):</b> todo, en los dos locales.</li><li><b>Encargado/a:</b> Panel, pedir, recibir, stock y editar proveedores y precios.</li>
-  <li><b>Jefe/a de cocina y Jefe/a de pedidos:</b> pedir, recibir, stock y conteos. Ve el catálogo pero no lo edita.</li><li><b>Cocinero/a y Bartender:</b> pedir y recibir.</li></ul></details>
+  <li><b>Administrador (vos):</b> todo, en los dos locales.</li><li><b>Encargado/a y Administración:</b> Panel, mandar pedidos a proveedores, recibir, stock y editar proveedores y precios.</li>
+  <li><b>Jefe/a de cocina y Jefe/a de pedidos:</b> mandar pedidos a proveedores (con las solicitudes del equipo), recibir, stock y conteos. Ve el catálogo pero no lo edita.</li><li><b>Cocinero/a y Bartender:</b> le piden al jefe (solicitudes) y reciben mercadería.</li></ul></details>
   <div class="cols"><section><div class="list">${ms.map(([id,m])=>`<div class="li" style="flex-wrap:wrap"><div style="flex:1 1 180px">${esc(m.nombre)}${m.activo?'':' <span class="badge">Desactivado</span>'}<small>${esc(m.email)}</small></div>
   <div class="row" style="flex:2 1 300px"><select style="flex:1 1 140px" aria-label="Puesto" data-eq="${id}" data-f="rol">${ROLES.map(r=>`<option ${m.rol===r?'selected':''}>${r}</option>`).join('')}</select><select style="flex:1 1 120px" aria-label="Local" data-eq="${id}" data-f="local">${locOpts(m.local)}</select>
   <button data-act="activo" data-id="${id}">${m.activo?'Desactivar':'Reactivar'}</button><button data-act="reset" data-id="${id}">Mail para cambiar clave</button></div></div>`).join('')||'<p class="empty">Todavía no diste de alta a nadie.</p>'}</div></section>
