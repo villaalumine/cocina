@@ -77,7 +77,7 @@ td.n,th.n{text-align:right}td input{min-height:40px}
 @media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7em;margin-inline-start:-7.5em;color:var(--mute);font-size:13px}.stack td:empty{display:none}}
 @media(prefers-reduced-motion:no-preference){.tk{animation:drop .35s ease-out both}@keyframes drop{from{transform:translateY(-10px);opacity:0}}}
 .login{max-width:460px;margin:6vh auto}.out{min-height:36px;padding:6px 12px;background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 35%,transparent)}[hidden]{display:none!important}
-.chatbtn{position:fixed;right:16px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:7;width:58px;height:58px;border-radius:50%;font-size:26px;padding:0;background:var(--ink);color:var(--bg);border:0;box-shadow:0 8px 22px -8px #000a}
+.chatbtn{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:7;width:58px;height:58px;border-radius:50%;font-size:26px;padding:0;background:var(--ink);color:var(--bg);border:0;box-shadow:0 8px 22px -8px #000a}
 body[data-sec=villa] .chatbtn{background:#f93604}body[data-sec=mara] .chatbtn{background:#1d1712}
 @media(min-width:900px){.chatbtn{bottom:24px;right:24px}}
 #chatBadge{position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;border-radius:11px;background:#1fa855;color:#fff;font:700 13px Barlow,sans-serif;display:grid;place-items:center;padding:0 5px}
@@ -104,7 +104,7 @@ nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;backgroun
 body[data-sec=villa] .acc{border-left:6px solid #f93604}body[data-sec=mara] .acc{border-left:6px solid #a17a57}
 @media(max-width:480px){.accesos{grid-template-columns:1fr 1fr}}
 .soltag{color:#1f7a3a;font-weight:600}.solbox{border:2px solid #25a244;background:#eef8ef}.sol{border-top:1px solid var(--line);padding:10px 0}.sol:first-of-type{border-top:0}.sol ul{margin:4px 0;padding-left:18px}
-nav.tabs a.on{opacity:1}body{padding-bottom:96px}
+nav.tabs a.on{opacity:1}body{padding-bottom:24px}nav.tabs{display:none!important}.volver{display:inline-flex;margin-bottom:14px;text-decoration:none}
 @media(max-width:420px){nav.tabs a{font-size:16.5px;letter-spacing:-.01em}}@media(max-width:480px){nav.tabs{gap:2px}nav.tabs a{font-size:14.5px;padding:8px 1px}}
 @media(min-width:900px){body{padding-bottom:0}nav.tabs{gap:8px;padding:10px max(4vw,14px)}nav.tabs a{font-size:22px;min-height:54px;padding:10px 24px}}
 body[data-sec=villa] nav.tabs a.on{background:#f93604;color:#fff}body[data-sec=mara] nav.tabs a.on{background:#1d1712;color:#e9d9c4}
@@ -241,10 +241,11 @@ const faltantes=p=>p.recepcion?p.items.map((i,k)=>({i,x:p.recepcion.items?.[k]})
 function accesos(nPend){
   const L=lvl(),ns=solsPend(workLocal()).length,room=workLocal(),nc=(S.chat[room]||[]).filter(m=>m.uid!==S.uid&&m.t>lastRead(room)).length;
   const B=[['pedir','🛒','Pedir',''],['solicitudes','📥','Solicitudes',ns?`${ns} pendiente${ns>1?'s':''}`:''],['pedidos','📦','Pedidos',nPend?`${nPend} por recibir`:''],
-    ...(L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(S.owner?[['equipo','👥','Equipo','']]:[]),['chat','💬','Chat',nc?`${nc} sin leer`:'']];
+    ...(L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(S.owner?[['equipo','👥','Equipo','']]:[])];
   return `<div class="accesos">${B.map(([v,i,t,n])=>`<a class="acc" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
 }
 function vPanel(){
+  if(lvl()>2)return `<div class="head" style="margin-bottom:6px"><div><h2>Hola, ${esc(me()?.nombre||'')}</h2><p class="sub">${esc(me()?.rol||'')} · ${esc(locName(workLocal()))}</p></div></div>${accesos(S.pedidos.filter(inLocal).filter(p=>p.estado==='enviado'||p.estado==='pendiente').length)}`;
   const hoy=dayKey(Date.now()),dia=S.panelDia||hoy,esHoy=dia===hoy;
   const ps=S.pedidos.filter(inLocal);
   const enviados=ps.filter(p=>p.enviado&&dayKey(p.enviado)===dia);
@@ -715,7 +716,7 @@ function render(force){
   {const pb=$('#perfilBtn');pb.hidden=!inApp;if(inApp)pb.innerHTML=avatarIn(S.uid)}
   const so=$('#soporte');so.hidden=true;so.href=sopLink();
   $('#who').textContent=me()?.nombre||'';
-  if(inApp&&S.equipo[S.uid]||S.owner){const ok=myLocs();if(S.local&&!ok.includes(S.local))S.local='';if(ok.length===1&&(!S.local||location.hash==='#inicio'||!location.hash)){S.local=ok[0];if(location.hash==='#inicio'||!location.hash)history.replaceState(null,'','#'+(lvl()<=2?'panel':'pedidos'))}}
+  if(inApp&&S.equipo[S.uid]||S.owner){const ok=myLocs();if(S.local&&!ok.includes(S.local))S.local='';if(ok.length===1&&(!S.local||location.hash==='#inicio'||!location.hash)){S.local=ok[0];if(location.hash==='#inicio'||!location.hash)history.replaceState(null,'','#'+('panel'))}}
   if(inApp&&location.hash.startsWith('#chat-')){const r=location.hash.slice(6);if(myLocs().includes(r))S.local=r;history.replaceState(null,'','#chat')}
   const sec=inApp&&S.local&&location.hash!=='#inicio'&&location.hash!==''?S.local:'';
   document.body.dataset.sec=sec;$('#tabs').hidden=!sec;
@@ -724,14 +725,15 @@ function render(force){
   $('#chatBtn').hidden=!sec;if(sec){ensureChat(sec);updChatBadge()}
   if(!inApp){$('#tabs').hidden=true;$('#main').innerHTML=vAcceso();return}
   if(!sec){$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vInicio();return}
-  const L=lvl();const views=[...(L<=2?['panel']:[]),'pedir','solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
+  const L=lvl();const views=['panel','pedir','solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
   document.querySelectorAll('#tabs a').forEach(x=>x.hidden=!views.includes(x.dataset.v));
-  let v=location.hash.slice(1),pid=null;if(v==='chat'){S.view='chat';document.querySelectorAll('#tabs a').forEach(x=>x.classList.remove('on'));$('#chatBtn').hidden=true;$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vChat();return}if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v=L<=2?'panel':'pedidos';
+  let v=location.hash.slice(1),pid=null;if(v==='chat'){S.view='chat';document.querySelectorAll('#tabs a').forEach(x=>x.classList.remove('on'));$('#chatBtn').hidden=true;$('#main').innerHTML=volverBtn()+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vChat();return}if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v='panel';
   {const n=solsPend(S.local).length,b=$('#solN');b.hidden=!n||!canSend();b.textContent=n>9?'9+':n}
   S.view=v;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   const html=pid?vPedido(pid):{panel:vPanel,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo}[v]();
-  $('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
+  $('#main').innerHTML=(v!=='panel'&&!pid?volverBtn():'')+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
 }
+const volverBtn=()=>'<a class="btn volver" href="#panel">‹ Inicio</a>';
 document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(S.pending&&!(a&&a.closest&&a.closest('#main')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))render()},50));
 addEventListener('hashchange',()=>{S.recOpen=null;S.note='';render(true);scrollTo(0,0)});
 $('#localSel').addEventListener('change',e=>{S.local=e.target.value;try{localStorage.setItem('cocina.local',S.local)}catch(x){}render(true)});
@@ -830,7 +832,7 @@ document.addEventListener('click',e=>{
   if(a==='psel'){S.panelSel=S.panelSel===id?null:id;render(true);return}
   if(a==='dia'){const n=+id;S.panelDia=n===0?null:shiftDay(S.panelDia||dayKey(Date.now()),n);if(S.panelDia&&S.panelDia>=dayKey(Date.now()))S.panelDia=null;render(true);return}
   if(a==='inicio'){if(location.hash==='#inicio')render(true);else location.hash='inicio';return}
-  if(a==='entrar'){S.local=id;try{localStorage.setItem('cocina.sec',id)}catch(x){}S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};S.catDraft=null;S.conteo={};location.hash=lvl()<=2?'panel':'pedidos';return}
+  if(a==='entrar'){S.local=id;try{localStorage.setItem('cocina.sec',id)}catch(x){}S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};S.catDraft=null;S.conteo={};location.hash='panel';return}
   if(a==='reintentar'){location.reload();return}
   if(a==='modo'){S.authMode=id;S.note=''}
   if(a==='olvide'){const em0=$('#l-e')?.value.trim();if(em0&&!em0.includes('@')){S.note='Pedile tu contraseña al administrador: él tiene guardadas las de todos.';render(true);return}const em=em0;if(!em){S.note='Escribí tu mail arriba y tocá de nuevo "Me olvidé la clave".'}else{sendPasswordResetEmail(auth,em).then(()=>{S.note='Te mandamos un mail para cambiar la clave. Fijate en spam si no llega.';render(true)},er=>{S.note=errMsg(er);render(true)});return}}
