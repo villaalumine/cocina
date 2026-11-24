@@ -61,6 +61,7 @@ label{font-size:14px;color:var(--mute);display:block;margin-bottom:4px}
 .pitem small{color:var(--mute);display:block}.pitem.low small{color:var(--redink)}
 .qbox{display:flex;align-items:center;gap:6px}.qbox input{text-align:right}.qbox span{font-size:14px;color:var(--mute);width:28px}.qbox .usel{width:84px;flex:none;padding:6px 4px;font-size:15px}
 .recrow{display:grid;grid-template-columns:minmax(0,1fr) 100px 110px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
+.panel.ok{background:#e8f5e0;border-color:#b9dca3}
 .recrow .st{font-size:13px;font-weight:700}.st.ok{color:var(--ok)}.st.bad{color:var(--redink)}
 @media(max-width:480px){.recrow{grid-template-columns:minmax(0,1fr) 92px}.recrow select{grid-column:1/-1}}
 .panel{background:var(--card);border-radius:14px;padding:16px 18px;margin-bottom:18px}
@@ -222,7 +223,7 @@ function vPanel(){
   const ps=S.pedidos.filter(inLocal);
   const enviados=ps.filter(p=>p.enviado&&dayKey(p.enviado)===dia);
   const pend=ps.filter(p=>p.estado==='enviado'||p.estado==='pendiente');
-  const corte=Date.now()-30*864e5,falt=ps.filter(p=>p.recepcion&&p.recepcion.t>corte&&faltantes(p).length);
+  const corte=Date.now()-30*864e5,falt=ps.filter(p=>p.recepcion&&p.recepcion.t>corte&&!p.faltaOk&&faltantes(p).length);
   const [y,m,d]=dia.split('-').map(Number),diaTxt=esHoy?'Hoy':new Date(y,m-1,d).toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
   const rol=S.owner?'Administrador':(me()?.rol||'');
   const sel=S.panelSel;
@@ -429,6 +430,15 @@ async function avisarChat(room,txt,men=[]){
     mandar(subs,`💬 ${nameOf(S.uid)} · Chat ${locName(room)}`);
   }catch(e){console.warn('aviso chat',e)}
 }
+async function faltaOk(id,deshacer,ok){
+  const p=S.pedidos.find(x=>x.id===id);if(!p)return;
+  if(deshacer){await w(()=>updateDoc(doc(db,'pedidos',id),{faltaOk:null,hist:hist(p,'marcó que el faltante no llegó')}));return}
+  const L=faltantes(p).map(o=>`${fmt(num(o.i.cant)-o.x.rec)} ${o.i.unidad} ${o.i.nombre}`);
+  if(!ok){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Llegó todo lo que faltaba?</h3><ul class="meta">${L.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="pri" style="width:100%" data-act="faltaSi" data-id="${id}">Sí, llegó todo</button><button style="margin-top:10px;width:100%" data-act="closeSheet">Cancelar</button></div></div>`;return}
+  $('#sheet').innerHTML='';
+  await w(()=>updateDoc(doc(db,'pedidos',id),{faltaOk:{t:Date.now(),por:S.uid},hist:hist(p,'recibió lo que faltaba')}),'Listo, el pedido quedó completo.');
+  push(`✅ Llegó el faltante · ${locName(p.local)}`,`${nameOf(S.uid)} recibió lo que faltaba de ${prov(p.prov)?.nombre||'proveedor'}:\n${L.map(x=>'• '+x).join('\n')}`,['white_check_mark']);
+}
 function difsBox(p){
   const r=p.recepcion;if(!r||p.estado!=='diferencias')return '';
   const L=p.items.map((i,k)=>{const x=r.items?.[k];if(!x)return '';const parts=[],df=x.rec-num(i.cant);
@@ -456,7 +466,8 @@ function vPedido(id){
   <label class="btn" style="margin-top:10px;cursor:pointer">📷 Agregar foto<input type="file" accept="image/*" capture="environment" data-foto="${p.id}" hidden></label>
   <p class="meta" id="fotomsg">Las fotos se borran solas a los 6 meses.</p></div>
   ${p.recepcion&&!S.owner?'':`${p.recepcion?'':'<p class="meta">Revisá bien antes de guardar: una vez guardada, solo el administrador puede corregirla.</p>'}<button class="pri guardar" type="submit" form="rf-${p.id}">${p.recepcion?'Guardar cambios (administrador)':'Guardar recepción'}</button>`}
-  ${reclamo?`<a class="btn wa" style="margin-top:12px" href="${esc(reclamo)}" target="_blank" rel="noopener">Reclamar faltantes por WhatsApp</a>`:''}</div>`;
+  ${p.faltaOk?`<div class="panel ok" style="margin-top:12px"><b>✅ Lo que faltaba ya llegó</b><p class="meta" style="margin:4px 0 0">Lo recibió ${esc(nameOf(p.faltaOk.por))} el ${fecha(p.faltaOk.t)} a las ${hora(p.faltaOk.t)}.${S.owner?` <button class="linkbtn" data-act="faltaDeshacer" data-id="${p.id}">deshacer</button>`:''}</p></div>`:
+  falt.length?`<div class="row" style="margin-top:12px">${reclamo?`<a class="btn wa" style="flex:1 1 220px" href="${esc(reclamo)}" target="_blank" rel="noopener">Reclamar faltantes por WhatsApp</a>`:''}<button class="pri" style="flex:1 1 220px" data-act="faltaOk" data-id="${p.id}">✅ Ya llegó lo que faltaba</button></div>`:''}</div>`;
 }
 async function limpiarFotosViejas(){
   if(!S.owner)return;
@@ -683,6 +694,9 @@ document.addEventListener('click',e=>{
   if(a==='fSet'){const [k,v]=id.split(/:(.*)/s);if(k==='dia')S.fDia=v;if(k==='prov')S.fProv=v;if(k==='est')S.fEstado=v||'todos';S.pVer=true;S.pOpen=null;render(true);return}
   if(a==='fClear'){S.fDia='';S.fProv='';S.fEstado='todos';render(true);return}
   if(a==='chat'){location.hash='chat';return}
+  if(a==='faltaOk'){faltaOk(id);return}
+  if(a==='faltaSi'){faltaOk(id,false,true);return}
+  if(a==='faltaDeshacer'){faltaOk(id,true);return}
   if(a==='mencionar'){mencionar(b.dataset.n);return}
   if(a==='chatDel'){const room=workLocal();deleteDoc(doc(db,'chats',room,'msgs',id)).catch(e=>{S.note=errMsg(e);render(true)});return}
   if(a==='psel'){S.panelSel=S.panelSel===id?null:id;render(true);return}
