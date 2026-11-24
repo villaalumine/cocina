@@ -326,7 +326,7 @@ function vInicio(){
   return `<div class="inicio"><p class="sub" style="text-align:center;margin:0 0 4px">Hola${me()?.nombre?', '+esc(me().nombre):''}. ¿Dónde trabajamos hoy?</p>
   ${myLocs().includes('villa')?`<button class="sect villa" data-act="entrar" data-id="villa"><img src="logo-villa-blanco.png" alt="Villa Aluminé"><span>Cocina · comida</span></button>`:''}
   ${myLocs().includes('mara')?`<button class="sect mara" data-act="entrar" data-id="mara"><img src="logo-mara.png" alt="Mara Social Club"><span>Noche · bebidas</span></button>`:''}
-  ${S.owner?'':`<a class="soporte" href="${esc(sopLink())}" target="_blank" rel="noopener"><b>Soporte</b><span>¿Tenés una duda o algo no anda? Escribile a Matías por WhatsApp.</span></a>`}</div>`;
+  ${`<a class="soporte" href="${esc(sopLink())}" target="_blank" rel="noopener"><b>Soporte</b><span>¿Tenés una duda o algo no anda? Escribile a Matías por WhatsApp.</span></a>`}</div>`;
 }
 /* ---------- render ---------- */
 function render(force){
@@ -335,7 +335,7 @@ function render(force){
   S.pending=false;
   const inApp=S.stage==='app'&&S.cat;
   $('#localSel').hidden=true;$('#salir').hidden=!auth.currentUser;
-  const so=$('#soporte');so.hidden=!(S.stage==='app'&&!S.owner);so.href=sopLink();
+  const so=$('#soporte');so.hidden=S.stage!=='app';so.href=sopLink();
   $('#who').textContent=me()?.nombre||'';
   if(inApp&&S.equipo[S.uid]||S.owner){const ok=myLocs();if(S.local&&!ok.includes(S.local))S.local='';if(ok.length===1&&(!S.local||location.hash==='#inicio'||!location.hash)){S.local=ok[0];if(location.hash==='#inicio'||!location.hash)history.replaceState(null,'','#'+(lvl()<=2?'panel':'pedidos'))}}
   const sec=inApp&&S.local&&location.hash!=='#inicio'&&location.hash!==''?S.local:'';
