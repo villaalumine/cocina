@@ -76,6 +76,7 @@ td.n,th.n{text-align:right}td input{min-height:40px}
 @media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7em;margin-inline-start:-7.5em;color:var(--mute);font-size:13px}.stack td:empty{display:none}}
 @media(prefers-reduced-motion:no-preference){.tk{animation:drop .35s ease-out both}@keyframes drop{from{transform:translateY(-10px);opacity:0}}}
 .login{max-width:460px;margin:6vh auto}.out{min-height:36px;padding:6px 12px;background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 35%,transparent)}[hidden]{display:none!important}
+.bwrap{display:inline-flex;flex-direction:column;align-items:flex-end;gap:4px}.bwrap .badge{font-size:inherit}.b-dif{background:var(--bg);color:var(--redink);border-color:var(--redink)}
 .agregar{border:2px solid var(--ink);margin-bottom:16px}
 .difs{border:2px solid var(--red);background:color-mix(in srgb,var(--red) 7%,var(--bg))}.difs ul{margin:8px 0 0;padding-left:18px}.difs li{margin:6px 0}
 .detalle{max-width:760px}.detalle .guardar{width:100%;min-height:52px;font-size:18px;margin-top:4px}
@@ -182,8 +183,9 @@ function vAcceso(){
 const dayKey=t=>{const d=new Date(t);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 const shiftDay=(k,n)=>{const [y,m,d]=k.split('-').map(Number);return dayKey(new Date(y,m-1,d+n))};
 function prowHTML(p,extra){const r=p.recepcion;return `<button class="prow" data-act="abrir" data-id="${p.id}"><span class="pfecha"><b>${new Date(p.creado).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})}</b><small>${hora(p.creado)}</small></span>
-  <span class="pinfo"><b>${esc(prov(p.prov)?.nombre||'Proveedor')}</b><small>${extra||`${p.items.length} producto${p.items.length>1?'s':''} · ${esc(nameOf(p.por))}${r&&num(r.monto)?' · '+money(num(r.monto)):''}${p.fotos?' · 📷':''}${p.estado==='diferencias'?' · ⚠️ con diferencias':''}`}</small></span>
-  <span class="badge b-${p.estado}">${ESTADOS[p.estado]||p.estado}</span></button>`}
+  <span class="pinfo"><b>${esc(prov(p.prov)?.nombre||'Proveedor')}</b><small>${extra||`${p.items.length} producto${p.items.length>1?'s':''} · ${esc(nameOf(p.por))}${r&&num(r.monto)?' · '+money(num(r.monto)):''}${p.fotos?' · 📷':''}`}</small></span>
+  ${badgeHTML(p)}</button>`}
+const badgeHTML=(p,big)=>`<span class="bwrap"${big?' style="font-size:15px"':''}><span class="badge b-${p.estado}">${ESTADOS[p.estado]||p.estado}</span>${p.estado==='diferencias'?'<span class="badge b-dif">Con diferencias</span>':''}</span>`;
 const faltantes=p=>p.recepcion?p.items.map((i,k)=>({i,x:p.recepcion.items?.[k]})).filter(o=>o.x&&o.x.rec<num(o.i.cant)):[];
 function vPanel(){
   const hoy=dayKey(Date.now()),dia=S.panelDia||hoy,esHoy=dia===hoy;
@@ -211,7 +213,7 @@ function tk(p){
     return `<li><span>${esc(i.nombre)}${ri&&ri.cal&&ri.cal!=='bien'?` <span class="lowtag">· calidad ${esc(ri.cal)}</span>`:''}${ri?.nota?`<br><small class="meta">${esc(ri.nota)}</small>`:''}</span><span class="q">${fmt(i.cant)} ${esc(i.unidad)}${ri?` → <span class="${diff?'lowtag':''}">${fmt(num(ri.rec))}</span>`:''}</span></li>`}).join('');
   let acts='';
   if(p.estado==='pendiente'||p.estado==='enviado')acts=`<div class="row"><a class="btn wa" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">${p.estado==='pendiente'?'Enviar':'Reenviar'} por WhatsApp</a><button class="dark" data-act="abrir" data-id="${p.id}">Recibir</button></div>`;else acts=`<div class="row"><button data-act="abrir" data-id="${p.id}">Ver detalle</button></div>`;
-  return `<article class="tk"><span class="clip"></span><h3><span>${esc(pv?.nombre||'Proveedor')}</span><span class="badge b-${p.estado}">${ESTADOS[p.estado]||p.estado}</span></h3>
+  return `<article class="tk"><span class="clip"></span><h3><span>${esc(pv?.nombre||'Proveedor')}</span>${badgeHTML(p)}</h3>
   <div class="meta">${esc(locName(p.local))} · pidió ${esc(nameOf(p.por))} · ${fecha(p.creado)} ${hora(p.creado)}</div>
   <ul>${items}</ul>${p.nota?`<p class="meta">Nota: ${esc(p.nota)}</p>`:''}
   ${r?`<p class="meta">Recibió ${esc(nameOf(r.por))} · ${fecha(r.t)} ${hora(r.t)}${num(r.monto)?` · remito ${money(num(r.monto))}`:''}${r.nota?`<br>${esc(r.nota)}`:''}</p>`:''}
@@ -302,7 +304,7 @@ function vPedidos(){
   <p class="meta" style="margin:10px 0">${ps.length} pedido${ps.length===1?'':'s'}</p>
   <div class="plist">${ps.map(p=>{const r=p.recepcion;return `<button class="prow" data-act="abrir" data-id="${p.id}"><span class="pfecha"><b>${new Date(p.creado).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})}</b><small>${hora(p.creado)}</small></span>
   <span class="pinfo"><b>${esc(prov(p.prov)?.nombre||'Proveedor')}</b><small>${p.items.length} producto${p.items.length>1?'s':''} · ${esc(nameOf(p.por))}${r&&num(r.monto)?' · '+money(num(r.monto)):''}${p.fotos?' · 📷':''}</small></span>
-  <span class="badge b-${p.estado}">${ESTADOS[p.estado]||p.estado}</span></button>`}).join('')||'<p class="empty">No hay pedidos con esos filtros.</p>'}</div>`;
+  ${badgeHTML(p)}</button>`}).join('')||'<p class="empty">No hay pedidos con esos filtros.</p>'}</div>`;
 }
 function vAgregar(p){
   const a=S.agr[p.id]||(S.agr[p.id]={qty:{},unit:{},extra:{n:'',q:'',u:'kg'}});
@@ -352,7 +354,7 @@ function vPedido(id){
   const falt=r?p.items.map((i,k)=>({i,x:r.items?.[k]})).filter(o=>o.x&&o.x.rec<num(o.i.cant)):[];
   const reclamo=falt.length&&pv?'https://wa.me/'+String(pv.tel||'').replace(/\D/g,'')+'?text='+encodeURIComponent(`Hola! En el pedido del ${fecha(p.creado)} para ${locName(p.local)} faltó:\n${falt.map(o=>`• ${fmt(num(o.i.cant)-o.x.rec)} ${o.i.unidad} ${o.i.nombre}`).join('\n')}\n¿Lo podés mandar? Gracias!`):'';
   return `<button data-act="volver" style="margin-bottom:14px">‹ Todos los pedidos</button>
-  <div class="head"><div><h2>${esc(pv?.nombre||'Proveedor')}</h2><p class="sub">${esc(locName(p.local))} · pidió ${esc(nameOf(p.por))} el ${fecha(p.creado)} a las ${hora(p.creado)}</p></div><span class="badge b-${p.estado}" style="font-size:15px">${ESTADOS[p.estado]||p.estado}</span></div>
+  <div class="head"><div><h2>${esc(pv?.nombre||'Proveedor')}</h2><p class="sub">${esc(locName(p.local))} · pidió ${esc(nameOf(p.por))} el ${fecha(p.creado)} a las ${hora(p.creado)}</p></div>${badgeHTML(p,1)}</div>
   ${abierto?`<div class="row" style="margin-bottom:16px"><a class="btn wa" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">${p.estado==='pendiente'?'Enviar':'Reenviar'} por WhatsApp</a><button class="dark" data-act="addOpen" data-id="${p.id}">➕ Agregar productos</button><button class="del" data-act="delPed" data-id="${p.id}">🗑 Eliminar pedido</button></div>${S.addOpen===p.id?vAgregar(p):''}`:''}
   ${p.nota?`<p class="note">Nota del pedido: ${esc(p.nota)}</p>`:''}
   <div class="detalle">${difsBox(p)}${vRec(p)}
