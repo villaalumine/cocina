@@ -389,18 +389,20 @@ async function guardarSolicitud(){
   pushUids(jefesDe(loc).filter(u=>u!==S.uid),`📥 Solicitud de ${nameOf(S.uid)} · ${locName(loc)}`,`Para ${pv?.nombre||'proveedor'}:\n${items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join('\n')}`,'#solicitudes');
 }
 function vSolicitudes(){
-  const loc=workLocal(),env=canSend(),pend=solsPend(loc),sem=Date.now()-7*864e5;
-  const res=(S.sols||[]).filter(x=>x.local===loc&&x.estado!=='pendiente'&&(x.resp?.t||x.creado)>sem).slice(0,40);
+  const loc=workLocal(),env=canSend(),todas=solsPend(loc);
+  const gente=[...new Set(todas.map(x=>x.por))].sort((a,b)=>nameOf(a).localeCompare(nameOf(b)));
+  if(S.fSolU&&!gente.includes(S.fSolU))S.fSolU='';
+  const pend=S.fSolU?todas.filter(x=>x.por===S.fSolU):todas;
   const porProv={};pend.forEach(x=>(porProv[x.prov]=porProv[x.prov]||[]).push(x));
   const solHTML=x=>`<div class="sol"><b>${esc(nameOf(x.por))}</b> <span class="meta">· ${fecha(x.creado)} ${hora(x.creado)}</span><ul>${x.items.map(i=>`<li>${fmt(i.cant)} ${esc(i.unidad)} ${esc(i.nombre)}</li>`).join('')}</ul>${x.nota?`<p class="meta" style="margin:0">Nota: ${esc(x.nota)}</p>`:''}
-    <div class="row" style="margin-top:6px">${x.por===S.uid||env?`<button class="del" data-act="solDel" data-id="${x.id}">Borrar</button>`:''}${env?`<button data-act="solNo" data-id="${x.id}">No se pide</button>`:''}</div></div>`;
-  const grupos=Object.entries(porProv).map(([pv,L])=>`<div class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">${esc(prov(pv)?.nombre||'Proveedor')}</h3><span class="soltag">${L.length} solicitud${L.length>1?'es':''}</span></div>
-    <p class="meta" style="margin:8px 0 2px"><b>Total a pedir:</b></p><ul style="margin:0 0 8px;padding-left:18px">${solTotales(L).map(t=>`<li><b>${fmt(t.cant)} ${esc(t.unidad)} ${esc(t.nombre)}</b> <span class="meta">(${t.quien.map(esc).join(', ')})</span></li>`).join('')}</ul>
-    ${env?`<button class="pri" style="width:100%;margin-bottom:6px" data-act="solArmar" data-id="${pv}">🛒 Armar pedido a ${esc(prov(pv)?.nombre||'proveedor')}</button>`:''}
-    <details open><summary class="meta" style="cursor:pointer">Ver cada solicitud</summary>${L.map(solHTML).join('')}</details></div>`).join('');
-  return `<div class="head"><div><h2>Solicitudes</h2><p class="sub">${env?'Lo que pidió el equipo, sumado por proveedor. Armá el pedido y mandalo.':`Lo que pidió el equipo al ${jefeTxt(loc)}. Fijate acá antes de pedir algo, así no se duplica.`}</p></div>${env?'':'<a class="btn pri" href="#pedir">+ Pedir algo</a>'}</div>
-  ${grupos||'<p class="empty">No hay solicitudes pendientes. 🎉</p>'}
-  ${res.length?`<h3 class="ptit" style="margin-top:22px">Últimos 7 días</h3><div class="list">${res.map(x=>`<div class="li"><div>${esc(prov(x.prov)?.nombre||'Proveedor')} · ${esc(nameOf(x.por))}<small>${x.items.map(i=>`${fmt(i.cant)} ${esc(i.unidad)} ${esc(i.nombre)}`).join(', ')}</small>${x.estado==='no'&&x.resp?.nota?`<small>“${esc(x.resp.nota)}”</small>`:''}</div><span class="badge ${x.estado==='pedido'?'b-recibido':'b-fno'}">${x.estado==='pedido'?'Pedido ✓':'No se pide'}</span></div>`).join('')}</div>`:''}`;
+    ${x.por===S.uid||env?`<div class="row" style="margin-top:6px">${x.por===S.uid||env?`<button class="del" data-act="solDel" data-id="${x.id}">Borrar</button>`:''}${env?`<button data-act="solNo" data-id="${x.id}">No se pide</button>`:''}</div>`:''}</div>`;
+  const grupos=Object.entries(porProv).map(([pv,L])=>{const all=solsPend(loc,pv);return `<div class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">${esc(prov(pv)?.nombre||'Proveedor')}</h3><span class="soltag">${L.length} solicitud${L.length>1?'es':''}</span></div>
+    ${L.map(solHTML).join('')}
+    ${!S.fSolU&&L.length>1?`<div class="solbox panel" style="margin:10px 0 0;padding:10px 12px"><p class="meta" style="margin:0 0 4px"><b>Total sumado:</b></p><ul style="margin:0;padding-left:18px">${solTotales(L).map(t=>`<li><b>${fmt(t.cant)} ${esc(t.unidad)} ${esc(t.nombre)}</b> <span class="meta">(${t.quien.map(esc).join(', ')})</span></li>`).join('')}</ul></div>`:''}
+    ${env?`<button class="pri" style="width:100%;margin-top:12px" data-act="solArmar" data-id="${pv}">🛒 Armar pedido a ${esc(prov(pv)?.nombre||'proveedor')}${S.fSolU&&all.length>L.length?` (incluye las ${all.length} solicitudes)`:''}</button>`:''}</div>`}).join('');
+  const filtro=gente.length?`<div class="chips" style="margin-bottom:16px"><button class="chip ${S.fSolU?'':'on'}" data-act="fSolU" data-id="">Todos (${todas.length})</button>${gente.map(u=>`<button class="chip ${S.fSolU===u?'on':''}" data-act="fSolU" data-id="${u}">${esc(nameOf(u))} (${todas.filter(x=>x.por===u).length})</button>`).join('')}</div>`:'';
+  return `<div class="head"><div><h2>Solicitudes</h2><p class="sub">${env?'Lo que pidió el equipo, por proveedor. Revisá y armá el pedido.':`Lo que pidió el equipo al ${jefeTxt(loc)}. Fijate acá antes de pedir algo, así no se duplica.`}</p></div>${env?'':'<a class="btn pri" href="#pedir">+ Pedir algo</a>'}</div>
+  ${filtro}${grupos||'<p class="empty">No hay solicitudes pendientes. 🎉</p>'}`;
 }
 async function solResolver(ids,estado,nota,pedidoId){
   const t=Date.now();
@@ -840,6 +842,7 @@ document.addEventListener('click',e=>{
   if(a==='cargarSols'){cargarSols()}
   if(a==='sugerir'){const loc=workLocal();prods().filter(p=>p.prov===S.pedir.prov).forEach(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc);if(mn>0&&st<mn)S.pedir.qty[p.id]=String(Math.ceil((mn-st)*10)/10)})}
   if(a==='addExtra')S.pedir.extra.push({n:'',q:'',u:'kg'});
+  if(a==='fSolU'){S.fSolU=id||'';render(true);return}
   if(a==='solArmar'){S.pedir={prov:id,qty:{},unit:{},extra:[],nota:'',buscar:''};cargarSols();location.hash='pedir';return}
   if(a==='solDel'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Borrar esta solicitud?</h3><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="solDelOk" data-id="${id}">Sí, borrar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
   if(a==='solDelOk'){$('#sheet').innerHTML='';deleteDoc(doc(db,'solicitudes',id)).catch(e=>{S.note=errMsg(e);render(true)});return}
