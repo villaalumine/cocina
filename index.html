@@ -330,6 +330,46 @@ function vPedidos(){
   ${ver?`<p class="meta" style="margin:14px 0 6px">${ps.length} pedido${ps.length===1?'':'s'}${S.fDia||S.fProv||f!=='todos'?' · <button class="linkbtn" data-act="fClear">Limpiar filtros</button>':''}</p>
   <div class="plist">${ps.map(p=>prowHTML(p)).join('')||'<p class="empty">No hay pedidos con esos filtros.</p>'}</div>`:`<button class="verTodos" data-act="fSet" data-id="ver:">Ver todos los pedidos</button>`}`;
 }
+function vAgregar(p){
+  const a=S.agr[p.id]||(S.agr[p.id]={qty:{},unit:{},extra:{n:'',q:'',u:'kg'}});
+  const list=prods().filter(x=>x.prov===p.prov);
+  return `<div class="panel agregar"><h3>Agregar al pedido</h3><p class="meta">Cargá solo lo que te olvidaste. ${p.estado==='enviado'?'Después se abre WhatsApp con un mensaje para el proveedor con lo agregado.':'Se suma al pedido antes de mandarlo.'}</p>
+  <input type="search" data-buscar placeholder="Buscar producto…" aria-label="Buscar producto" style="margin:8px 0">
+  ${list.map(x=>`<div class="pitem" data-n="${esc(x.nombre.toLowerCase())}"><div>${esc(x.nombre)}${p.items.some(i=>i.pid===x.id)?`<small>Ya en el pedido: ${fmt(p.items.filter(i=>i.pid===x.id).reduce((s,i)=>s+num(i.cant),0))} ${esc(x.unidad)}</small>`:''}</div>
+  <div class="qbox"><input inputmode="decimal" aria-label="Agregar ${esc(x.nombre)}" data-aq="${x.id}" value="${esc(a.qty[x.id]||'')}" placeholder="0"><select class="usel" data-au="${x.id}" aria-label="Unidad">${[...new Set([x.unidad,...UNIDADES])].map(u=>`<option ${(a.unit[x.id]||x.unidad)===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div></div>`).join('')}
+  <div class="row" style="margin-top:10px"><input style="flex:3 1 150px" placeholder="Otro producto" data-axn value="${esc(a.extra.n)}"><input style="flex:1 1 70px" inputmode="decimal" placeholder="Cant." data-axq value="${esc(a.extra.q)}"><select style="flex:1 1 84px" data-axu aria-label="Unidad">${UNIDADES.map(u=>`<option ${a.extra.u===u?'selected':''}>${u}</option>`).join('')}</select></div>
+  <div class="row" style="margin-top:12px"><button class="pri" data-act="addOk" data-id="${p.id}">Agregar al pedido</button><button data-act="addCancel">Cancelar</button></div></div>`;
+}
+async function agregarItems(id){
+  const p=S.pedidos.find(x=>x.id===id),a=S.agr[id];if(!p||!a||p.recepcion)return;
+  const nuevos=[...prods().filter(x=>x.prov===p.prov&&num(a.qty[x.id])>0).map(x=>{const u=a.unit[x.id]||x.unidad;return {pid:x.id,nombre:x.nombre,unidad:u,cant:num(a.qty[x.id]),...(x.precio&&u===x.unidad?{precio:x.precio}:{})}}),
+    ...(a.extra.n.trim()&&num(a.extra.q)>0?[{pid:null,nombre:a.extra.n.trim(),unidad:a.extra.u||'u',cant:num(a.extra.q)}]:[])];
+  if(!nuevos.length){S.note='Cargá al menos una cantidad para agregar.';render(true);return}
+  const items=p.items.map(i=>({...i}));
+  nuevos.forEach(n=>{const e=items.find(i=>i.pid&&i.pid===n.pid&&i.unidad===n.unidad);if(e)e.cant=num(e.cant)+n.cant;else items.push(n)});
+  const resumen=nuevos.map(n=>`${fmt(n.cant)} ${n.unidad} ${n.nombre}`).join(', ');
+  await w(()=>updateDoc(doc(db,'pedidos',id),{items,agregados:[...(p.agregados||[]),{t:Date.now(),uid:S.uid,items:nuevos}],hist:hist(p,'agregó '+resumen)}));
+  S.addOpen=null;delete S.agr[id];
+  push(`➕ Agregado al pedido · ${locName(p.local)}`,`${nameOf(S.uid)} agregó al pedido de ${prov(p.prov)?.nombre||'proveedor'}:\n${nuevos.map(n=>`• ${fmt(n.cant)} ${n.unidad} ${n.nombre}`).join('\n')}`,['heavy_plus_sign']);
+  if(p.estado==='enviado'){
+    const t=String(prov(p.prov)?.tel||'').replace(/\D/g,'');
+    const msg=[`*Agregado al pedido de ${locName(p.local)}* · ${fecha(p.creado)}`,'Hola! Me olvidé de esto, ¿lo podés sumar al pedido?',...nuevos.map(n=>`• ${fmt(n.cant)} ${n.unidad} ${n.nombre}`),'','Gracias! '+nameOf(S.uid)].join('\n');
+    $('#sheet').innerHTML=`<div class="sheet"><div><h3>Agregado al pedido</h3><p class="sub">Ahora avisale al proveedor. El mensaje ya está armado.</p><pre>${esc(msg)}</pre>
+    <a class="btn wa" style="width:100%" href="${esc('https://wa.me/'+t+'?text='+encodeURIComponent(msg))}" target="_blank" rel="noopener" data-act="closeSheet">Mandar por WhatsApp</a>
+    <button style="margin-top:10px;width:100%" data-act="closeSheet">Lo mando después</button></div></div>`;
+  }else toast('Agregado al pedido. Acordate de mandarlo por WhatsApp.');
+  render(true);
+}
+function difsBox(p){
+  const r=p.recepcion;if(!r||p.estado!=='diferencias')return '';
+  const L=p.items.map((i,k)=>{const x=r.items?.[k];if(!x)return '';const parts=[],df=x.rec-num(i.cant);
+    if(df<0)parts.push(`<b>faltó ${fmt(-df)} ${esc(i.unidad)}</b> (pidieron ${fmt(num(i.cant))}, llegó ${fmt(x.rec)})`);
+    if(df>0)parts.push(`<b>sobró ${fmt(df)} ${esc(i.unidad)}</b> (pidieron ${fmt(num(i.cant))}, llegó ${fmt(x.rec)})`);
+    if(x.rem!==undefined&&x.rem!==x.rec)parts.push(`el remito dice ${fmt(x.rem)} y llegó ${fmt(x.rec)}`);
+    if(x.cal&&x.cal!=='bien')parts.push(`calidad ${esc(x.cal)}`);
+    if(!parts.length)return '';return `<li><b>${esc(i.nombre)}:</b> ${parts.join(' · ')}${x.nota?`<br><span class="meta">"${esc(x.nota)}"</span>`:''}</li>`}).filter(Boolean);
+  return L.length?`<div class="panel difs"><h3>⚠️ Diferencias en este pedido</h3><ul>${L.join('')}</ul></div>`:'';
+}
 function vPedido(id){
   const p=S.pedidos.find(x=>x.id===id);
   if(!p)return `<button data-act="volver">‹ Todos los pedidos</button><p class="empty">No encontré ese pedido.</p>`;
