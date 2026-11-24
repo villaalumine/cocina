@@ -131,7 +131,7 @@ button.kpi.y{border-top-color:var(--mus)}button.kpi.r{border-top-color:var(--red
 .soporte b{font:700 20px "Barlow Condensed",sans-serif;color:#1fa855}.soporte span{color:var(--mute);font-size:15px}
 .top .brand{background:none;border:0;color:inherit;padding:0;min-height:44px;gap:8px;font:700 24px "Barlow Condensed",sans-serif;display:flex;align-items:center;cursor:pointer}
 .av{display:inline-flex;align-items:center;justify-content:center;border-radius:12px;background:var(--bg);border:2px solid var(--line);overflow:hidden;font:700 20px "Barlow Condensed",sans-serif;color:var(--redink);flex:none;padding:0;min-height:0;cursor:pointer}.av img{width:100%;height:100%;object-fit:cover;display:block}
-.top .av{border-color:#fff8;background:#fff2;color:#fff}
+.top .av{border-color:#fff8;background:#fff2;color:#fff;border-radius:50%}
 .perfil{text-align:center}.perfil .av{margin:0 auto 10px;cursor:default}.perfil label.btn,.perfil a.btn,.perfil button{width:100%;margin-top:10px}
 .top .brand img{height:16px;width:auto;display:block}#who{display:none}.top .brand .back{font-size:30px;line-height:1;margin-top:-4px}
 body[data-sec=villa] .top{background:#f93604;color:#fff}body[data-sec=mara] .top{background:#1d1712;color:#f3e7d8}
@@ -239,7 +239,7 @@ function vPanel(){
   if(sel==='env')lista=`<h3 class="ptit">Enviados ${esHoy?'hoy':'el '+esc(diaTxt)}</h3>${enviados.length?`<div class="plist">${enviados.map(p=>prowHTML(p)).join('')}</div>`:'<p class="empty">No se envió ningún pedido ese día.</p>'}`;
   if(sel==='pend')lista=`<h3 class="ptit">Pendientes de entrega</h3><p class="meta">Pedidos que todavía no se recibieron, de cualquier fecha.</p>${pend.length?`<div class="plist">${pend.map(p=>prowHTML(p,p.estado==='pendiente'?'Todavía no se mandó por WhatsApp':`Enviado ${fecha(p.enviado||p.creado)} ${hora(p.enviado||p.creado)} · ${p.items.length} producto${p.items.length>1?'s':''}`)).join('')}</div>`:'<p class="empty">No hay pedidos pendientes.</p>'}`;
   if(sel==='falt')lista=`<h3 class="ptit">Faltantes por recibir</h3><p class="meta">Pedidos de los últimos 30 días que llegaron incompletos. Entrá para reclamarle al proveedor.</p>${falt.length?`<div class="plist">${falt.map(p=>prowHTML(p,'Faltó: '+faltantes(p).map(o=>`${fmt(num(o.i.cant)-o.x.rec)} ${esc(o.i.unidad)} ${esc(o.i.nombre)}`).join(', '))).join('')}</div>`:'<p class="empty">No hay faltantes. 🎉</p>'}`;
-  return `<div class="head" style="margin-bottom:6px"><div><h2>Hola, ${esc(me()?.nombre||'Matías')}</h2><p class="sub">${esc(rol)} · ${esc(locName(workLocal()))}</p></div><button class="av" data-act="perfil" aria-label="Mi perfil" style="width:64px;height:64px;align-self:center">${avatarIn(S.uid)}</button></div>
+  return `<div class="head" style="margin-bottom:6px"><div><h2>Hola, ${esc(me()?.nombre||'Matías')}</h2><p class="sub">${esc(rol)} · ${esc(locName(workLocal()))}</p></div></div>
   <div class="row diasel" style="margin:10px 0 18px"><button data-act="dia" data-id="-1" aria-label="Día anterior">‹</button><input type="date" data-dia value="${dia}" max="${hoy}" aria-label="Día"><button data-act="dia" data-id="1" aria-label="Día siguiente" ${esHoy?'disabled':''}>›</button>${esHoy?'':'<button data-act="dia" data-id="0">Hoy</button>'}</div>
   <div class="kpis k3">${cards.map(([k,n,t,c])=>`<button class="kpi ${c} ${n&&c==='r'?'':''} ${sel===k?'sel':''}" data-act="psel" data-id="${k}" aria-pressed="${sel===k}"><b>${n}</b><span>${t}</span></button>`).join('')}</div>
   ${lista||'<p class="empty">Tocá un cuadro para ver el detalle.</p>'}`;
@@ -642,7 +642,7 @@ function render(force){
   const L=lvl(),views=[...(L<=2?['panel']:[]),'pedir','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
   document.querySelectorAll('#tabs a').forEach(x=>x.hidden=!views.includes(x.dataset.v));
   let v=location.hash.slice(1),pid=null;if(v==='chat'){S.view='chat';document.querySelectorAll('#tabs a').forEach(x=>x.classList.remove('on'));$('#chatBtn').hidden=true;$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vChat();return}if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v=L<=2?'panel':'pedidos';
-  S.view=v;$('#perfilBtn').hidden=v==='panel'&&!pid;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
+  S.view=v;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   const html=pid?vPedido(pid):{panel:vPanel,pedir:vPedir,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo}[v]();
   $('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
 }
