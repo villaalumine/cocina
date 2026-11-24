@@ -387,17 +387,35 @@ function chatListHTML(room){
   return (S.chat[room]||[]).map(m=>{const dk=dayKey(m.t),sep=dk!==last?`<div class="chatday">${dk===dayKey(Date.now())?'Hoy':fecha(m.t)}</div>`:'';last=dk;const mine=m.uid===S.uid;
     return `${sep}<div class="msg ${mine?'mine':''}">${mine?'':`<b>${esc(nameOf(m.uid))}</b>`}<span>${esc(m.txt).replace(/\n/g,'<br>')}</span><small>${hora(m.t)}${mine||S.owner?` · <button class="linkbtn" data-act="chatDel" data-id="${m.id}">borrar</button>`:''}</small></div>`}).join('')||'<p class="empty">Todavía no hay mensajes. ¡Escribí el primero!</p>';
 }
+function chatAvisoHTML(){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window))return isIOS&&!standalone?'<p class="meta" style="max-width:300px">🔔 Para recibir avisos del chat, anclá la app: en Safari tocá Compartir → <b>Agregar a inicio</b> y abrila desde ese ícono.</p>':'';
+  let on=false;try{on=Notification.permission==='granted'&&localStorage.getItem('cocina.push.'+S.uid)==='1'}catch(e){}
+  if(Notification.permission==='denied')return '<p class="meta" style="max-width:300px">🔕 Bloqueaste las notificaciones. Activalas en la configuración del celu (Notificaciones → Cocina).</p>';
+  return on?'<span class="meta">🔔 Avisos activados</span>':'<button class="pri" data-act="activarPush">🔔 Activar avisos del chat</button>';
+}
 function vChat(){
   const room=workLocal();ensureChat(room);markRead(room);
   setTimeout(()=>{const l=$('#chatlist');if(l)l.scrollTop=l.scrollHeight},0);
-  return `<div class="head"><div><h2>Chat · ${esc(locName(room))}</h2><p class="sub">Lo ven todos los que trabajan en ${esc(locName(room))}.</p></div></div>
+  return `<div class="head"><div><h2>Chat · ${esc(locName(room))}</h2><p class="sub">Lo ven todos los que trabajan en ${esc(locName(room))}.</p></div>${chatAvisoHTML()}</div>
   <div class="chatbox"><div class="chatlist" id="chatlist">${chatListHTML(room)}</div>
   <form class="chatform" data-form="chat"><textarea name="txt" rows="1" placeholder="Escribí un mensaje…" aria-label="Mensaje" data-chatin></textarea><button class="pri" type="submit" aria-label="Enviar">Enviar</button></form></div>`;
 }
 async function enviarChat(f){
   const ta=f.querySelector('textarea'),txt=ta.value.trim();if(!txt)return;const room=workLocal();
-  ta.value='';try{await addDoc(collection(db,'chats',room,'msgs'),{t:Date.now(),uid:S.uid,txt:txt.slice(0,1500)})}catch(e){ta.value=txt;S.note=errMsg(e);render(true)}
-  ta.focus();
+  ta.value='';try{await addDoc(collection(db,'chats',room,'msgs'),{t:Date.now(),uid:S.uid,txt:txt.slice(0,1500)})}catch(e){ta.value=txt;S.note=errMsg(e);render(true);return}
+  ta.focus();avisarChat(room,txt);
+}
+async function avisarChat(room,txt){
+  const av=S.cat?.avisos||{};if(!av.worker||!av.pushKey)return;
+  try{
+    const quien=uid=>uid!==S.uid&&(uid===S.ownerUid||(S.equipo[uid]?.activo&&(S.equipo[uid].local===room||S.equipo[uid].local==='todos')));
+    const sn=await getDocs(collection(db,'avisos'));let subs=[];
+    sn.docs.forEach(d=>{if(quien(d.id))subs.push(...(d.data().subs||[]))});
+    if(!S.owner)subs.push(...(av.subs||[]));
+    const seen=new Set();subs=subs.filter(x=>x?.endpoint&&!seen.has(x.endpoint)&&seen.add(x.endpoint));
+    const body={key:av.pushKey,title:`💬 ${nameOf(S.uid)} · Chat ${locName(room)}`,body:txt.slice(0,300),url:location.href.split('#')[0]+'#chat-'+room};
+    for(let i=0;i<subs.length;i+=10)fetch(av.worker,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,subs:subs.slice(i,i+10)})}).catch(e=>console.warn('aviso chat',e));
+  }catch(e){console.warn('aviso chat',e)}
 }
 function difsBox(p){
   const r=p.recepcion;if(!r||p.estado!=='diferencias')return '';
@@ -508,8 +526,13 @@ async function activarPush(){
     const reg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;
     const b=Uint8Array.from(atob(VAPID_PUB.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-VAPID_PUB.length%4)%4)),c=>c.charCodeAt(0));
     let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b});
-    const j=sub.toJSON(),subs=(av.subs||[]).filter(x=>x.endpoint!==j.endpoint).concat([{endpoint:j.endpoint,keys:j.keys,alta:Date.now()}]).slice(-5);
-    await w(()=>updateDoc(doc(db,'cfg','catalogo'),{avisos:{...av,subs}}),'Notificaciones activadas en este celu. Tocá Probar.');
+    const j=sub.toJSON(),nuevo={endpoint:j.endpoint,keys:j.keys,alta:Date.now()};
+    const mine=await getDoc(doc(db,'avisos',S.uid)),prev=mine.exists()?(mine.data().subs||[]):[];
+    await setDoc(doc(db,'avisos',S.uid),{subs:prev.filter(x=>x.endpoint!==j.endpoint).concat([nuevo]).slice(-3),t:Date.now()});
+    try{localStorage.setItem('cocina.push.'+S.uid,'1')}catch(e){}
+    if(S.owner){const subs=(av.subs||[]).filter(x=>x.endpoint!==j.endpoint).concat([nuevo]).slice(-5);
+      await w(()=>updateDoc(doc(db,'cfg','catalogo'),{avisos:{...av,subs}}),'Notificaciones activadas en este celu. Tocá Probar.')}
+    else{toast('¡Listo! Te van a llegar avisos cuando te escriban en el chat.');render(true)}
   }catch(e){console.error(e);S.note='No se pudieron activar: '+(e.message||e);render(true)}
 }
 function vEquipo(){
@@ -524,7 +547,7 @@ function vEquipo(){
   <div class="row" style="flex:2 1 300px"><select style="flex:1 1 140px" aria-label="Puesto" data-eq="${id}" data-f="rol">${ROLES.map(r=>`<option ${m.rol===r?'selected':''}>${r}</option>`).join('')}</select><select style="flex:1 1 120px" aria-label="Local" data-eq="${id}" data-f="local">${locOpts(m.local)}</select>
   <button data-act="activo" data-id="${id}">${m.activo?'Desactivar':'Reactivar'}</button><button data-act="reset" data-id="${id}">Mail para cambiar clave</button></div></div>`).join('')||'<p class="empty">Todavía no diste de alta a nadie.</p>'}</div></section>
   <aside>
-  <div class="panel"><h3>Notificaciones en tu celu</h3><p class="meta">Te llega un aviso con el ícono de Cocina cuando alguien arma un pedido o recibe mercadería, aunque la app esté cerrada.</p>
+  <div class="panel"><h3>Notificaciones en tu celu</h3><p class="meta">Te llega un aviso con el ícono de Cocina cuando alguien arma un pedido, recibe mercadería o escribe en el chat, aunque la app esté cerrada.</p>
   ${pushInfo()}</div>
   <form class="panel" data-form="alta"><h3>Dar de alta</h3>
   <label for="e-n" style="margin-top:10px">Nombre</label><input id="e-n" name="nombre" required placeholder="Como le dicen en la cocina">
@@ -552,6 +575,7 @@ function render(force){
   const so=$('#soporte');so.hidden=S.stage!=='app';so.href=sopLink();
   $('#who').textContent=me()?.nombre||'';
   if(inApp&&S.equipo[S.uid]||S.owner){const ok=myLocs();if(S.local&&!ok.includes(S.local))S.local='';if(ok.length===1&&(!S.local||location.hash==='#inicio'||!location.hash)){S.local=ok[0];if(location.hash==='#inicio'||!location.hash)history.replaceState(null,'','#'+(lvl()<=2?'panel':'pedidos'))}}
+  if(inApp&&location.hash.startsWith('#chat-')){const r=location.hash.slice(6);if(myLocs().includes(r))S.local=r;history.replaceState(null,'','#chat')}
   const sec=inApp&&S.local&&location.hash!=='#inicio'&&location.hash!==''?S.local:'';
   document.body.dataset.sec=sec;$('#tabs').hidden=!sec;
   $('#brandImg').hidden=!sec;$('#brandTxt').hidden=!!sec;document.querySelector('#brand .back').hidden=!sec||(inApp&&myLocs().length<2);
@@ -752,7 +776,7 @@ onAuthStateChanged(auth,async u=>{
       if(S.authMode!=='dueño'){S.stage='blocked';render(true);return}
       await claim(u);o=await getDoc(doc(db,'cfg','owner'));
     }
-    S.owner=o.data().uid===u.uid;
+    S.owner=o.data().uid===u.uid;S.ownerUid=o.data().uid;
     if(!S.owner){const m=await getDoc(doc(db,'equipo',u.uid));if(!m.exists()||!m.data().activo){S.stage='blocked';render(true);return}}
     S.stage='app';if(!location.hash||location.hash==='#')history.replaceState(null,'','#inicio');subscribe();render(true);setTimeout(limpiarFotosViejas,8000);
   }catch(e){console.error(e);if(e.code==='permission-denied'){S.stage='blocked'}else{S.stage='error';S.note=errMsg(e)+(e.code?` (${e.code})`:'')}render(true)}
