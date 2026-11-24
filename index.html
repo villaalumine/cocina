@@ -627,7 +627,7 @@ function render(force){
   S.pending=false;
   const inApp=S.stage==='app'&&S.cat;
   $('#localSel').hidden=true;$('#salir').hidden=!auth.currentUser||inApp;
-  {const pb=$('#perfilBtn'),enPanel=location.hash==='#panel'&&lvl()<=2&&!!S.local;pb.hidden=!inApp||enPanel;if(inApp)pb.innerHTML=avatarIn(S.uid)}
+  {const pb=$('#perfilBtn');pb.hidden=!inApp;if(inApp)pb.innerHTML=avatarIn(S.uid)}
   const so=$('#soporte');so.hidden=true;so.href=sopLink();
   $('#who').textContent=me()?.nombre||'';
   if(inApp&&S.equipo[S.uid]||S.owner){const ok=myLocs();if(S.local&&!ok.includes(S.local))S.local='';if(ok.length===1&&(!S.local||location.hash==='#inicio'||!location.hash)){S.local=ok[0];if(location.hash==='#inicio'||!location.hash)history.replaceState(null,'','#'+(lvl()<=2?'panel':'pedidos'))}}
@@ -642,7 +642,7 @@ function render(force){
   const L=lvl(),views=[...(L<=2?['panel']:[]),'pedir','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
   document.querySelectorAll('#tabs a').forEach(x=>x.hidden=!views.includes(x.dataset.v));
   let v=location.hash.slice(1),pid=null;if(v==='chat'){S.view='chat';document.querySelectorAll('#tabs a').forEach(x=>x.classList.remove('on'));$('#chatBtn').hidden=true;$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vChat();return}if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v=L<=2?'panel':'pedidos';
-  S.view=v;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
+  S.view=v;$('#perfilBtn').hidden=v==='panel'&&!pid;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   const html=pid?vPedido(pid):{panel:vPanel,pedir:vPedir,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo}[v]();
   $('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
 }
