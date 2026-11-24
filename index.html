@@ -681,7 +681,7 @@ function vEquipo(){
   ${pushInfo()}</div>
   <form class="panel" data-form="alta"><h3>Dar de alta</h3>
   <label for="e-n" style="margin-top:10px">Nombre</label><input id="e-n" name="nombre" required placeholder="Como le dicen en la cocina">
-  <label for="e-e" style="margin-top:10px">Usuario (para entrar)</label><input id="e-e" name="usuario" required autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="Ej: pedro">
+  <label for="e-e" style="margin-top:10px">Usuario (para entrar)</label><input id="e-e" name="usuario" required autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="Ej: pedro" data-usrchk><small class="meta" id="usrmsg"></small>
   <label for="e-p" style="margin-top:10px">Contraseña (mínimo 6)</label><input id="e-p" name="clave" required minlength="6" autocomplete="off">
   <label for="e-r" style="margin-top:10px">Puesto</label><select id="e-r" name="rol">${ROLES.map(r=>`<option>${r}</option>`).join('')}</select>
   <label for="e-l" style="margin-top:10px">Local</label><select id="e-l" name="local">${locOpts(locales()[0].id)}</select>
@@ -781,6 +781,7 @@ async function guardarCat(){
 async function darAlta(f){
   const fd=new FormData(f),usuario=userSlug(fd.get('usuario')),clave=String(fd.get('clave'));
   if(!usuario){S.note='El usuario tiene que tener letras o números.';render(true);return}
+  if(Object.values(S.equipo).some(x=>usuarioDe(x)===usuario)){S.note=`Ya existe el usuario "${usuario}". Elegí otro.`;render(true);return}
   const m={nombre:String(fd.get('nombre')).trim(),usuario,email:usuario+DOM_U,rol:fd.get('rol'),local:fd.get('local'),activo:true,alta:Date.now()};
   let cred;
   try{cred=await createUserWithEmailAndPassword(auth2,m.email,clave)}catch(e){S.note=e?.code==='auth/email-already-in-use'?`Ya existe el usuario "${usuario}". Elegí otro.`:errMsg(e);render(true);return}
@@ -871,6 +872,7 @@ function mencionar(nombre){
 document.addEventListener('input',e=>{
   const t=e.target,ds=t.dataset;
   if(ds.chatin!==undefined){menUpdate(t);return}
+  if(ds.usrchk!==undefined){const u=userSlug(t.value),m=$('#usrmsg'),ya=u&&Object.values(S.equipo).some(x=>usuarioDe(x)===u);if(m){m.textContent=!u?'':ya?`❌ El usuario "${u}" ya existe. Elegí otro.`:`✅ "${u}" está libre.`;m.style.color=ya?'var(--redink)':'var(--ok)'}return}
   if(ds.aq!==undefined||ds.axn!==undefined||ds.axq!==undefined){const a=S.agr[S.addOpen];if(a){if(ds.aq!==undefined)a.qty[ds.aq]=t.value;if(ds.axn!==undefined)a.extra.n=t.value;if(ds.axq!==undefined)a.extra.q=t.value}return}
   if(ds.filtro!==undefined){const q=t.value.trim().toLowerCase();document.querySelectorAll('#main tr[data-n]').forEach(r=>r.hidden=!!r.dataset.off||(!!q&&!r.dataset.n.includes(q)));document.querySelectorAll('#main .grp').forEach(g=>g.hidden=!!q&&!g.querySelector('tr[data-n]:not([hidden])'));return}
   if(ds.buscar!==undefined){S.pedir.buscar=t.value;const q=t.value.trim().toLowerCase();document.querySelectorAll('#main .pitem').forEach(el=>{const inp=el.querySelector('input');el.hidden=!!q&&!el.dataset.n.includes(q)&&!(num(inp.value)>0)});document.querySelectorAll('#main h4.rubro').forEach(h=>h.hidden=!!q)}
