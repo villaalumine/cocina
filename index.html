@@ -76,6 +76,10 @@ td.n,th.n{text-align:right}td input{min-height:40px}
 @media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7em;margin-inline-start:-7.5em;color:var(--mute);font-size:13px}.stack td:empty{display:none}}
 @media(prefers-reduced-motion:no-preference){.tk{animation:drop .35s ease-out both}@keyframes drop{from{transform:translateY(-10px);opacity:0}}}
 .login{max-width:460px;margin:6vh auto}.out{min-height:36px;padding:6px 12px;background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 35%,transparent)}[hidden]{display:none!important}
+.accs{display:grid;gap:10px}.acc{border:1px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden}.acc.open{border-color:var(--ink)}
+.acchead{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto 24px;align-items:center;gap:10px;background:none;border:0;border-radius:0;padding:16px 18px;min-height:62px;text-align:left}
+.acchead span{font:700 21px "Barlow Condensed",sans-serif}.acchead b{font-weight:600;color:var(--mute);font-size:15px;max-width:45vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.acchead i{font-style:normal;color:var(--mute);font-size:13px}
+.accbody{padding:0 18px 16px}.verTodos{width:100%;margin-top:14px;min-height:52px;font-size:17px}.linkbtn{background:none;border:0;padding:0;min-height:0;color:var(--redink);text-decoration:underline;font-size:inherit}
 nav.tabs{padding:8px 6px calc(8px + env(safe-area-inset-bottom));gap:4px}
 nav.tabs a{font-size:18px;min-height:56px;display:flex;align-items:center;justify-content:center;padding:8px 2px;color:var(--ink);opacity:.72}
 nav.tabs a.on{opacity:1}body{padding-bottom:96px}
@@ -302,61 +306,25 @@ function pedidoItems(){const d=S.pedir;
 function countPedido(){const its=pedidoItems(),n=its.length,tot=its.reduce((a,i)=>a+(i.precio||0)*i.cant,0);return n?`${n} producto${n>1?'s':''} en el pedido${tot?` · estimado ${money(tot)} según lista`:''}`:'Todavía no cargaste cantidades'}
 
 function pedFiltrados(){
-  const f=S.fEstado||'todos';
-  return S.pedidos.filter(inLocal).filter(p=>(!S.fProv||p.prov===S.fProv)&&(!S.fDia||dayKey(p.creado)===S.fDia)&&(f==='todos'||(f==='abiertos'?['pendiente','enviado'].includes(p.estado):p.estado===f)));
+  const f=S.fEstado||'todos',hoy=dayKey(Date.now()),sem=Date.now()-7*864e5;
+  return S.pedidos.filter(inLocal).filter(p=>(!S.fProv||p.prov===S.fProv)&&(!S.fDia||(S.fDia==='7d'?p.creado>=sem:dayKey(p.creado)===S.fDia))&&(f==='todos'||(f==='abiertos'?['pendiente','enviado'].includes(p.estado):p.estado===f)));
 }
+const EST_OPTS=[['todos','Todos'],['pendiente','Sin enviar'],['enviado','Esperando'],['recibido','Recibidos OK'],['diferencias','Con diferencias']];
 function vPedidos(){
-  const ps=pedFiltrados(),f=S.fEstado||'todos';
+  const hoy=dayKey(Date.now()),ayer=shiftDay(hoy,-1),f=S.fEstado||'todos',o=S.pOpen;
   const pvIds=[...new Set([...provsFor(workLocal()).map(p=>p.id),...S.pedidos.filter(inLocal).map(p=>p.prov)])];
-  return `<div class="head"><div><h2>Pedidos</h2><p class="sub">Todo el historial, los más nuevos arriba. Tocá un pedido para ver el detalle, recibirlo o agregarle datos.</p></div></div>
-  <div class="filtros">
-  <select data-fprov aria-label="Proveedor"><option value="">Todos los proveedores</option>${pvIds.map(id=>`<option value="${esc(id)}" ${S.fProv===id?'selected':''}>${esc(prov(id)?.nombre||'Proveedor borrado')}</option>`).join('')}</select>
-  <div class="row" style="flex-wrap:nowrap;gap:6px"><input type="date" data-fdia value="${S.fDia||''}" aria-label="Día">${S.fDia?'<button data-act="fdia0" aria-label="Todas las fechas">✕</button>':''}</div>
-  <select data-festado aria-label="Estado">${[['todos','Todos los estados'],['abiertos','En curso'],['diferencias','Con diferencias'],['recibido','Recibidos OK']].map(([k,t])=>`<option value="${k}" ${f===k?'selected':''}>${t}</option>`).join('')}</select></div>
-  <p class="meta" style="margin:10px 0">${ps.length} pedido${ps.length===1?'':'s'}</p>
-  <div class="plist">${ps.map(p=>{const r=p.recepcion;return `<button class="prow" data-act="abrir" data-id="${p.id}"><span class="pfecha"><b>${new Date(p.creado).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})}</b><small>${hora(p.creado)}</small></span>
-  <span class="pinfo"><b>${esc(prov(p.prov)?.nombre||'Proveedor')}</b><small>${p.items.length} producto${p.items.length>1?'s':''} · ${esc(nameOf(p.por))}${r&&num(r.monto)?' · '+money(num(r.monto)):''}${p.fotos?' · 📷':''}</small></span>
-  ${badgeHTML(p)}</button>`}).join('')||'<p class="empty">No hay pedidos con esos filtros.</p>'}</div>`;
-}
-function vAgregar(p){
-  const a=S.agr[p.id]||(S.agr[p.id]={qty:{},unit:{},extra:{n:'',q:'',u:'kg'}});
-  const list=prods().filter(x=>x.prov===p.prov);
-  return `<div class="panel agregar"><h3>Agregar al pedido</h3><p class="meta">Cargá solo lo que te olvidaste. ${p.estado==='enviado'?'Después se abre WhatsApp con un mensaje para el proveedor con lo agregado.':'Se suma al pedido antes de mandarlo.'}</p>
-  <input type="search" data-buscar placeholder="Buscar producto…" aria-label="Buscar producto" style="margin:8px 0">
-  ${list.map(x=>`<div class="pitem" data-n="${esc(x.nombre.toLowerCase())}"><div>${esc(x.nombre)}${p.items.some(i=>i.pid===x.id)?`<small>Ya en el pedido: ${fmt(p.items.filter(i=>i.pid===x.id).reduce((s,i)=>s+num(i.cant),0))} ${esc(x.unidad)}</small>`:''}</div>
-  <div class="qbox"><input inputmode="decimal" aria-label="Agregar ${esc(x.nombre)}" data-aq="${x.id}" value="${esc(a.qty[x.id]||'')}" placeholder="0"><select class="usel" data-au="${x.id}" aria-label="Unidad">${[...new Set([x.unidad,...UNIDADES])].map(u=>`<option ${(a.unit[x.id]||x.unidad)===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div></div>`).join('')}
-  <div class="row" style="margin-top:10px"><input style="flex:3 1 150px" placeholder="Otro producto" data-axn value="${esc(a.extra.n)}"><input style="flex:1 1 70px" inputmode="decimal" placeholder="Cant." data-axq value="${esc(a.extra.q)}"><select style="flex:1 1 84px" data-axu aria-label="Unidad">${UNIDADES.map(u=>`<option ${a.extra.u===u?'selected':''}>${u}</option>`).join('')}</select></div>
-  <div class="row" style="margin-top:12px"><button class="pri" data-act="addOk" data-id="${p.id}">Agregar al pedido</button><button data-act="addCancel">Cancelar</button></div></div>`;
-}
-async function agregarItems(id){
-  const p=S.pedidos.find(x=>x.id===id),a=S.agr[id];if(!p||!a||p.recepcion)return;
-  const nuevos=[...prods().filter(x=>x.prov===p.prov&&num(a.qty[x.id])>0).map(x=>{const u=a.unit[x.id]||x.unidad;return {pid:x.id,nombre:x.nombre,unidad:u,cant:num(a.qty[x.id]),...(x.precio&&u===x.unidad?{precio:x.precio}:{})}}),
-    ...(a.extra.n.trim()&&num(a.extra.q)>0?[{pid:null,nombre:a.extra.n.trim(),unidad:a.extra.u||'u',cant:num(a.extra.q)}]:[])];
-  if(!nuevos.length){S.note='Cargá al menos una cantidad para agregar.';render(true);return}
-  const items=p.items.map(i=>({...i}));
-  nuevos.forEach(n=>{const e=items.find(i=>i.pid&&i.pid===n.pid&&i.unidad===n.unidad);if(e)e.cant=num(e.cant)+n.cant;else items.push(n)});
-  const resumen=nuevos.map(n=>`${fmt(n.cant)} ${n.unidad} ${n.nombre}`).join(', ');
-  await w(()=>updateDoc(doc(db,'pedidos',id),{items,agregados:[...(p.agregados||[]),{t:Date.now(),uid:S.uid,items:nuevos}],hist:hist(p,'agregó '+resumen)}));
-  S.addOpen=null;delete S.agr[id];
-  push(`➕ Agregado al pedido · ${locName(p.local)}`,`${nameOf(S.uid)} agregó al pedido de ${prov(p.prov)?.nombre||'proveedor'}:\n${nuevos.map(n=>`• ${fmt(n.cant)} ${n.unidad} ${n.nombre}`).join('\n')}`,['heavy_plus_sign']);
-  if(p.estado==='enviado'){
-    const t=String(prov(p.prov)?.tel||'').replace(/\D/g,'');
-    const msg=[`*Agregado al pedido de ${locName(p.local)}* · ${fecha(p.creado)}`,'Hola! Me olvidé de esto, ¿lo podés sumar al pedido?',...nuevos.map(n=>`• ${fmt(n.cant)} ${n.unidad} ${n.nombre}`),'','Gracias! '+nameOf(S.uid)].join('\n');
-    $('#sheet').innerHTML=`<div class="sheet"><div><h3>Agregado al pedido</h3><p class="sub">Ahora avisale al proveedor. El mensaje ya está armado.</p><pre>${esc(msg)}</pre>
-    <a class="btn wa" style="width:100%" href="${esc('https://wa.me/'+t+'?text='+encodeURIComponent(msg))}" target="_blank" rel="noopener" data-act="closeSheet">Mandar por WhatsApp</a>
-    <button style="margin-top:10px;width:100%" data-act="closeSheet">Lo mando después</button></div></div>`;
-  }else toast('Agregado al pedido. Acordate de mandarlo por WhatsApp.');
-  render(true);
-}
-function difsBox(p){
-  const r=p.recepcion;if(!r||p.estado!=='diferencias')return '';
-  const L=p.items.map((i,k)=>{const x=r.items?.[k];if(!x)return '';const parts=[],df=x.rec-num(i.cant);
-    if(df<0)parts.push(`<b>faltó ${fmt(-df)} ${esc(i.unidad)}</b> (pidieron ${fmt(num(i.cant))}, llegó ${fmt(x.rec)})`);
-    if(df>0)parts.push(`<b>sobró ${fmt(df)} ${esc(i.unidad)}</b> (pidieron ${fmt(num(i.cant))}, llegó ${fmt(x.rec)})`);
-    if(x.rem!==undefined&&x.rem!==x.rec)parts.push(`el remito dice ${fmt(x.rem)} y llegó ${fmt(x.rec)}`);
-    if(x.cal&&x.cal!=='bien')parts.push(`calidad ${esc(x.cal)}`);
-    if(!parts.length)return '';return `<li><b>${esc(i.nombre)}:</b> ${parts.join(' · ')}${x.nota?`<br><span class="meta">"${esc(x.nota)}"</span>`:''}</li>`}).filter(Boolean);
-  return L.length?`<div class="panel difs"><h3>⚠️ Diferencias en este pedido</h3><ul>${L.join('')}</ul></div>`:'';
+  const diaTxt=!S.fDia?'Todas':S.fDia==='7d'?'Últimos 7 días':S.fDia===hoy?'Hoy':S.fDia===ayer?'Ayer':(()=>{const [y,m,d]=S.fDia.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('es-AR',{day:'numeric',month:'short'})})();
+  const chip=(act,val,txt,on)=>`<button class="chip ${on?'on':''}" data-act="${act}" data-id="${esc(val)}">${esc(txt)}</button>`;
+  const sec=(k,ico,tit,val,body)=>`<div class="acc ${o===k?'open':''}"><button class="acchead" data-act="pOpen" data-id="${k}" aria-expanded="${o===k}"><span>${ico} ${tit}</span><b>${esc(val)}</b><i>${o===k?'▲':'▼'}</i></button>${o===k?`<div class="accbody">${body}</div>`:''}</div>`;
+  const ps=pedFiltrados(),ver=S.pVer;
+  return `<div class="head"><div><h2>Pedidos</h2><p class="sub">Elegí la fecha, el proveedor o el estado para ver los pedidos.</p></div></div>
+  <div class="accs">
+  ${sec('fecha','📅','Fecha',diaTxt,`<div class="chips">${chip('fSet','dia:'+hoy,'Hoy',S.fDia===hoy)}${chip('fSet','dia:'+ayer,'Ayer',S.fDia===ayer)}${chip('fSet','dia:7d','Últimos 7 días',S.fDia==='7d')}${chip('fSet','dia:','Todas',!S.fDia)}</div><label style="margin-top:10px">Otro día</label><input type="date" data-fdia value="${S.fDia&&S.fDia!=='7d'?S.fDia:''}" max="${hoy}" aria-label="Otro día">`)}
+  ${sec('prov','🏪','Proveedor',S.fProv?(prov(S.fProv)?.nombre||'Proveedor'):'Todos',`<div class="chips">${chip('fSet','prov:','Todos',!S.fProv)}${pvIds.map(id=>chip('fSet','prov:'+id,prov(id)?.nombre||'Proveedor borrado',S.fProv===id)).join('')}</div>`)}
+  ${sec('estado','🔖','Estado',EST_OPTS.find(x=>x[0]===f)?.[1]||'Todos',`<div class="chips">${EST_OPTS.map(([k,t])=>chip('fSet','est:'+k,t,f===k)).join('')}</div>`)}
+  </div>
+  ${ver?`<p class="meta" style="margin:14px 0 6px">${ps.length} pedido${ps.length===1?'':'s'}${S.fDia||S.fProv||f!=='todos'?' · <button class="linkbtn" data-act="fClear">Limpiar filtros</button>':''}</p>
+  <div class="plist">${ps.map(p=>prowHTML(p)).join('')||'<p class="empty">No hay pedidos con esos filtros.</p>'}</div>`:`<button class="verTodos" data-act="fSet" data-id="ver:">Ver todos los pedidos</button>`}`;
 }
 function vPedido(id){
   const p=S.pedidos.find(x=>x.id===id);
@@ -581,6 +549,9 @@ document.addEventListener('click',e=>{
   if(a==='addOk'){agregarItems(id).catch(()=>{});return}
   if(a==='provBack'){const n=Object.values(S.pedir.qty).filter(v=>num(v)>0).length;if(n&&!b.dataset.ok){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Salir sin guardar?</h3><p class="sub">Tenés ${n} producto${n>1?'s':''} cargado${n>1?'s':''} en este pedido. Si volvés, se borran.</p><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="provBack" data-ok="1">Salir</button><button style="flex:1" data-act="closeSheet">Seguir pidiendo</button></div></div></div>`;return}
     $('#sheet').innerHTML='';S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};render(true);scrollTo(0,0);return}
+  if(a==='pOpen'){S.pOpen=S.pOpen===id?null:id;render(true);return}
+  if(a==='fSet'){const [k,v]=id.split(/:(.*)/s);if(k==='dia')S.fDia=v;if(k==='prov')S.fProv=v;if(k==='est')S.fEstado=v||'todos';S.pVer=true;S.pOpen=null;render(true);return}
+  if(a==='fClear'){S.fDia='';S.fProv='';S.fEstado='todos';render(true);return}
   if(a==='psel'){S.panelSel=S.panelSel===id?null:id;render(true);return}
   if(a==='dia'){const n=+id;S.panelDia=n===0?null:shiftDay(S.panelDia||dayKey(Date.now()),n);if(S.panelDia&&S.panelDia>=dayKey(Date.now()))S.panelDia=null;render(true);return}
   if(a==='inicio'){if(location.hash==='#inicio')render(true);else location.hash='inicio';return}
@@ -637,7 +608,7 @@ document.addEventListener('change',e=>{
   if(t.matches('select[data-axu]')){const a=S.agr[S.addOpen];if(a)a.extra.u=t.value}
   if(t.matches('select[data-fprov]')){S.fProv=t.value;t.blur();render(true)}
   if(t.matches('select[data-festado]')){S.fEstado=t.value;t.blur();render(true)}
-  if(t.matches('input[data-fdia]')){S.fDia=t.value;t.blur();render(true)}
+  if(t.matches('input[data-fdia]')){S.fDia=t.value;S.pVer=true;S.pOpen=null;t.blur();render(true)}
   if(t.matches('input[data-foto]')&&t.files?.[0]){subirFoto(t.dataset.foto,t.files[0]);t.value=''}
   if(t.matches('input[data-dia]')){S.panelDia=t.value&&t.value<dayKey(Date.now())?t.value:null;t.blur();render(true)}
   if(t.matches('select[data-u]')){S.pedir.unit={...(S.pedir.unit||{}),[t.dataset.u]:t.value};const c=$('#pcount');if(c)c.textContent=countPedido()}
