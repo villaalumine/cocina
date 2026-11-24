@@ -59,7 +59,7 @@ label{font-size:14px;color:var(--mute);display:block;margin-bottom:4px}
 .lowtag{color:var(--redink);font-weight:700}
 .pitem{display:grid;grid-template-columns:minmax(0,1fr) 168px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .pitem small{color:var(--mute);display:block}.pitem.low small{color:var(--redink)}
-.qbox{display:flex;align-items:center;gap:6px}.qbox input{text-align:right}.qbox span{font-size:14px;color:var(--mute);width:28px}.qbox .usel{width:76px;flex:none;padding:6px 4px;font-size:15px}
+.qbox{display:flex;align-items:center;gap:6px}.qbox input{text-align:right}.qbox span{font-size:14px;color:var(--mute);width:28px}.qbox .usel{width:84px;flex:none;padding:6px 4px;font-size:15px}
 .recrow{display:grid;grid-template-columns:minmax(0,1fr) 100px 110px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
 .recrow .st{font-size:13px;font-weight:700}.st.ok{color:var(--ok)}.st.bad{color:var(--redink)}
 @media(max-width:480px){.recrow{grid-template-columns:minmax(0,1fr) 92px}.recrow select{grid-column:1/-1}}
@@ -99,7 +99,7 @@ body[data-sec=villa] .top .out,body[data-sec=mara] .top .out{color:inherit;borde
 <header class="top"><button class="brand" id="brand" data-act="inicio" aria-label="Volver al inicio"><span class="back" hidden>‹</span><img id="brandImg" alt="" hidden><span id="brandTxt"><i></i>Cocina</span></button><div class="sp"></div><span class="who" id="who"></span><select id="localSel" aria-label="Local"></select><a class="out sop" id="soporte" hidden target="_blank" rel="noopener" aria-label="Soporte por WhatsApp">Soporte</a><button class="out" id="salir" hidden>Salir</button></header>
 <nav class="tabs" id="tabs" hidden><a href="#panel" data-v="panel">Panel</a><a href="#pedir" data-v="pedir">Pedir</a><a href="#pedidos" data-v="pedidos">Pedidos</a><a href="#stock" data-v="stock">Stock</a><a href="#catalogo" data-v="catalogo">Catálogo</a><a href="#equipo" data-v="equipo" id="tabEquipo" hidden>Equipo</a></nav>
 <main id="main"><p class="empty">Cargando la cocina…</p></main>
-<div id="sheet"></div>
+<div id="sheet"></div><datalist id="unidades"><option>kg</option><option>u</option><option>bolsa</option><option>cajón</option><option>bulto</option><option>paq</option><option>caja</option><option>botella</option><option>pack</option><option>barril</option><option>maple</option><option>bandeja</option><option>l</option></datalist>
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -124,6 +124,7 @@ const hora=t=>new Date(t).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-d
 const ESTADOS={pendiente:'Sin enviar',enviado:'Esperando',recibido:'Recibido OK',diferencias:'Con diferencias'};
 const SOPORTE='5492236918566';
 const sopLink=()=>'https://wa.me/'+SOPORTE+'?text='+encodeURIComponent(`Hola Matías, soy ${me()?.nombre||''}. Tengo una consulta sobre la app de cocina: `);
+const UNIDADES=['kg','u','bolsa','cajón','bulto'];
 const ROLES=['Encargado/a','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
 const NIVEL={'Encargado/a':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
 const lvl=()=>S.owner?1:(NIVEL[me()?.rol]||4);
@@ -258,9 +259,9 @@ function vPedir(){
     const vis=list.filter(p=>!q||p.nombre.toLowerCase().includes(q)||num(d.qty[p.id])>0);
     return vis.map(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc),low=mn>0&&st<mn;const h=p.cat&&p.cat!==last?`<h4 class="rubro">${esc(p.cat)}</h4>`:'';last=p.cat||last;
     return `${h}<div class="pitem ${low?'low':''}" data-n="${esc(p.nombre.toLowerCase())}"><div>${esc(p.nombre)}<small>Hay ${fmt(st)} ${esc(p.unidad)}${mn?` · mínimo ${fmt(mn)}`:''}${p.precio?` · ${money(p.precio)}/${esc(p.unidad)}`:''}</small></div>
-  <div class="qbox"><input inputmode="decimal" aria-label="Cantidad ${esc(p.nombre)}" data-q="${p.id}" value="${esc(d.qty[p.id]||'')}" placeholder="0"><select class="usel" data-u="${p.id}" aria-label="Unidad ${esc(p.nombre)}">${[...new Set([p.unidad,'kg','u'])].map(u=>`<option ${(d.unit?.[p.id]||p.unidad)===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div></div>`}).join('')||(q?'<p class="empty">No hay productos con ese nombre.</p>':'<p class="empty">Este proveedor no tiene productos cargados.</p>')})()}</div>
+  <div class="qbox"><input inputmode="decimal" aria-label="Cantidad ${esc(p.nombre)}" data-q="${p.id}" value="${esc(d.qty[p.id]||'')}" placeholder="0"><select class="usel" data-u="${p.id}" aria-label="Unidad ${esc(p.nombre)}">${[...new Set([p.unidad,...UNIDADES])].map(u=>`<option ${(d.unit?.[p.id]||p.unidad)===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div></div>`}).join('')||(q?'<p class="empty">No hay productos con ese nombre.</p>':'<p class="empty">Este proveedor no tiene productos cargados.</p>')})()}</div>
   <h3 style="margin:22px 0 8px;font-size:19px">Algo que no está en la lista</h3>
-  ${d.extra.map((x,k)=>`<div class="row" style="margin-bottom:8px"><input style="flex:3 1 150px" placeholder="Producto" data-xn="${k}" value="${esc(x.n)}"><input style="flex:1 1 70px" inputmode="decimal" placeholder="Cant." data-xq="${k}" value="${esc(x.q)}"><input style="flex:1 1 60px" placeholder="kg, u…" data-xu="${k}" value="${esc(x.u)}"></div>`).join('')}
+  ${d.extra.map((x,k)=>`<div class="row" style="margin-bottom:8px"><input style="flex:3 1 150px" placeholder="Producto" data-xn="${k}" value="${esc(x.n)}"><input style="flex:1 1 70px" inputmode="decimal" placeholder="Cant." data-xq="${k}" value="${esc(x.q)}"><select style="flex:1 1 84px" data-xu="${k}" aria-label="Unidad">${UNIDADES.map(u=>`<option ${(x.u||'kg')===u?'selected':''}>${u}</option>`).join('')}</select></div>`).join('')}
   <button data-act="addExtra">+ Agregar otro</button></section>
   <aside><div class="panel"><label for="pnota">Nota para el proveedor</label><textarea id="pnota" data-pnota placeholder="Entregar antes de las 10, por la puerta de Falucho…">${esc(d.nota)}</textarea>
   <p class="meta" id="pcount" style="margin:12px 0">${countPedido()}</p>
@@ -345,7 +346,7 @@ function vCatalogo(){
   <table class="stack"><thead><tr><th>Local</th><th>Sector</th><th>Nombre</th><th>WhatsApp</th><th></th></tr></thead><tbody>${d.proveedores.map((p,k)=>`<tr ${S.local!=='todos'&&p.local&&p.local!=='ambos'&&p.local!==S.local?'hidden':''}><td><select ${dis} aria-label="Local" data-pv="${k}" data-f="local">${[...locales().map(l=>[l.id,l.nombre]),['ambos','Los dos']].map(([v,n])=>`<option value="${v}" ${(p.local||'ambos')===v?'selected':''}>${esc(n)}</option>`).join('')}</select></td><td><input ${dis} aria-label="Sector" data-pv="${k}" data-f="sector" value="${esc(p.sector||'')}" placeholder="Verdulería…"></td><td><input ${dis} aria-label="Nombre" data-pv="${k}" data-f="nombre" value="${esc(p.nombre)}"></td><td><input ${dis} inputmode="tel" aria-label="WhatsApp" data-pv="${k}" data-f="tel" value="${esc(p.tel||'')}" placeholder="549…"></td><td>${ed?`<button data-act="delPv" data-id="${k}" aria-label="Borrar proveedor">Quitar</button>`:''}</td></tr>`).join('')}</tbody></table>
   ${ed?'<button style="margin-top:10px" data-act="addPv">+ Proveedor</button>':''}</div>
   <div class="panel"><h3>Productos</h3><input type="search" data-filtro="cat" placeholder="Buscar producto…" aria-label="Buscar producto" style="margin:10px 0"><table class="stack"><thead><tr><th>Producto</th><th>Unidad</th><th>Proveedor</th><th class="n">Precio ($)</th>${locales().map(l=>`<th class="n">Mín. ${esc(l.nombre)}</th>`).join('')}<th></th></tr></thead><tbody>
-  ${d.productos.map((p,k)=>{const pv=d.proveedores.find(v=>v.id===p.prov);const off=S.local!=='todos'&&pv?.local&&pv.local!=='ambos'&&pv.local!==S.local;return `<tr data-n="${esc((p.nombre||'').toLowerCase())}" ${off?'hidden data-off="1"':''}><td><input ${dis} aria-label="Producto" data-pr="${k}" data-f="nombre" value="${esc(p.nombre)}"></td><td><input ${dis} aria-label="Unidad" data-pr="${k}" data-f="unidad" value="${esc(p.unidad)}" style="max-width:90px"></td>
+  ${d.productos.map((p,k)=>{const pv=d.proveedores.find(v=>v.id===p.prov);const off=S.local!=='todos'&&pv?.local&&pv.local!=='ambos'&&pv.local!==S.local;return `<tr data-n="${esc((p.nombre||'').toLowerCase())}" ${off?'hidden data-off="1"':''}><td><input ${dis} aria-label="Producto" data-pr="${k}" data-f="nombre" value="${esc(p.nombre)}"></td><td><input ${dis} aria-label="Unidad" data-pr="${k}" data-f="unidad" value="${esc(p.unidad)}" list="unidades" style="max-width:100px"></td>
   <td><select ${dis} aria-label="Proveedor" data-pr="${k}" data-f="prov">${d.proveedores.map(v=>`<option value="${v.id}" ${v.id===p.prov?'selected':''}>${esc(v.nombre)}</option>`).join('')}</select></td>
   <td><input ${dis} inputmode="decimal" aria-label="Precio" data-pr="${k}" data-f="precio" value="${esc(p.precio??'')}" style="text-align:right"></td>
   ${locales().map(l=>`<td><input ${dis} inputmode="decimal" aria-label="Mínimo ${esc(l.nombre)}" data-pr="${k}" data-min="${l.id}" value="${esc(p.min?.[l.id]??'')}" style="text-align:right"></td>`).join('')}
@@ -503,7 +504,7 @@ document.addEventListener('click',e=>{
   if(a==='olvide'){const em=$('#l-e')?.value.trim();if(!em){S.note='Escribí tu mail arriba y tocá de nuevo "Me olvidé la clave".'}else{sendPasswordResetEmail(auth,em).then(()=>{S.note='Te mandamos un mail para cambiar la clave. Fijate en spam si no llega.';render(true)},er=>{S.note=errMsg(er);render(true)});return}}
   if(a==='prov'){S.pedir.prov=id;S.pedir.qty={};S.pedir.unit={};S.pedir.buscar=''}
   if(a==='sugerir'){const loc=workLocal();prods().filter(p=>p.prov===S.pedir.prov).forEach(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc);if(mn>0&&st<mn)S.pedir.qty[p.id]=String(Math.ceil((mn-st)*10)/10)})}
-  if(a==='addExtra')S.pedir.extra.push({n:'',q:'',u:''});
+  if(a==='addExtra')S.pedir.extra.push({n:'',q:'',u:'kg'});
   if(a==='guardarPedido'){guardarPedido().catch(()=>{});return}
   if(a==='abrir'){location.hash='p-'+id;return}
   if(a==='volver'){location.hash='pedidos';return}
@@ -551,7 +552,7 @@ document.addEventListener('change',e=>{
   if(t.matches('input[data-foto]')&&t.files?.[0]){subirFoto(t.dataset.foto,t.files[0]);t.value=''}
   if(t.matches('input[data-dia]')){S.panelDia=t.value&&t.value<dayKey(Date.now())?t.value:null;t.blur();render(true)}
   if(t.matches('select[data-u]')){S.pedir.unit={...(S.pedir.unit||{}),[t.dataset.u]:t.value};const c=$('#pcount');if(c)c.textContent=countPedido()}
-  if(t.matches('select[data-cal],select[data-pr],select[data-rf]'))t.dispatchEvent(new Event('input',{bubbles:true}));
+  if(t.matches('select[data-cal],select[data-pr],select[data-rf],select[data-xu]'))t.dispatchEvent(new Event('input',{bubbles:true}));
   if(t.matches('select[data-eq]'))w(()=>updateDoc(doc(db,'equipo',t.dataset.eq),{[t.dataset.f]:t.value})).catch(()=>{});
 });
 document.addEventListener('submit',async e=>{
