@@ -193,7 +193,7 @@ const ENVIA=['Jefe/a de cocina','Jefe/a de pedidos','Encargado/a','AdministraciÃ
 const canSend=()=>S.owner||ENVIA.includes(me()?.rol);
 const jefeTxt=loc=>loc==='mara'?'jefe de pedidos':'jefe de cocina';
 const solsPend=(loc,pv)=>(S.sols||[]).filter(x=>x.local===loc&&x.estado==='pendiente'&&(!pv||x.prov===pv));
-const iniciales=n=>String(n||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'?';
+const iniciales=n=>(String(n||'').match(/\p{L}+/gu)||['?']).slice(0,2).map(x=>x[0]).join('').toUpperCase();
 const avatarIn=uid=>{const m=S.equipo[uid];return m?.foto?`<img src="${m.foto}" alt="">`:esc(iniciales(m?.nombre))};
 const nameOf=uid=>S.equipo[uid]?.nombre||'Alguien';
 const canAdmin=()=>lvl()<=2;
