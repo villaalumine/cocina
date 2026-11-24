@@ -222,7 +222,18 @@ function recDraft(p){
 }
 function stLabel2(i,x){const d=num(x.rec)-num(i.cant),parts=[d===0?'Llegó justo':d<0?`Faltó ${fmt(-d)} ${i.unidad}`:`Sobró ${fmt(d)} ${i.unidad}`];if(String(x.rem).trim()!==''&&num(x.rem)!==num(x.rec))parts.push(`remito dice ${fmt(num(x.rem))}`);return parts.join(' · ')}
 const stOk=(i,x)=>num(x.rec)===num(i.cant)&&(String(x.rem).trim()===''||num(x.rem)===num(x.rec));
+function vRecView(p){
+  const r=p.recepcion,pg=PAGOS.find(x=>x[0]===(r.pago||''))?.[1]||'Sin indicar';
+  return `<div class="panel recform"><h3>Recepción cerrada</h3><p class="meta">Recibió ${esc(nameOf(r.por))} el ${fecha(r.t)} a las ${hora(r.t)}${r.editado?` · corregida por ${esc(nameOf(r.editadoPor))} el ${fecha(r.editado)}`:''}.</p>
+  <div class="rechead"><span>Producto</span><span>Remito</span><span>Llegó</span></div>
+  ${p.items.map((i,k)=>{const x=r.items?.[k]||{rec:0,cal:'bien'},xx={rec:x.rec,rem:x.rem??''};return `<div class="recrow2"><div><b>${esc(i.nombre)}</b><br><span class="meta">Pedido: ${fmt(num(i.cant))} ${esc(i.unidad)}</span><br><span class="st ${stOk(i,xx)?'ok':'bad'}">${stLabel2(i,xx)}</span></div>
+  <span class="q" style="text-align:right">${x.rem!==undefined?fmt(x.rem):'–'}</span><span class="q" style="text-align:right">${fmt(x.rec)}</span>
+  ${x.cal!=='bien'||x.nota?`<span class="meta" style="grid-column:1/-1">${x.cal!=='bien'?`<span class="lowtag">Calidad ${esc(x.cal)}</span> `:''}${esc(x.nota||'')}</span>`:''}</div>`}).join('')}
+  <div class="list" style="margin-top:12px">${[['N° de remito',r.nro],['Total del remito',num(r.monto)?money(num(r.monto)):''],['Pago',pg],['Lo entregó',r.entrego],['Temperatura',r.temp],['Nota',r.nota]].filter(([,v])=>v).map(([k,v])=>`<div class="li"><span class="meta">${k}</span><b>${esc(v)}</b></div>`).join('')}</div>
+  <p class="note" style="margin-top:14px">La recepción ya está guardada y no se puede modificar. Si hay que corregir algo, pedíselo al administrador por <a href="${esc(sopLink())}" target="_blank" rel="noopener">Soporte</a>.</p></div>`;
+}
 function vRec(p){
+  if(p.recepcion&&!S.owner)return vRecView(p);
   const d=recDraft(p),editando=!!p.recepcion;
   return `<form data-form="rec" data-id="${p.id}" class="panel recform"><h3>${editando?'Datos de la recepción':'¿Cómo llegó?'}</h3>
   <p class="meta">Por cada producto: lo que dice el <b>remito</b> y lo que <b>llegó de verdad</b> (pesado o contado).</p>
@@ -239,7 +250,8 @@ function vRec(p){
   <div><label for="en-${p.id}">Quién lo entregó</label><input id="en-${p.id}" data-rf="entrego" value="${esc(d.entrego)}" placeholder="Nombre del repartidor"></div>
   <div><label for="tp-${p.id}">Temperatura al llegar (frescos)</label><input id="tp-${p.id}" data-rf="temp" value="${esc(d.temp)}" placeholder="Ej: 4 °C, cadena de frío OK"></div>
   <div><label for="n-${p.id}">Nota de la entrega</label><input id="n-${p.id}" data-rf="nota" value="${esc(d.nota)}" placeholder="Llegó tarde, faltó remito…"></div></div>
-  <div class="row"><button class="pri" type="submit">${editando?'Guardar cambios':'Guardar recepción'}</button></div></form>`;
+  ${editando?'':'<p class="meta">Revisá bien antes de guardar: una vez guardada, solo el administrador puede corregirla.</p>'}
+  <div class="row"><button class="pri" type="submit">${editando?'Guardar cambios (administrador)':'Guardar recepción'}</button></div></form>`;
 }function stLabel(ped,rec,u){const d=num(rec)-num(ped);return d===0?'Llegó justo':d<0?`Faltó ${fmt(-d)} ${u}`:`Sobró ${fmt(d)} ${u}`}
 
 function vPedir(){
@@ -462,6 +474,7 @@ async function marcarEnviado(id){const p=S.pedidos.find(x=>x.id===id);if(!p||p.e
 async function guardarRec(id){
   const p=S.pedidos.find(x=>x.id===id),d=S.rec[id];if(!p||!d)return;
   const prev=p.recepcion,t=Date.now();
+  if(prev&&!S.owner){S.note='Esta recepción ya está cerrada. Pedíselo al administrador.';render(true);return}
   const items=d.items.map(x=>({rec:num(x.rec),...(String(x.rem).trim()!==''?{rem:num(x.rem)}:{}),cal:x.cal,nota:String(x.nota).trim()}));
   const dif=items.some((x,k)=>x.rec!==num(p.items[k].cant)||x.cal!=='bien'||(x.rem!==undefined&&x.rem!==x.rec));
   const rec={t:prev?.t||t,por:prev?.por||S.uid,items,monto:num(d.monto),nota:String(d.nota).trim(),nro:String(d.nro).trim(),pago:d.pago||'',entrego:String(d.entrego).trim(),temp:String(d.temp).trim(),...(prev?{editado:t,editadoPor:S.uid}:{})};
