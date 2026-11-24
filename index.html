@@ -76,6 +76,10 @@ td.n,th.n{text-align:right}td input{min-height:40px}
 @media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7em;margin-inline-start:-7.5em;color:var(--mute);font-size:13px}.stack td:empty{display:none}}
 @media(prefers-reduced-motion:no-preference){.tk{animation:drop .35s ease-out both}@keyframes drop{from{transform:translateY(-10px);opacity:0}}}
 .login{max-width:460px;margin:6vh auto}.out{min-height:36px;padding:6px 12px;background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 35%,transparent)}[hidden]{display:none!important}
+.pvdatos{background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:10px}.pvdatos summary{cursor:pointer;font-weight:600}
+.prodlist{display:grid;gap:6px}.prodrow{display:grid;grid-template-columns:minmax(0,1fr) 74px 104px 64px 40px;gap:6px;align-items:center}
+.prodrow input{min-height:42px}.prodrow .pp{display:flex;align-items:center;gap:3px}.prodrow .pp input,.prodrow .pm{text-align:right}.prodrow .pq{min-height:42px;padding:0;color:var(--redink)}
+@media(max-width:560px){.prodrow{grid-template-columns:minmax(0,1fr) 64px 40px;padding-bottom:8px;border-bottom:1px dashed var(--line)}.prodrow .pp{grid-column:1/2}.prodrow .pm{grid-column:2/3}.prodrow .pq{grid-row:1;grid-column:3}}
 .accs{display:grid;gap:10px}.acc{border:1px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden}.acc.open{border-color:var(--ink)}
 .acchead{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto 24px;align-items:center;gap:10px;background:none;border:0;border-radius:0;padding:16px 18px;min-height:62px;text-align:left}
 .acchead span{font:700 21px "Barlow Condensed",sans-serif}.acchead b{font-weight:600;color:var(--mute);font-size:15px;max-width:45vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.acchead i{font-style:normal;color:var(--mute);font-size:13px}
@@ -382,20 +386,30 @@ function vStock(){
 
 function vCatalogo(){
   const d=S.catDraft||(S.catDraft=JSON.parse(JSON.stringify({proveedores:provs(),productos:prods()})));
-  const ed=canAdmin(),dis=ed?'':'disabled';
-  return `<div class="head"><div><h2>Catálogo</h2><p class="sub">Proveedores con su WhatsApp, productos y el mínimo que tiene que haber en cada local.</p></div>
+  const ed=canAdmin(),dis=ed?'':'disabled',loc=workLocal(),o=S.catOpen;
+  const pvs=d.proveedores.map((p,k)=>({p,k})).filter(({p})=>!p.local||p.local==='ambos'||p.local===loc);
+  const locOpts=v=>[...locales().map(l=>[l.id,l.nombre]),['ambos','Los dos']].map(([x,n])=>`<option value="${x}" ${(v||'ambos')===x?'selected':''}>${esc(n)}</option>`).join('');
+  return `<div class="head"><div><h2>Catálogo</h2><p class="sub">Tocá un proveedor para ver sus productos y precios.</p></div>
   ${ed?`<button class="pri" data-act="guardarCat">Guardar catálogo</button>`:''}</div>
-  ${ed?'':'<p class="note">Solo encargados, jefe de cocina y el dueño pueden cambiar el catálogo.</p>'}
-  <div class="panel"><h3>Proveedores</h3><p class="meta">WhatsApp con código de país: 549 + característica + número, por ejemplo 5492235551234.</p>
-  <table class="stack"><thead><tr><th>Local</th><th>Sector</th><th>Nombre</th><th>WhatsApp</th><th></th></tr></thead><tbody>${d.proveedores.map((p,k)=>`<tr ${S.local!=='todos'&&p.local&&p.local!=='ambos'&&p.local!==S.local?'hidden':''}><td><select ${dis} aria-label="Local" data-pv="${k}" data-f="local">${[...locales().map(l=>[l.id,l.nombre]),['ambos','Los dos']].map(([v,n])=>`<option value="${v}" ${(p.local||'ambos')===v?'selected':''}>${esc(n)}</option>`).join('')}</select></td><td><input ${dis} aria-label="Sector" data-pv="${k}" data-f="sector" value="${esc(p.sector||'')}" placeholder="Verdulería…"></td><td><input ${dis} aria-label="Nombre" data-pv="${k}" data-f="nombre" value="${esc(p.nombre)}"></td><td><input ${dis} inputmode="tel" aria-label="WhatsApp" data-pv="${k}" data-f="tel" value="${esc(p.tel||'')}" placeholder="549…"></td><td>${ed?`<button data-act="delPv" data-id="${k}" aria-label="Borrar proveedor">Quitar</button>`:''}</td></tr>`).join('')}</tbody></table>
-  ${ed?'<button style="margin-top:10px" data-act="addPv">+ Proveedor</button>':''}</div>
-  <div class="panel"><h3>Productos</h3><input type="search" data-filtro="cat" placeholder="Buscar producto…" aria-label="Buscar producto" style="margin:10px 0"><table class="stack"><thead><tr><th>Producto</th><th>Unidad</th><th>Proveedor</th><th class="n">Precio ($)</th>${locales().map(l=>`<th class="n">Mín. ${esc(l.nombre)}</th>`).join('')}<th></th></tr></thead><tbody>
-  ${d.productos.map((p,k)=>{const pv=d.proveedores.find(v=>v.id===p.prov);const off=S.local!=='todos'&&pv?.local&&pv.local!=='ambos'&&pv.local!==S.local;return `<tr data-n="${esc((p.nombre||'').toLowerCase())}" ${off?'hidden data-off="1"':''}><td><input ${dis} aria-label="Producto" data-pr="${k}" data-f="nombre" value="${esc(p.nombre)}"></td><td><input ${dis} aria-label="Unidad" data-pr="${k}" data-f="unidad" value="${esc(p.unidad)}" list="unidades" style="max-width:100px"></td>
-  <td><select ${dis} aria-label="Proveedor" data-pr="${k}" data-f="prov">${d.proveedores.map(v=>`<option value="${v.id}" ${v.id===p.prov?'selected':''}>${esc(v.nombre)}</option>`).join('')}</select></td>
-  <td><input ${dis} inputmode="decimal" aria-label="Precio" data-pr="${k}" data-f="precio" value="${esc(p.precio??'')}" style="text-align:right"></td>
-  ${locales().map(l=>`<td><input ${dis} inputmode="decimal" aria-label="Mínimo ${esc(l.nombre)}" data-pr="${k}" data-min="${l.id}" value="${esc(p.min?.[l.id]??'')}" style="text-align:right"></td>`).join('')}
-  <td>${ed?`<button data-act="delPr" data-id="${k}" aria-label="Borrar producto">Quitar</button>`:''}</td></tr>`}).join('')}</tbody></table>
-  ${ed?'<button style="margin-top:10px" data-act="addPr">+ Producto</button>':''}</div>`;
+  ${ed?'':'<p class="note">Solo el administrador y los encargados pueden cambiar el catálogo.</p>'}
+  <div class="accs">${pvs.map(({p,k})=>{const items=d.productos.map((x,pk)=>({x,pk})).filter(({x})=>x.prov===p.id),open=o===p.id;
+  return `<div class="acc ${open?'open':''}"><button class="acchead" data-act="catOpen" data-id="${esc(p.id)}" aria-expanded="${open}"><span>${esc(p.nombre||'Proveedor nuevo')}</span><b>${p.sector?esc(p.sector)+' · ':''}${items.length} producto${items.length===1?'':'s'}</b><i>${open?'▲':'▼'}</i></button>
+  ${open?`<div class="accbody">
+  ${ed?`<details class="pvdatos" ${p.nombre?'':'open'}><summary>Datos del proveedor</summary><div class="grid2" style="margin-top:8px">
+  <div><label>Nombre</label><input data-pv="${k}" data-f="nombre" value="${esc(p.nombre)}" aria-label="Nombre del proveedor"></div>
+  <div><label>Sector</label><input data-pv="${k}" data-f="sector" value="${esc(p.sector||'')}" placeholder="Verdulería…" aria-label="Sector"></div>
+  <div><label>WhatsApp</label><input inputmode="tel" data-pv="${k}" data-f="tel" value="${esc(p.tel||'')}" placeholder="549…" aria-label="WhatsApp"></div>
+  <div><label>Local</label><select data-pv="${k}" data-f="local" aria-label="Local">${locOpts(p.local)}</select></div></div>
+  <button class="del" style="margin-top:10px" data-act="delPv" data-id="${k}">Quitar proveedor</button></details>`:''}
+  <div class="prodlist">${items.map(({x,pk})=>ed?`<div class="prodrow"><input data-pr="${pk}" data-f="nombre" value="${esc(x.nombre)}" aria-label="Producto" placeholder="Producto">
+  <input data-pr="${pk}" data-f="unidad" value="${esc(x.unidad)}" list="unidades" aria-label="Unidad" class="pu">
+  <div class="pp"><span>$</span><input inputmode="decimal" data-pr="${pk}" data-f="precio" value="${esc(x.precio??'')}" aria-label="Precio" placeholder="Precio"></div>
+  <input inputmode="decimal" data-pr="${pk}" data-min="${loc}" value="${esc(x.min?.[loc]??'')}" aria-label="Mínimo de stock" placeholder="Mín." class="pm">
+  <button class="pq" data-act="delPr" data-id="${pk}" aria-label="Quitar ${esc(x.nombre)}">✕</button></div>`
+  :`<div class="li"><span>${esc(x.nombre)} <small class="meta">· ${esc(x.unidad)}</small></span><b class="q">${x.precio?money(x.precio):'–'}</b></div>`).join('')||'<p class="empty">Todavía no tiene productos.</p>'}</div>
+  ${ed?`<div class="row" style="margin-top:10px"><button data-act="addPr" data-id="${esc(p.id)}">+ Producto</button><button class="pri" data-act="guardarCat">Guardar</button></div><p class="meta" style="margin-top:6px">Columnas: producto · unidad · precio · mínimo de stock en ${esc(locName(loc))}.</p>`:''}
+  </div>`:''}</div>`}).join('')||'<p class="empty">Todavía no hay proveedores en este local.</p>'}</div>
+  ${ed?'<button style="margin-top:14px;width:100%" data-act="addPv">+ Nuevo proveedor</button>':''}`;
 }
 
 const VAPID_PUB='BDPbN4AIJ5alSbcrTeO6QL_sNMsPKOcM4UFuLEPgPhHKsJODm_DW5fovLbdBLrXGWcebUrmK20puCAMCliEJ2po';
@@ -571,9 +585,10 @@ document.addEventListener('click',e=>{
   if(a==='cancelRec'){S.recOpen=null}
   if(a==='fEstado'){S.fEstado=id}
   if(a==='guardarConteo'){guardarConteo().catch(()=>{});return}
-  if(a==='addPv')S.catDraft.proveedores.push({id:rid('v'),nombre:'',tel:'',local:workLocal()});
+  if(a==='addPv'){const nid=rid('v');S.catDraft.proveedores.push({id:nid,nombre:'',tel:'',local:workLocal()});S.catOpen=nid}
+  if(a==='catOpen'){S.catOpen=S.catOpen===id?null:id;render(true);return}
   if(a==='delPv')S.catDraft.proveedores.splice(+id,1);
-  if(a==='addPr')S.catDraft.productos.push({id:rid('p'),nombre:'',unidad:'kg',prov:S.catDraft.proveedores[0]?.id||'',min:{}});
+  if(a==='addPr')S.catDraft.productos.push({id:rid('p'),nombre:'',unidad:'kg',prov:id||S.catDraft.proveedores[0]?.id||'',min:{}});
   if(a==='delPr')S.catDraft.productos.splice(+id,1);
   if(a==='guardarCat'){guardarCat().catch(()=>{});return}
   if(a==='copyTopic'){navigator.clipboard?.writeText(S.cat.avisos.ntfy).then(()=>{b.textContent='Copiado'},()=>{});return}
