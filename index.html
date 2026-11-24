@@ -111,7 +111,10 @@ const money=n=>'$ '+Math.round(n).toLocaleString('es-AR');
 const fecha=t=>new Date(t).toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'numeric'});
 const hora=t=>new Date(t).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
 const ESTADOS={pendiente:'Sin enviar',enviado:'Esperando',recibido:'Recibido OK',diferencias:'Con diferencias'};
-const ROLES=['Encargado/a','Jefe/a de cocina','Cocinero/a'];
+const ROLES=['Encargado/a','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
+const NIVEL={'Encargado/a':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
+const lvl=()=>S.owner?1:(NIVEL[me()?.rol]||4);
+const myLocs=()=>S.owner||!me()?.local||me().local==='todos'?locales().map(l=>l.id):[me().local];
 const S={stage:'boot',authMode:'login',cat:null,pedidos:[],stock:{},equipo:{},uid:null,owner:false,local:'todos',view:'',subs:[],
   pedir:{prov:null,qty:{},extra:[],nota:''},recOpen:null,rec:{},conteo:{},catDraft:null,pending:false,note:'',claimName:''};
 try{S.local=localStorage.getItem('cocina.sec')||''}catch(e){}
@@ -122,7 +125,7 @@ const provs=()=>S.cat?.proveedores||[];const prods=()=>S.cat?.productos||[];
 const prov=id=>provs().find(p=>p.id===id);const provsFor=loc=>provs().filter(p=>!p.local||p.local==='ambos'||p.local===loc);const prod=id=>prods().find(p=>p.id===id);
 const me=()=>S.equipo[S.uid]||null;
 const nameOf=uid=>S.equipo[uid]?.nombre||'Alguien';
-const canAdmin=()=>S.owner||['Encargado/a','Jefe/a de cocina'].includes(me()?.rol);
+const canAdmin=()=>lvl()<=2;
 const workLocal=()=>S.local||locales()[0].id;
 const stockOf=(loc,pid)=>num(S.stock[loc]?.items?.[pid]);
 const minOf=(p,loc)=>num(p.min?.[loc]);
@@ -293,8 +296,11 @@ async function activarPush(){
 function vEquipo(){
   if(!S.owner)return '<p class="empty">Solo el dueño administra el equipo.</p>';
   const ms=Object.entries(S.equipo).filter(([id])=>id!==S.uid).sort((a,b)=>(b[1].activo?1:0)-(a[1].activo?1:0)||a[1].nombre.localeCompare(b[1].nombre));
-  const locOpts=v=>locales().map(l=>`<option value="${l.id}" ${v===l.id?'selected':''}>${esc(l.nombre)}</option>`).join('')+`<option value="todos" ${v==='todos'?'selected':''}>Los dos</option>`;
-  return `<div class="head"><div><h2>Equipo</h2><p class="sub">Vos das de alta a cada persona con su mail y una clave inicial. Si alguien se va, lo desactivás y no entra más.</p></div></div>
+  const locOpts=v=>locales().map(l=>`<option value="${l.id}" ${v===l.id?'selected':''}>Solo ${esc(l.nombre)}</option>`).join('')+`<option value="todos" ${v==='todos'?'selected':''}>Los dos locales</option>`;
+  return `<div class="head"><div><h2>Equipo</h2><p class="sub">Vos das de alta a cada persona con su mail y una clave inicial, le elegís el puesto y a qué local entra. Si alguien se va, lo desactivás y no entra más.</p></div></div>
+  <details class="panel" style="margin-bottom:16px"><summary><b>Qué puede hacer cada puesto</b></summary><ul class="meta" style="margin:8px 0 0;padding-left:18px">
+  <li><b>Administrador (vos):</b> todo, en los dos locales.</li><li><b>Encargado/a:</b> Panel, pedir, recibir, stock y editar proveedores y precios.</li>
+  <li><b>Jefe/a de cocina y Jefe/a de pedidos:</b> pedir, recibir, stock y conteos. Ve el catálogo pero no lo edita.</li><li><b>Cocinero/a y Bartender:</b> pedir y recibir.</li></ul></details>
   <div class="cols"><section><div class="list">${ms.map(([id,m])=>`<div class="li" style="flex-wrap:wrap"><div style="flex:1 1 180px">${esc(m.nombre)}${m.activo?'':' <span class="badge">Desactivado</span>'}<small>${esc(m.email)}</small></div>
   <div class="row" style="flex:2 1 300px"><select style="flex:1 1 140px" aria-label="Puesto" data-eq="${id}" data-f="rol">${ROLES.map(r=>`<option ${m.rol===r?'selected':''}>${r}</option>`).join('')}</select><select style="flex:1 1 120px" aria-label="Local" data-eq="${id}" data-f="local">${locOpts(m.local)}</select>
   <button data-act="activo" data-id="${id}">${m.activo?'Desactivar':'Reactivar'}</button><button data-act="reset" data-id="${id}">Mail para cambiar clave</button></div></div>`).join('')||'<p class="empty">Todavía no diste de alta a nadie.</p>'}</div></section>
@@ -316,8 +322,8 @@ function vEquipo(){
 
 function vInicio(){
   return `<div class="inicio"><p class="sub" style="text-align:center;margin:0 0 4px">Hola${me()?.nombre?', '+esc(me().nombre):''}. ¿Dónde trabajamos hoy?</p>
-  <button class="sect villa" data-act="entrar" data-id="villa"><img src="logo-villa-blanco.png" alt="Villa Aluminé"><span>Cocina · comida</span></button>
-  <button class="sect mara" data-act="entrar" data-id="mara"><img src="logo-mara.png" alt="Mara Social Club"><span>Noche · bebidas</span></button></div>`;
+  ${myLocs().includes('villa')?`<button class="sect villa" data-act="entrar" data-id="villa"><img src="logo-villa-blanco.png" alt="Villa Aluminé"><span>Cocina · comida</span></button>`:''}
+  ${myLocs().includes('mara')?`<button class="sect mara" data-act="entrar" data-id="mara"><img src="logo-mara.png" alt="Mara Social Club"><span>Noche · bebidas</span></button>`:''}</div>`;
 }
 /* ---------- render ---------- */
 function render(force){
@@ -327,15 +333,16 @@ function render(force){
   const inApp=S.stage==='app'&&S.cat;
   $('#localSel').hidden=true;$('#salir').hidden=!auth.currentUser;
   $('#who').textContent=me()?.nombre||'';
+  if(inApp&&S.equipo[S.uid]||S.owner){const ok=myLocs();if(S.local&&!ok.includes(S.local))S.local='';if(ok.length===1&&(!S.local||location.hash==='#inicio'||!location.hash)){S.local=ok[0];if(location.hash==='#inicio'||!location.hash)history.replaceState(null,'','#'+(lvl()<=2?'panel':'pedidos'))}}
   const sec=inApp&&S.local&&location.hash!=='#inicio'&&location.hash!==''?S.local:'';
   document.body.dataset.sec=sec;$('#tabs').hidden=!sec;
-  $('#brandImg').hidden=!sec;$('#brandTxt').hidden=!!sec;document.querySelector('#brand .back').hidden=!sec;
+  $('#brandImg').hidden=!sec;$('#brandTxt').hidden=!!sec;document.querySelector('#brand .back').hidden=!sec||(inApp&&myLocs().length<2);
   if(sec){$('#brandImg').src=sec==='mara'?'logo-mara.png':'logo-villa-blanco.png';$('#brandImg').alt=locName(sec)}
   if(!inApp){$('#tabs').hidden=true;$('#main').innerHTML=vAcceso();return}
   if(!sec){$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vInicio();return}
-  $('#tabEquipo').hidden=!S.owner;
-  const views=['panel','pedir','pedidos','stock','catalogo'].concat(S.owner?['equipo']:[]);
-  let v=location.hash.slice(1);if(!views.includes(v))v=S.owner?'panel':'pedidos';
+  const L=lvl(),views=[...(L<=2?['panel']:[]),'pedir','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
+  document.querySelectorAll('#tabs a').forEach(x=>x.hidden=!views.includes(x.dataset.v));
+  let v=location.hash.slice(1);if(!views.includes(v))v=L<=2?'panel':'pedidos';
   S.view=v;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   const html={panel:vPanel,pedir:vPedir,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo}[v]();
   $('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
@@ -418,7 +425,7 @@ document.addEventListener('click',e=>{
   e.preventDefault();
   if(a==='salir'){signOut(auth);return}
   if(a==='inicio'){if(location.hash==='#inicio')render(true);else location.hash='inicio';return}
-  if(a==='entrar'){S.local=id;try{localStorage.setItem('cocina.sec',id)}catch(x){}S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};S.catDraft=null;S.conteo={};location.hash=S.owner?'panel':'pedidos';return}
+  if(a==='entrar'){S.local=id;try{localStorage.setItem('cocina.sec',id)}catch(x){}S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};S.catDraft=null;S.conteo={};location.hash=lvl()<=2?'panel':'pedidos';return}
   if(a==='reintentar'){location.reload();return}
   if(a==='modo'){S.authMode=id;S.note=''}
   if(a==='olvide'){const em=$('#l-e')?.value.trim();if(!em){S.note='Escribí tu mail arriba y tocá de nuevo "Me olvidé la clave".'}else{sendPasswordResetEmail(auth,em).then(()=>{S.note='Te mandamos un mail para cambiar la clave. Fijate en spam si no llega.';render(true)},er=>{S.note=errMsg(er);render(true)});return}}
