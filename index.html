@@ -109,6 +109,8 @@ body[data-sec=villa] nav.tabs a.on{background:#f93604;color:#fff}body[data-sec=m
 body[data-sec=villa] .provbtn{border-left:6px solid #f93604}body[data-sec=mara] .provbtn{border-left:6px solid #a17a57}
 .bwrap{display:inline-flex;flex-direction:column;align-items:flex-end;gap:4px}.bwrap .badge{font-size:inherit}.b-dif{background:var(--bg);color:var(--redink);border-color:var(--redink)}
 .agregar{border:2px solid var(--ink);margin-bottom:16px}
+.b-fok{background:var(--bg);color:var(--ok);border-color:var(--ok)}.b-fno{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}
+.difs.res{border-color:var(--line);background:var(--card)}.panel.no{background:#fdf0d5;border-color:#e6b85c}
 .difs{border:2px solid var(--red);background:color-mix(in srgb,var(--red) 7%,var(--bg))}.difs ul{margin:8px 0 0;padding-left:18px}.difs li{margin:6px 0}
 .detalle{max-width:760px}.detalle .guardar{width:100%;min-height:52px;font-size:18px;margin-top:4px}
 .del{background:var(--bg);color:var(--redink);border-color:var(--redink)}
@@ -216,7 +218,7 @@ const shiftDay=(k,n)=>{const [y,m,d]=k.split('-').map(Number);return dayKey(new 
 function prowHTML(p,extra){const r=p.recepcion;return `<button class="prow" data-act="abrir" data-id="${p.id}"><span class="pfecha"><b>${new Date(p.creado).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})}</b><small>${hora(p.creado)}</small></span>
   <span class="pinfo"><b>${esc(prov(p.prov)?.nombre||'Proveedor')}</b><small>${extra||`${p.items.length} producto${p.items.length>1?'s':''} · ${esc(nameOf(p.por))}${r&&num(r.monto)?' · '+money(num(r.monto)):''}${p.fotos?' · 📷':''}`}</small></span>
   ${badgeHTML(p)}</button>`}
-const badgeHTML=(p,big)=>`<span class="bwrap"${big?' style="font-size:15px"':''}><span class="badge b-${p.estado}">${ESTADOS[p.estado]||p.estado}</span>${p.estado==='diferencias'?'<span class="badge b-dif">Con diferencias</span>':''}</span>`;
+const badgeHTML=(p,big)=>`<span class="bwrap"${big?' style="font-size:15px"':''}><span class="badge b-${p.estado}">${ESTADOS[p.estado]||p.estado}</span>${p.estado==='diferencias'?(p.faltaOk?(p.faltaOk.tipo==='no'?'<span class="badge b-fno">Faltante sin entregar</span>':'<span class="badge b-fok">Faltante entregado ✓</span>'):'<span class="badge b-dif">Con diferencias</span>'):''}</span>`;
 const faltantes=p=>p.recepcion?p.items.map((i,k)=>({i,x:p.recepcion.items?.[k]})).filter(o=>o.x&&o.x.rec<num(o.i.cant)):[];
 function vPanel(){
   const hoy=dayKey(Date.now()),dia=S.panelDia||hoy,esHoy=dia===hoy;
@@ -430,24 +432,32 @@ async function avisarChat(room,txt,men=[]){
     mandar(subs,`💬 ${nameOf(S.uid)} · Chat ${locName(room)}`);
   }catch(e){console.warn('aviso chat',e)}
 }
-async function faltaOk(id,deshacer,ok){
+async function stockFaltante(p,signo){
+  const add={};faltantes(p).forEach(o=>{const i=o.i;if(!i.pid||(prod(i.pid)&&prod(i.pid).unidad!==i.unidad))return;add[i.pid]=(add[i.pid]??stockOf(p.local,i.pid))+signo*(num(i.cant)-o.x.rec)});
+  if(Object.keys(add).length)await setDoc(doc(db,'stock',p.local),{items:add,t:Date.now()},{merge:true});
+}
+async function faltaOk(id,modo,ok){
   const p=S.pedidos.find(x=>x.id===id);if(!p)return;
-  if(deshacer){await w(()=>updateDoc(doc(db,'pedidos',id),{faltaOk:null,hist:hist(p,'marcó que el faltante no llegó')}));return}
-  const L=faltantes(p).map(o=>`${fmt(num(o.i.cant)-o.x.rec)} ${o.i.unidad} ${o.i.nombre}`);
-  if(!ok){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Llegó todo lo que faltaba?</h3><ul class="meta">${L.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="pri" style="width:100%" data-act="faltaSi" data-id="${id}">Sí, llegó todo</button><button style="margin-top:10px;width:100%" data-act="closeSheet">Cancelar</button></div></div>`;return}
-  $('#sheet').innerHTML='';
-  await w(()=>updateDoc(doc(db,'pedidos',id),{faltaOk:{t:Date.now(),por:S.uid},hist:hist(p,'recibió lo que faltaba')}),'Listo, el pedido quedó completo.');
-  push(`✅ Llegó el faltante · ${locName(p.local)}`,`${nameOf(S.uid)} recibió lo que faltaba de ${prov(p.prov)?.nombre||'proveedor'}:\n${L.map(x=>'• '+x).join('\n')}`,['white_check_mark']);
+  if(modo==='deshacer'){const era=p.faltaOk;await w(()=>updateDoc(doc(db,'pedidos',id),{faltaOk:null,hist:hist(p,'reabrió el faltante')}));if(era&&era.tipo!=='no')stockFaltante(p,-1).catch(e=>console.warn(e));return}
+  const no=modo==='no',L=faltantes(p).map(o=>`${fmt(num(o.i.cant)-o.x.rec)} ${o.i.unidad} ${o.i.nombre}`);
+  if(!ok){$('#sheet').innerHTML=no?`<div class="sheet"><div><h3>¿Cerrar el faltante sin que llegue?</h3><p class="sub">Usalo cuando el proveedor no tiene el producto y no lo va a mandar.</p><ul class="meta">${L.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+    <label for="fno-n">Nota (opcional)</label><input id="fno-n" placeholder="Ej: no tenía lechuga, compramos en otro lado">
+    <button class="pri" style="width:100%;margin-top:12px" data-act="faltaNoSi" data-id="${id}">Sí, cerrar faltante</button><button style="margin-top:10px;width:100%" data-act="closeSheet">Cancelar</button></div></div>`
+    :`<div class="sheet"><div><h3>¿Llegó todo lo que faltaba?</h3><ul class="meta">${L.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="pri" style="width:100%" data-act="faltaSi" data-id="${id}">Sí, llegó todo</button><button style="margin-top:10px;width:100%" data-act="closeSheet">Cancelar</button></div></div>`;return}
+  const nota=no?($('#fno-n')?.value||'').trim().slice(0,200):'';$('#sheet').innerHTML='';
+  await w(()=>updateDoc(doc(db,'pedidos',id),{faltaOk:{t:Date.now(),por:S.uid,tipo:no?'no':'llego',...(nota?{nota}:{})},hist:hist(p,no?'cerró el faltante: el proveedor no lo tenía':'recibió lo que faltaba')}),no?'Listo, el faltante quedó cerrado.':'Listo, el pedido quedó completo.');
+  if(!no)stockFaltante(p,1).catch(e=>console.warn(e));
+  push(no?`🚫 Faltante sin entregar · ${locName(p.local)}`:`✅ Llegó el faltante · ${locName(p.local)}`,`${nameOf(S.uid)} ${no?'cerró el faltante':'recibió lo que faltaba'} de ${prov(p.prov)?.nombre||'proveedor'}:\n${L.map(x=>'• '+x).join('\n')}${no?'\nEl proveedor no lo tenía.'+(nota?` "${nota}"`:''):''}`,[no?'no_entry':'white_check_mark']);
 }
 function difsBox(p){
   const r=p.recepcion;if(!r||p.estado!=='diferencias')return '';
   const L=p.items.map((i,k)=>{const x=r.items?.[k];if(!x)return '';const parts=[],df=x.rec-num(i.cant);
-    if(df<0)parts.push(`<b>faltó ${fmt(-df)} ${esc(i.unidad)}</b> (pidieron ${fmt(num(i.cant))}, llegó ${fmt(x.rec)})`);
+    if(df<0)parts.push(`<b>faltó ${fmt(-df)} ${esc(i.unidad)}</b> (pidieron ${fmt(num(i.cant))}, llegó ${fmt(x.rec)})${p.faltaOk?(p.faltaOk.tipo==='no'?' → <b>el proveedor no lo tenía</b>':' → <b>llegó después ✓</b>'):''}`);
     if(df>0)parts.push(`<b>sobró ${fmt(df)} ${esc(i.unidad)}</b> (pidieron ${fmt(num(i.cant))}, llegó ${fmt(x.rec)})`);
     if(x.rem!==undefined&&x.rem!==x.rec)parts.push(`el remito dice ${fmt(x.rem)} y llegó ${fmt(x.rec)}`);
     if(x.cal&&x.cal!=='bien')parts.push(`calidad ${esc(x.cal)}`);
     if(!parts.length)return '';return `<li><b>${esc(i.nombre)}:</b> ${parts.join(' · ')}${x.nota?`<br><span class="meta">"${esc(x.nota)}"</span>`:''}</li>`}).filter(Boolean);
-  return L.length?`<div class="panel difs"><h3>⚠️ Diferencias en este pedido</h3><ul>${L.join('')}</ul></div>`:'';
+  return L.length?`<div class="panel difs${p.faltaOk?' res':''}"><h3>${p.faltaOk?'Diferencias de este pedido (faltante resuelto)':'⚠️ Diferencias en este pedido'}</h3><ul>${L.join('')}</ul></div>`:'';
 }
 function vPedido(id){
   const p=S.pedidos.find(x=>x.id===id);
@@ -466,8 +476,8 @@ function vPedido(id){
   <label class="btn" style="margin-top:10px;cursor:pointer">📷 Agregar foto<input type="file" accept="image/*" capture="environment" data-foto="${p.id}" hidden></label>
   <p class="meta" id="fotomsg">Las fotos se borran solas a los 6 meses.</p></div>
   ${p.recepcion&&!S.owner?'':`${p.recepcion?'':'<p class="meta">Revisá bien antes de guardar: una vez guardada, solo el administrador puede corregirla.</p>'}<button class="pri guardar" type="submit" form="rf-${p.id}">${p.recepcion?'Guardar cambios (administrador)':'Guardar recepción'}</button>`}
-  ${p.faltaOk?`<div class="panel ok" style="margin-top:12px"><b>✅ Lo que faltaba ya llegó</b><p class="meta" style="margin:4px 0 0">Lo recibió ${esc(nameOf(p.faltaOk.por))} el ${fecha(p.faltaOk.t)} a las ${hora(p.faltaOk.t)}.${S.owner?` <button class="linkbtn" data-act="faltaDeshacer" data-id="${p.id}">deshacer</button>`:''}</p></div>`:
-  falt.length?`<div class="row" style="margin-top:12px">${reclamo?`<a class="btn wa" style="flex:1 1 220px" href="${esc(reclamo)}" target="_blank" rel="noopener">Reclamar faltantes por WhatsApp</a>`:''}<button class="pri" style="flex:1 1 220px" data-act="faltaOk" data-id="${p.id}">✅ Ya llegó lo que faltaba</button></div>`:''}</div>`;
+  ${p.faltaOk?(p.faltaOk.tipo==='no'?`<div class="panel no" style="margin-top:12px"><b>🚫 Faltante cerrado: el proveedor no lo tenía</b><p class="meta" style="margin:4px 0 0">${p.faltaOk.nota?`"${esc(p.faltaOk.nota)}" · `:''}Lo cerró ${esc(nameOf(p.faltaOk.por))} el ${fecha(p.faltaOk.t)} a las ${hora(p.faltaOk.t)}.`:`<div class="panel ok" style="margin-top:12px"><b>✅ Lo que faltaba ya llegó</b><p class="meta" style="margin:4px 0 0">Lo recibió ${esc(nameOf(p.faltaOk.por))} el ${fecha(p.faltaOk.t)} a las ${hora(p.faltaOk.t)}.`)+`${S.owner?` <button class="linkbtn" data-act="faltaDeshacer" data-id="${p.id}">deshacer</button>`:''}</p></div>`:
+  falt.length?`<div class="row" style="margin-top:12px">${reclamo?`<a class="btn wa" style="flex:1 1 220px" href="${esc(reclamo)}" target="_blank" rel="noopener">Reclamar faltantes por WhatsApp</a>`:''}<button class="pri" style="flex:1 1 220px" data-act="faltaOk" data-id="${p.id}">✅ Ya llegó lo que faltaba</button><button style="flex:1 1 220px" data-act="faltaNo" data-id="${p.id}">🚫 El proveedor no lo tiene</button></div>`:''}</div>`;
 }
 async function limpiarFotosViejas(){
   if(!S.owner)return;
@@ -694,9 +704,11 @@ document.addEventListener('click',e=>{
   if(a==='fSet'){const [k,v]=id.split(/:(.*)/s);if(k==='dia')S.fDia=v;if(k==='prov')S.fProv=v;if(k==='est')S.fEstado=v||'todos';S.pVer=true;S.pOpen=null;render(true);return}
   if(a==='fClear'){S.fDia='';S.fProv='';S.fEstado='todos';render(true);return}
   if(a==='chat'){location.hash='chat';return}
-  if(a==='faltaOk'){faltaOk(id);return}
-  if(a==='faltaSi'){faltaOk(id,false,true);return}
-  if(a==='faltaDeshacer'){faltaOk(id,true);return}
+  if(a==='faltaOk'){faltaOk(id,'llego');return}
+  if(a==='faltaSi'){faltaOk(id,'llego',true);return}
+  if(a==='faltaNo'){faltaOk(id,'no');return}
+  if(a==='faltaNoSi'){faltaOk(id,'no',true);return}
+  if(a==='faltaDeshacer'){faltaOk(id,'deshacer');return}
   if(a==='mencionar'){mencionar(b.dataset.n);return}
   if(a==='chatDel'){const room=workLocal();deleteDoc(doc(db,'chats',room,'msgs',id)).catch(e=>{S.note=errMsg(e);render(true)});return}
   if(a==='psel'){S.panelSel=S.panelSel===id?null:id;render(true);return}
