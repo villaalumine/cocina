@@ -76,6 +76,7 @@ td.n,th.n{text-align:right}td input{min-height:40px}
 @media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7em;margin-inline-start:-7.5em;color:var(--mute);font-size:13px}.stack td:empty{display:none}}
 @media(prefers-reduced-motion:no-preference){.tk{animation:drop .35s ease-out both}@keyframes drop{from{transform:translateY(-10px);opacity:0}}}
 .login{max-width:460px;margin:6vh auto}.out{min-height:36px;padding:6px 12px;background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 35%,transparent)}[hidden]{display:none!important}
+.detalle{max-width:760px}.detalle .guardar{width:100%;min-height:52px;font-size:18px;margin-top:4px}
 .del{background:var(--bg);color:var(--redink);border-color:var(--redink)}
 .kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:600px){.kpis.k3{gap:8px}.kpis.k3 .kpi{padding:10px;min-height:84px}.kpis.k3 .kpi b{font-size:34px}.kpis.k3 .kpi span{font-size:12.5px;line-height:1.25;display:block}}
 button.kpi{text-align:left;cursor:pointer;font:inherit;color:inherit;border:2px solid transparent;border-top:6px solid var(--rail);min-height:96px;display:block}
@@ -230,13 +231,13 @@ function vRecView(p){
   ${p.items.map((i,k)=>{const x=r.items?.[k]||{rec:0,cal:'bien'},xx={rec:x.rec,rem:x.rem??''};return `<div class="recrow2"><div><b>${esc(i.nombre)}</b><br><span class="meta">Pedido: ${fmt(num(i.cant))} ${esc(i.unidad)}</span><br><span class="st ${stOk(i,xx)?'ok':'bad'}">${stLabel2(i,xx)}</span></div>
   <span class="q" style="text-align:right">${x.rem!==undefined?fmt(x.rem):'–'}</span><span class="q" style="text-align:right">${fmt(x.rec)}</span>
   ${x.cal!=='bien'||x.nota?`<span class="meta" style="grid-column:1/-1">${x.cal!=='bien'?`<span class="lowtag">Calidad ${esc(x.cal)}</span> `:''}${esc(x.nota||'')}</span>`:''}</div>`}).join('')}
-  <div class="list" style="margin-top:12px">${[['N° de remito',r.nro],['Total del remito',num(r.monto)?money(num(r.monto)):''],['Pago',pg],['Lo entregó',r.entrego],['Temperatura',r.temp],['Nota',r.nota]].filter(([,v])=>v).map(([k,v])=>`<div class="li"><span class="meta">${k}</span><b>${esc(v)}</b></div>`).join('')}</div>
+  <div class="list" style="margin-top:12px">${[['N° de remito',r.nro],['Total del remito',num(r.monto)?money(num(r.monto)):''],['Pago',pg],['Lo entregó',r.entrego],['Nota',r.nota]].filter(([,v])=>v).map(([k,v])=>`<div class="li"><span class="meta">${k}</span><b>${esc(v)}</b></div>`).join('')}</div>
   <p class="note" style="margin-top:14px">La recepción ya está guardada y no se puede modificar. Si hay que corregir algo, pedíselo al administrador por <a href="${esc(sopLink())}" target="_blank" rel="noopener">Soporte</a>.</p></div>`;
 }
 function vRec(p){
   if(p.recepcion&&!S.owner)return vRecView(p);
   const d=recDraft(p),editando=!!p.recepcion;
-  return `<form data-form="rec" data-id="${p.id}" class="panel recform"><h3>${editando?'Datos de la recepción':'¿Cómo llegó?'}</h3>
+  return `<form data-form="rec" data-id="${p.id}" id="rf-${p.id}" class="panel recform"><h3>${editando?'Datos de la recepción':'¿Cómo llegó?'}</h3>
   <p class="meta">Por cada producto: lo que dice el <b>remito</b> y lo que <b>llegó de verdad</b> (pesado o contado).</p>
   <div class="rechead"><span>Producto</span><span>Remito</span><span>Llegó</span></div>
   ${p.items.map((i,k)=>{const x=d.items[k];return `<div class="recrow2"><div><b>${esc(i.nombre)}</b><br><span class="meta">Pedido: ${fmt(num(i.cant))} ${esc(i.unidad)}</span><br><span class="st ${stOk(i,x)?'ok':'bad'}" id="st-${p.id}-${k}">${stLabel2(i,x)}</span></div>
@@ -249,10 +250,8 @@ function vRec(p){
   <div><label for="m-${p.id}">Total del remito ($)</label><input id="m-${p.id}" inputmode="decimal" data-rf="monto" value="${esc(d.monto)}"></div>
   <div><label for="pg-${p.id}">Pago</label><select id="pg-${p.id}" data-rf="pago">${PAGOS.map(([v,n])=>`<option value="${v}" ${d.pago===v?'selected':''}>${n}</option>`).join('')}</select></div>
   <div><label for="en-${p.id}">Quién lo entregó</label><input id="en-${p.id}" data-rf="entrego" value="${esc(d.entrego)}" placeholder="Nombre del repartidor"></div>
-  <div><label for="tp-${p.id}">Temperatura al llegar (frescos)</label><input id="tp-${p.id}" data-rf="temp" value="${esc(d.temp)}" placeholder="Ej: 4 °C, cadena de frío OK"></div>
   <div><label for="n-${p.id}">Nota de la entrega</label><input id="n-${p.id}" data-rf="nota" value="${esc(d.nota)}" placeholder="Llegó tarde, faltó remito…"></div></div>
-  ${editando?'':'<p class="meta">Revisá bien antes de guardar: una vez guardada, solo el administrador puede corregirla.</p>'}
-  <div class="row"><button class="pri" type="submit">${editando?'Guardar cambios (administrador)':'Guardar recepción'}</button></div></form>`;
+</form>`;
 }function stLabel(ped,rec,u){const d=num(rec)-num(ped);return d===0?'Llegó justo':d<0?`Faltó ${fmt(-d)} ${u}`:`Sobró ${fmt(d)} ${u}`}
 
 function vPedir(){
@@ -314,13 +313,13 @@ function vPedido(id){
   <div class="head"><div><h2>${esc(pv?.nombre||'Proveedor')}</h2><p class="sub">${esc(locName(p.local))} · pidió ${esc(nameOf(p.por))} el ${fecha(p.creado)} a las ${hora(p.creado)}</p></div><span class="badge b-${p.estado}" style="font-size:15px">${ESTADOS[p.estado]||p.estado}</span></div>
   ${abierto?`<div class="row" style="margin-bottom:16px"><a class="btn wa" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">${p.estado==='pendiente'?'Enviar':'Reenviar'} por WhatsApp</a><button class="del" data-act="delPed" data-id="${p.id}">🗑 Eliminar pedido</button></div>`:''}
   ${p.nota?`<p class="note">Nota del pedido: ${esc(p.nota)}</p>`:''}
-  <div class="cols"><section>${vRec(p)}
-  ${reclamo?`<a class="btn wa" style="margin-top:12px" href="${esc(reclamo)}" target="_blank" rel="noopener">Reclamar faltantes por WhatsApp</a>`:''}</section>
-  <aside><div class="panel"><h3>Fotos del remito</h3>
+  <div class="detalle">${vRec(p)}
+  <div class="panel"><h3>Fotos del remito</h3>
   <div class="fotos">${fotos.map(f=>`<button class="foto" data-act="verfoto" data-id="${f.id}"><img src="${f.data}" alt="Foto del remito"></button>`).join('')||'<p class="meta">Todavía no hay fotos.</p>'}</div>
   <label class="btn" style="margin-top:10px;cursor:pointer">📷 Agregar foto<input type="file" accept="image/*" capture="environment" data-foto="${p.id}" hidden></label>
   <p class="meta" id="fotomsg">Las fotos se borran solas a los 6 meses.</p></div>
-  <div class="panel"><h3>Historial</h3><div class="list" style="margin-top:8px">${(p.hist||[]).slice().reverse().map(h=>`<div class="li"><div>${esc(nameOf(h.uid))} ${esc(h.a)}</div><span class="meta q">${fecha(h.t)} ${hora(h.t)}</span></div>`).join('')}</div></div></aside></div>`;
+  ${p.recepcion&&!S.owner?'':`${p.recepcion?'':'<p class="meta">Revisá bien antes de guardar: una vez guardada, solo el administrador puede corregirla.</p>'}<button class="pri guardar" type="submit" form="rf-${p.id}">${p.recepcion?'Guardar cambios (administrador)':'Guardar recepción'}</button>`}
+  ${reclamo?`<a class="btn wa" style="margin-top:12px" href="${esc(reclamo)}" target="_blank" rel="noopener">Reclamar faltantes por WhatsApp</a>`:''}</div>`;
 }
 async function limpiarFotosViejas(){
   if(!S.owner)return;
