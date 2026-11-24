@@ -76,6 +76,9 @@ td.n,th.n{text-align:right}td input{min-height:40px}
 @media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7em;margin-inline-start:-7.5em;color:var(--mute);font-size:13px}.stack td:empty{display:none}}
 @media(prefers-reduced-motion:no-preference){.tk{animation:drop .35s ease-out both}@keyframes drop{from{transform:translateY(-10px);opacity:0}}}
 .login{max-width:460px;margin:6vh auto}.out{min-height:36px;padding:6px 12px;background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 35%,transparent)}[hidden]{display:none!important}
+.top .sop{text-decoration:none;display:inline-flex;align-items:center;font:600 14px Barlow,sans-serif;border:1px solid currentColor;border-radius:10px;padding:6px 10px;min-height:36px;color:inherit}
+.soporte{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:6px}
+.soporte b{font:700 20px "Barlow Condensed",sans-serif;color:#1fa855}.soporte span{color:var(--mute);font-size:15px}
 .top .brand{background:none;border:0;color:inherit;padding:0;min-height:44px;gap:8px;font:700 24px "Barlow Condensed",sans-serif;display:flex;align-items:center;cursor:pointer}
 .top .brand img{height:22px;width:auto;display:block}.top .brand .back{font-size:30px;line-height:1;margin-top:-4px}
 body[data-sec=villa] .top{background:#f93604;color:#fff}body[data-sec=mara] .top{background:#1d1712;color:#f3e7d8}
@@ -85,7 +88,7 @@ body[data-sec=villa] .top .out,body[data-sec=mara] .top .out{color:inherit;borde
 .sect:active{transform:scale(.98)}.sect img{width:min(78%,380px);height:auto}.sect span{font:600 17px Barlow,sans-serif;letter-spacing:.02em;opacity:.85}
 .sect.villa{background:#f93604;color:#fff}.sect.mara{background:#1d1712;color:#e9d9c4}.sect.mara img{width:min(86%,420px)}.rubro{font:700 15px Barlow,sans-serif;color:var(--mute);margin:18px 0 2px;padding-bottom:4px;border-bottom:2px solid var(--ink)}
 </style><script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script></head><body>
-<header class="top"><button class="brand" id="brand" data-act="inicio" aria-label="Volver al inicio"><span class="back" hidden>‹</span><img id="brandImg" alt="" hidden><span id="brandTxt"><i></i>Cocina</span></button><div class="sp"></div><span class="who" id="who"></span><select id="localSel" aria-label="Local"></select><button class="out" id="salir" hidden>Salir</button></header>
+<header class="top"><button class="brand" id="brand" data-act="inicio" aria-label="Volver al inicio"><span class="back" hidden>‹</span><img id="brandImg" alt="" hidden><span id="brandTxt"><i></i>Cocina</span></button><div class="sp"></div><span class="who" id="who"></span><select id="localSel" aria-label="Local"></select><a class="out sop" id="soporte" hidden target="_blank" rel="noopener" aria-label="Soporte por WhatsApp">Soporte</a><button class="out" id="salir" hidden>Salir</button></header>
 <nav class="tabs" id="tabs" hidden><a href="#panel" data-v="panel">Panel</a><a href="#pedir" data-v="pedir">Pedir</a><a href="#pedidos" data-v="pedidos">Pedidos</a><a href="#stock" data-v="stock">Stock</a><a href="#catalogo" data-v="catalogo">Catálogo</a><a href="#equipo" data-v="equipo" id="tabEquipo" hidden>Equipo</a></nav>
 <main id="main"><p class="empty">Cargando la cocina…</p></main>
 <div id="sheet"></div>
@@ -111,6 +114,8 @@ const money=n=>'$ '+Math.round(n).toLocaleString('es-AR');
 const fecha=t=>new Date(t).toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'numeric'});
 const hora=t=>new Date(t).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
 const ESTADOS={pendiente:'Sin enviar',enviado:'Esperando',recibido:'Recibido OK',diferencias:'Con diferencias'};
+const SOPORTE='5492236918566';
+const sopLink=()=>'https://wa.me/'+SOPORTE+'?text='+encodeURIComponent(`Hola Matías, soy ${me()?.nombre||''}. Tengo una consulta sobre la app de cocina: `);
 const ROLES=['Encargado/a','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
 const NIVEL={'Encargado/a':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
 const lvl=()=>S.owner?1:(NIVEL[me()?.rol]||4);
@@ -304,10 +309,7 @@ function vEquipo(){
   <div class="cols"><section><div class="list">${ms.map(([id,m])=>`<div class="li" style="flex-wrap:wrap"><div style="flex:1 1 180px">${esc(m.nombre)}${m.activo?'':' <span class="badge">Desactivado</span>'}<small>${esc(m.email)}</small></div>
   <div class="row" style="flex:2 1 300px"><select style="flex:1 1 140px" aria-label="Puesto" data-eq="${id}" data-f="rol">${ROLES.map(r=>`<option ${m.rol===r?'selected':''}>${r}</option>`).join('')}</select><select style="flex:1 1 120px" aria-label="Local" data-eq="${id}" data-f="local">${locOpts(m.local)}</select>
   <button data-act="activo" data-id="${id}">${m.activo?'Desactivar':'Reactivar'}</button><button data-act="reset" data-id="${id}">Mail para cambiar clave</button></div></div>`).join('')||'<p class="empty">Todavía no diste de alta a nadie.</p>'}</div></section>
-  <aside><form class="panel" data-form="avisos"><h3>Avisos de recepción</h3><p class="meta">Cuando alguien recibe un pedido, la app le arma un WhatsApp para este número.</p>
-  <label for="av-t" style="margin-top:10px">WhatsApp del dueño</label><input id="av-t" name="tel" inputmode="tel" value="${esc(S.cat?.avisos?.tel||'')}" placeholder="549…">
-  <label for="av-m" style="margin-top:10px">Avisar</label><select id="av-m" name="modo"><option value="siempre" ${S.cat?.avisos?.modo!=='diferencias'?'selected':''}>En cada recepción</option><option value="diferencias" ${S.cat?.avisos?.modo==='diferencias'?'selected':''}>Solo si llegó con diferencias</option></select>
-  <button class="pri" style="width:100%;margin-top:14px" type="submit">Guardar avisos</button></form>
+  <aside>
   <div class="panel"><h3>Notificaciones en tu celu</h3><p class="meta">Te llega un aviso con el ícono de Cocina cuando alguien arma un pedido o recibe mercadería, aunque la app esté cerrada.</p>
   ${pushInfo()}</div>
   <form class="panel" data-form="alta"><h3>Dar de alta</h3>
@@ -323,7 +325,8 @@ function vEquipo(){
 function vInicio(){
   return `<div class="inicio"><p class="sub" style="text-align:center;margin:0 0 4px">Hola${me()?.nombre?', '+esc(me().nombre):''}. ¿Dónde trabajamos hoy?</p>
   ${myLocs().includes('villa')?`<button class="sect villa" data-act="entrar" data-id="villa"><img src="logo-villa-blanco.png" alt="Villa Aluminé"><span>Cocina · comida</span></button>`:''}
-  ${myLocs().includes('mara')?`<button class="sect mara" data-act="entrar" data-id="mara"><img src="logo-mara.png" alt="Mara Social Club"><span>Noche · bebidas</span></button>`:''}</div>`;
+  ${myLocs().includes('mara')?`<button class="sect mara" data-act="entrar" data-id="mara"><img src="logo-mara.png" alt="Mara Social Club"><span>Noche · bebidas</span></button>`:''}
+  ${S.owner?'':`<a class="soporte" href="${esc(sopLink())}" target="_blank" rel="noopener"><b>Soporte</b><span>¿Tenés una duda o algo no anda? Escribile a Matías por WhatsApp.</span></a>`}</div>`;
 }
 /* ---------- render ---------- */
 function render(force){
@@ -332,6 +335,7 @@ function render(force){
   S.pending=false;
   const inApp=S.stage==='app'&&S.cat;
   $('#localSel').hidden=true;$('#salir').hidden=!auth.currentUser;
+  const so=$('#soporte');so.hidden=!(S.stage==='app'&&!S.owner);so.href=sopLink();
   $('#who').textContent=me()?.nombre||'';
   if(inApp&&S.equipo[S.uid]||S.owner){const ok=myLocs();if(S.local&&!ok.includes(S.local))S.local='';if(ok.length===1&&(!S.local||location.hash==='#inicio'||!location.hash)){S.local=ok[0];if(location.hash==='#inicio'||!location.hash)history.replaceState(null,'','#'+(lvl()<=2?'panel':'pedidos'))}}
   const sec=inApp&&S.local&&location.hash!=='#inicio'&&location.hash!==''?S.local:'';
@@ -389,7 +393,7 @@ async function guardarRec(id){
   S.recOpen=null;delete S.rec[id];render(true);
   push(`${dif?'⚠️ Llegó con diferencias':'✅ Pedido recibido'} · ${locName(p.local)}`,`${prov(p.prov)?.nombre||'Proveedor'}: recibió ${nameOf(S.uid)}${num(d.monto)?` · remito ${money(num(d.monto))}`:''}${dif?'\n'+p.items.map((i,k)=>{const x=items[k],df=x.rec-num(i.cant);return df!==0||x.cal!=='bien'?`• ${i.nombre}: ${df<0?'faltó '+fmt(-df)+' '+i.unidad:df>0?'sobró '+fmt(df)+' '+i.unidad:''}${x.cal!=='bien'?' calidad '+x.cal:''}`:''}).filter(Boolean).join('\n'):''}`,[dif?'warning':'white_check_mark']);
   const av=S.cat?.avisos||{},tel=String(av.tel||'').replace(/\D/g,'');
-  if(tel&&!S.owner&&(av.modo!=='diferencias'||dif)){
+  if(false){
     const L=[`${dif?'⚠️ *Recepción con diferencias*':'✅ *Recepción OK*'}`,`${prov(p.prov)?.nombre||'Proveedor'} → ${locName(p.local)} · ${fecha(t)} ${hora(t)}`,`Recibió: ${nameOf(S.uid)}`,''];
     p.items.forEach((i,k)=>{const x=items[k],df=x.rec-num(i.cant);const parts=[];if(df!==0)parts.push(`pedido ${fmt(num(i.cant))} ${i.unidad}, llegó ${fmt(x.rec)} ${i.unidad} (${df<0?'faltó '+fmt(-df):'sobró '+fmt(df)})`);if(x.cal!=='bien')parts.push(`calidad ${x.cal}`);if(x.nota)parts.push(`"${x.nota}"`);if(parts.length)L.push(`• ${i.nombre}: ${parts.join(' – ')}`)});
     if(!dif)L.push(`Llegaron los ${p.items.length} productos bien.`);
