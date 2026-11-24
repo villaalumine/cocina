@@ -76,6 +76,10 @@ td.n,th.n{text-align:right}td input{min-height:40px}
 @media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7em;margin-inline-start:-7.5em;color:var(--mute);font-size:13px}.stack td:empty{display:none}}
 @media(prefers-reduced-motion:no-preference){.tk{animation:drop .35s ease-out both}@keyframes drop{from{transform:translateY(-10px);opacity:0}}}
 .login{max-width:460px;margin:6vh auto}.out{min-height:36px;padding:6px 12px;background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 35%,transparent)}[hidden]{display:none!important}
+.provgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:12px}
+.provbtn{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;min-height:96px;padding:16px 18px;border-radius:16px;background:var(--card);border:1px solid var(--line);font-weight:400}
+.provbtn small{color:var(--mute);font-size:13px;text-transform:none}.provbtn b{font:700 24px "Barlow Condensed",sans-serif}.provbtn span{color:var(--mute);font-size:14px}
+body[data-sec=villa] .provbtn{border-left:6px solid #f93604}body[data-sec=mara] .provbtn{border-left:6px solid #a17a57}
 .bwrap{display:inline-flex;flex-direction:column;align-items:flex-end;gap:4px}.bwrap .badge{font-size:inherit}.b-dif{background:var(--bg);color:var(--redink);border-color:var(--redink)}
 .agregar{border:2px solid var(--ink);margin-bottom:16px}
 .difs{border:2px solid var(--red);background:color-mix(in srgb,var(--red) 7%,var(--bg))}.difs ul{margin:8px 0 0;padding-left:18px}.difs li{margin:6px 0}
@@ -262,12 +266,14 @@ function vPedir(){
   const loc=workLocal(),d=S.pedir;
   const pvs=provsFor(loc);
   if(!pvs.length)return `<div class="head"><h2>Nuevo pedido para ${esc(locName(loc))}</h2></div><p class="empty">${esc(locName(loc))} todavía no tiene proveedores. Cargalos en Catálogo.</p>`;
-  if(!d.prov||!pvs.some(p=>p.id===d.prov)){d.prov=pvs[0].id;d.qty={};d.unit={}}
-  const list=prods().filter(p=>p.prov===d.prov);
+  if(d.prov&&!pvs.some(p=>p.id===d.prov)){d.prov=null;d.qty={};d.unit={}}
+  if(!d.prov)return `<div class="head"><div><h2>Nuevo pedido</h2><p class="sub">Elegí a qué proveedor le querés pedir.</p></div></div>
+  <div class="provgrid">${pvs.map(p=>{const n=prods().filter(x=>x.prov===p.id).length,low=prods().filter(x=>x.prov===p.id&&minOf(x,loc)>0&&stockOf(loc,x.id)<minOf(x,loc)).length;return `<button class="provbtn" data-act="prov" data-id="${p.id}">${p.sector?`<small>${esc(p.sector)}</small>`:''}<b>${esc(p.nombre)}</b><span>${n} producto${n===1?'':'s'}${low?` · <span class="lowtag">${low} bajo el mínimo</span>`:''}</span></button>`}).join('')}</div>`;
+  const list=prods().filter(p=>p.prov===d.prov),pvSel=prov(d.prov);
   const lowN=list.filter(p=>minOf(p,loc)>0&&stockOf(loc,p.id)<minOf(p,loc)).length;
-  return `<div class="head"><div><h2>Nuevo pedido para ${esc(locName(loc))}</h2><p class="sub">Elegí el proveedor, cargá cantidades y mandalo por WhatsApp.</p></div></div>
+  return `<button data-act="provBack" style="margin-bottom:12px">‹ Proveedores</button>
+  <div class="head"><div><h2>${esc(pvSel?.nombre||'Proveedor')}</h2><p class="sub">${pvSel?.sector?esc(pvSel.sector)+' · ':''}Cargá cantidades y mandalo por WhatsApp.</p></div></div>
   ${S.local==='todos'?`<p class="note">Estás pidiendo para ${esc(locName(loc))}. Cambiá el local arriba si es para otro.</p>`:''}
-  <div class="chips" style="margin-bottom:16px">${pvs.map(p=>`<button class="chip ${p.id===d.prov?'on':''}" data-act="prov" data-id="${p.id}">${p.sector?`${esc(p.sector)} · `:''}${esc(p.nombre)}</button>`).join('')}</div>
   <input type="search" data-buscar placeholder="Buscar producto…" value="${esc(d.buscar||'')}" style="margin-bottom:6px" aria-label="Buscar producto">
   <div class="cols"><section>
   ${lowN?`<div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="lowtag">${lowN} producto${lowN>1?'s':''} bajo el mínimo</span><button data-act="sugerir">Completar con lo que falta</button></div>`:''}
@@ -514,7 +520,7 @@ async function guardarPedido(){
   const loc=workLocal(),t=Date.now();
   const p={local:loc,prov:S.pedir.prov,items,nota:S.pedir.nota.trim(),por:S.uid,creado:t,estado:'pendiente',hist:[{t,uid:S.uid,a:'armó un pedido'}]};
   let ref;await w(async()=>{ref=await addDoc(collection(db,'pedidos'),p)});
-  p.id=ref.id;S.pedir={prov:S.pedir.prov,qty:{},unit:{},extra:[],nota:''};
+  p.id=ref.id;S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};
   {const tot=items.reduce((a,i)=>a+(i.precio||0)*i.cant,0);push(`🛒 Pedido nuevo · ${locName(loc)}`,`${nameOf(S.uid)} armó un pedido a ${prov(p.prov)?.nombre||'proveedor'}:\n${items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join('\n')}${tot?`\nEstimado: ${money(tot)}`:''}`,['shopping_cart'])}
   $('#sheet').innerHTML=`<div class="sheet"><div><h3>Pedido guardado</h3><p class="sub">Ahora mandalo. Se abre WhatsApp con el mensaje listo.</p><pre>${esc(msgText(p))}</pre>
   <div class="row"><a class="btn wa" style="flex:1" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">Abrir WhatsApp</a><button data-act="copy" data-id="${p.id}">Copiar texto</button></div>
@@ -567,6 +573,8 @@ document.addEventListener('click',e=>{
   if(a==='addOpen'){S.addOpen=S.addOpen===id?null:id;render(true);return}
   if(a==='addCancel'){S.addOpen=null;render(true);return}
   if(a==='addOk'){agregarItems(id).catch(()=>{});return}
+  if(a==='provBack'){const n=Object.values(S.pedir.qty).filter(v=>num(v)>0).length;if(n&&!b.dataset.ok){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Salir sin guardar?</h3><p class="sub">Tenés ${n} producto${n>1?'s':''} cargado${n>1?'s':''} en este pedido. Si volvés, se borran.</p><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="provBack" data-ok="1">Salir</button><button style="flex:1" data-act="closeSheet">Seguir pidiendo</button></div></div></div>`;return}
+    $('#sheet').innerHTML='';S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};render(true);scrollTo(0,0);return}
   if(a==='psel'){S.panelSel=S.panelSel===id?null:id;render(true);return}
   if(a==='dia'){const n=+id;S.panelDia=n===0?null:shiftDay(S.panelDia||dayKey(Date.now()),n);if(S.panelDia&&S.panelDia>=dayKey(Date.now()))S.panelDia=null;render(true);return}
   if(a==='inicio'){if(location.hash==='#inicio')render(true);else location.hash='inicio';return}
