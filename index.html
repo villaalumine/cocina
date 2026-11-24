@@ -99,8 +99,10 @@ body[data-sec=villa] .chatbtn{background:#f93604}body[data-sec=mara] .chatbtn{ba
 .accbody{padding:0 18px 16px}.verTodos{width:100%;margin-top:14px;min-height:52px;font-size:17px}.linkbtn{background:none;border:0;padding:0;min-height:0;color:var(--redink);text-decoration:underline;font-size:inherit}
 nav.tabs{padding:8px 6px calc(8px + env(safe-area-inset-bottom));gap:4px}
 nav.tabs a{font-size:18px;min-height:56px;display:flex;align-items:center;justify-content:center;padding:8px 2px;color:var(--ink);opacity:.72}
+nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;background:#25a244;color:#fff;font:700 11px system-ui;border-radius:9px;min-width:18px;height:18px;line-height:18px;padding:0 4px}
+.soltag{color:#1f7a3a;font-weight:600}.solbox{border:2px solid #25a244;background:#eef8ef}.sol{border-top:1px solid var(--line);padding:10px 0}.sol:first-of-type{border-top:0}.sol ul{margin:4px 0;padding-left:18px}
 nav.tabs a.on{opacity:1}body{padding-bottom:96px}
-@media(max-width:420px){nav.tabs a{font-size:16.5px;letter-spacing:-.01em}}
+@media(max-width:420px){nav.tabs a{font-size:16.5px;letter-spacing:-.01em}}@media(max-width:480px){nav.tabs{gap:2px}nav.tabs a{font-size:14.5px;padding:8px 1px}}
 @media(min-width:900px){body{padding-bottom:0}nav.tabs{gap:8px;padding:10px max(4vw,14px)}nav.tabs a{font-size:22px;min-height:54px;padding:10px 24px}}
 body[data-sec=villa] nav.tabs a.on{background:#f93604;color:#fff}body[data-sec=mara] nav.tabs a.on{background:#1d1712;color:#e9d9c4}
 .provgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:12px}
@@ -142,7 +144,7 @@ body[data-sec=villa] .top .out,body[data-sec=mara] .top .out{color:inherit;borde
 .sect.villa{background:#f93604;color:#fff}.sect.mara{background:#1d1712;color:#e9d9c4}.sect.mara img{width:min(86%,420px)}.rubro{font:700 15px Barlow,sans-serif;color:var(--mute);margin:18px 0 2px;padding-bottom:4px;border-bottom:2px solid var(--ink)}
 </style><script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script></head><body>
 <header class="top"><button class="brand" id="brand" data-act="inicio" aria-label="Volver al inicio"><span class="back" hidden>‹</span><img id="brandImg" alt="" hidden><span id="brandTxt"><i></i>Cocina</span></button><div class="sp"></div><span class="who" id="who"></span><button class="av" id="perfilBtn" data-act="perfil" aria-label="Mi perfil" hidden style="width:40px;height:40px;font-size:17px"></button><select id="localSel" aria-label="Local"></select><a class="out sop" id="soporte" hidden target="_blank" rel="noopener" aria-label="Soporte por WhatsApp">Soporte</a><button class="out" id="salir" hidden>Salir</button></header>
-<nav class="tabs" id="tabs" hidden><a href="#panel" data-v="panel">Panel</a><a href="#pedir" data-v="pedir">Pedir</a><a href="#pedidos" data-v="pedidos">Pedidos</a><a href="#stock" data-v="stock">Stock</a><a href="#catalogo" data-v="catalogo">Catálogo</a><a href="#equipo" data-v="equipo" id="tabEquipo" hidden>Equipo</a></nav>
+<nav class="tabs" id="tabs" hidden><a href="#panel" data-v="panel">Panel</a><a href="#pedir" data-v="pedir">Pedir</a><a href="#solicitudes" data-v="solicitudes">Solicitudes<span class="tabn" id="solN" hidden></span></a><a href="#pedidos" data-v="pedidos">Pedidos</a><a href="#stock" data-v="stock">Stock</a><a href="#catalogo" data-v="catalogo">Catálogo</a><a href="#equipo" data-v="equipo" id="tabEquipo" hidden>Equipo</a></nav>
 <main id="main"><p class="empty">Cargando la cocina…</p></main>
 <button id="chatBtn" class="chatbtn" data-act="chat" hidden aria-label="Chat del equipo">💬<span id="chatBadge" hidden></span></button><div id="sheet"></div><datalist id="unidades"><option>kg</option><option>u</option><option>bolsa</option><option>cajón</option><option>bulto</option><option>paq</option><option>caja</option><option>botella</option><option>pack</option><option>barril</option><option>maple</option><option>bandeja</option><option>l</option></datalist>
 <script type="module">
@@ -183,6 +185,10 @@ const locName=id=>locales().find(l=>l.id===id)?.nombre||id;
 const provs=()=>S.cat?.proveedores||[];const prods=()=>S.cat?.productos||[];
 const prov=id=>provs().find(p=>p.id===id);const provsFor=loc=>provs().filter(p=>!p.local||p.local==='ambos'||p.local===loc);const prod=id=>prods().find(p=>p.id===id);
 const me=()=>S.equipo[S.uid]||null;
+const ENVIA=['Jefe/a de cocina','Jefe/a de pedidos'];
+const canSend=()=>S.owner||ENVIA.includes(me()?.rol);
+const jefeTxt=loc=>loc==='mara'?'jefe de pedidos':'jefe de cocina';
+const solsPend=(loc,pv)=>(S.sols||[]).filter(x=>x.local===loc&&x.estado==='pendiente'&&(!pv||x.prov===pv));
 const iniciales=n=>String(n||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'?';
 const avatarIn=uid=>{const m=S.equipo[uid];return m?.foto?`<img src="${m.foto}" alt="">`:esc(iniciales(m?.nombre))};
 const nameOf=uid=>S.equipo[uid]?.nombre||'Alguien';
@@ -250,7 +256,7 @@ function tk(p){
   const items=p.items.map((i,k)=>{const ri=r?.items?.[k];const diff=ri&&num(ri.rec)!==num(i.cant);
     return `<li><span>${esc(i.nombre)}${ri&&ri.cal&&ri.cal!=='bien'?` <span class="lowtag">· calidad ${esc(ri.cal)}</span>`:''}${ri?.nota?`<br><small class="meta">${esc(ri.nota)}</small>`:''}</span><span class="q">${fmt(i.cant)} ${esc(i.unidad)}${ri?` → <span class="${diff?'lowtag':''}">${fmt(num(ri.rec))}</span>`:''}</span></li>`}).join('');
   let acts='';
-  if(p.estado==='pendiente'||p.estado==='enviado')acts=`<div class="row"><a class="btn wa" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">${p.estado==='pendiente'?'Enviar':'Reenviar'} por WhatsApp</a><button class="dark" data-act="abrir" data-id="${p.id}">Recibir</button></div>`;else acts=`<div class="row"><button data-act="abrir" data-id="${p.id}">Ver detalle</button></div>`;
+  if(p.estado==='pendiente'||p.estado==='enviado')acts=`<div class="row">${canSend()?`<a class="btn wa" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">${p.estado==='pendiente'?'Enviar':'Reenviar'} por WhatsApp</a>`:''}<button class="dark" data-act="abrir" data-id="${p.id}">Recibir</button></div>`;else acts=`<div class="row"><button data-act="abrir" data-id="${p.id}">Ver detalle</button></div>`;
   return `<article class="tk"><span class="clip"></span><h3><span>${esc(pv?.nombre||'Proveedor')}</span>${badgeHTML(p)}</h3>
   <div class="meta">${esc(locName(p.local))} · pidió ${esc(nameOf(p.por))} · ${fecha(p.creado)} ${hora(p.creado)}</div>
   <ul>${items}</ul>${p.nota?`<p class="meta">Nota: ${esc(p.nota)}</p>`:''}
@@ -301,12 +307,13 @@ function vPedir(){
   const pvs=provsFor(loc);
   if(!pvs.length)return `<div class="head"><h2>Nuevo pedido para ${esc(locName(loc))}</h2></div><p class="empty">${esc(locName(loc))} todavía no tiene proveedores. Cargalos en Catálogo.</p>`;
   if(d.prov&&!pvs.some(p=>p.id===d.prov)){d.prov=null;d.qty={};d.unit={}}
-  if(!d.prov)return `<div class="head"><div><h2>Nuevo pedido</h2><p class="sub">Elegí a qué proveedor le querés pedir.</p></div></div>
-  <div class="provgrid">${pvs.map(p=>{const n=prods().filter(x=>x.prov===p.id).length,low=prods().filter(x=>x.prov===p.id&&minOf(x,loc)>0&&stockOf(loc,x.id)<minOf(x,loc)).length;return `<button class="provbtn" data-act="prov" data-id="${p.id}">${p.sector?`<small>${esc(p.sector)}</small>`:''}<b>${esc(p.nombre)}</b><span>${n} producto${n===1?'':'s'}${low?` · <span class="lowtag">${low} bajo el mínimo</span>`:''}</span></button>`}).join('')}</div>`;
+  if(!d.prov)return `<div class="head"><div><h2>${canSend()?'Nuevo pedido':'Pedir al '+jefeTxt(loc)}</h2><p class="sub">${canSend()?'Elegí a qué proveedor le querés pedir.':`Elegí el proveedor, cargá lo que necesitás y se lo mandás al ${jefeTxt(loc)}. Él arma el pedido.`}</p></div></div>
+  <div class="provgrid">${pvs.map(p=>{const n=prods().filter(x=>x.prov===p.id).length,low=prods().filter(x=>x.prov===p.id&&minOf(x,loc)>0&&stockOf(loc,x.id)<minOf(x,loc)).length;const ns=solsPend(loc,p.id).length;return `<button class="provbtn" data-act="prov" data-id="${p.id}">${p.sector?`<small>${esc(p.sector)}</small>`:''}<b>${esc(p.nombre)}</b><span>${n} producto${n===1?'':'s'}${low?` · <span class="lowtag">${low} bajo el mínimo</span>`:''}${ns?` · <span class="soltag">📥 ${ns} solicitud${ns>1?'es':''}</span>`:''}</span></button>`}).join('')}</div>`;
   const list=prods().filter(p=>p.prov===d.prov),pvSel=prov(d.prov);
   const lowN=list.filter(p=>minOf(p,loc)>0&&stockOf(loc,p.id)<minOf(p,loc)).length;
   return `<button data-act="provBack" style="margin-bottom:12px">‹ Proveedores</button>
-  <div class="head"><div><h2>${esc(pvSel?.nombre||'Proveedor')}</h2><p class="sub">${pvSel?.sector?esc(pvSel.sector)+' · ':''}Cargá cantidades y mandalo por WhatsApp.</p></div></div>
+  <div class="head"><div><h2>${esc(pvSel?.nombre||'Proveedor')}</h2><p class="sub">${pvSel?.sector?esc(pvSel.sector)+' · ':''}${canSend()?'Cargá cantidades y mandalo por WhatsApp.':'Cargá lo que necesitás y mandáselo al '+jefeTxt(loc)+'.'}</p></div></div>
+  ${solBanner(loc,d)}
   ${S.local==='todos'?`<p class="note">Estás pidiendo para ${esc(locName(loc))}. Cambiá el local arriba si es para otro.</p>`:''}
   <input type="search" data-buscar placeholder="Buscar producto…" value="${esc(d.buscar||'')}" style="margin-bottom:6px" aria-label="Buscar producto">
   <div class="cols"><section>
@@ -314,15 +321,77 @@ function vPedir(){
   <div>${(()=>{const q=(d.buscar||'').trim().toLowerCase();let last=null;
     const vis=list.filter(p=>!q||p.nombre.toLowerCase().includes(q)||num(d.qty[p.id])>0);
     return vis.map(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc),low=mn>0&&st<mn;const h=p.cat&&p.cat!==last?`<h4 class="rubro">${esc(p.cat)}</h4>`:'';last=p.cat||last;
-    return `${h}<div class="pitem ${low?'low':''}" data-n="${esc(p.nombre.toLowerCase())}"><div>${esc(p.nombre)}<small>Hay ${fmt(st)} ${esc(p.unidad)}${mn?` · mínimo ${fmt(mn)}`:''}${p.precio?` · ${money(p.precio)}/${esc(p.unidad)}`:''}</small></div>
+    return `${h}<div class="pitem ${low?'low':''}" data-n="${esc(p.nombre.toLowerCase())}"><div>${esc(p.nombre)}<small>Hay ${fmt(st)} ${esc(p.unidad)}${mn?` · mínimo ${fmt(mn)}`:''}${p.precio?` · ${money(p.precio)}/${esc(p.unidad)}`:''}</small>${yaPidieron(loc,p.id,d)}</div>
   <div class="qbox"><input inputmode="decimal" aria-label="Cantidad ${esc(p.nombre)}" data-q="${p.id}" value="${esc(d.qty[p.id]||'')}" placeholder="0"><select class="usel" data-u="${p.id}" aria-label="Unidad ${esc(p.nombre)}">${[...new Set([p.unidad,...UNIDADES])].map(u=>`<option ${(d.unit?.[p.id]||p.unidad)===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div></div>`}).join('')||(q?'<p class="empty">No hay productos con ese nombre.</p>':'<p class="empty">Este proveedor no tiene productos cargados.</p>')})()}</div>
   <h3 style="margin:22px 0 8px;font-size:19px">Algo que no está en la lista</h3>
   ${d.extra.map((x,k)=>`<div class="row" style="margin-bottom:8px"><input style="flex:3 1 150px" placeholder="Producto" data-xn="${k}" value="${esc(x.n)}"><input style="flex:1 1 70px" inputmode="decimal" placeholder="Cant." data-xq="${k}" value="${esc(x.q)}"><select style="flex:1 1 84px" data-xu="${k}" aria-label="Unidad">${UNIDADES.map(u=>`<option ${(x.u||'kg')===u?'selected':''}>${u}</option>`).join('')}</select></div>`).join('')}
   <button data-act="addExtra">+ Agregar otro</button></section>
-  <aside><div class="panel"><label for="pnota">Nota para el proveedor</label><textarea id="pnota" data-pnota placeholder="Entregar antes de las 10, por la puerta de Falucho…">${esc(d.nota)}</textarea>
+  <aside><div class="panel"><label for="pnota">${canSend()?'Nota para el proveedor':'Nota para el '+jefeTxt(loc)}</label><textarea id="pnota" data-pnota placeholder="Entregar antes de las 10, por la puerta de Falucho…">${esc(d.nota)}</textarea>
   <p class="meta" id="pcount" style="margin:12px 0">${countPedido()}</p>
-  <button class="pri" style="width:100%" data-act="guardarPedido">Guardar y enviar por WhatsApp</button>
-  ${prov(d.prov)?.tel?'':`<p class="sample">Este proveedor no tiene WhatsApp cargado: vas a poder elegir el contacto al abrir WhatsApp.</p>`}</div></aside></div>`;
+  <button class="pri" style="width:100%" data-act="guardarPedido">${canSend()?'Guardar y enviar por WhatsApp':'📥 Enviar al '+jefeTxt(loc)}</button>
+  ${prov(d.prov)?.tel||!canSend()?'':`<p class="sample">Este proveedor no tiene WhatsApp cargado: vas a poder elegir el contacto al abrir WhatsApp.</p>`}</div></aside></div>`;
+}
+function yaPidieron(loc,pid,d){
+  if(d.sols?.length)return '';
+  const L=[];solsPend(loc,d.prov).forEach(x=>x.items.forEach(i=>{if(i.pid===pid)L.push(`${fmt(i.cant)} ${esc(i.unidad)} · ${esc(nameOf(x.por))}`)}));
+  return L.length?`<small class="soltag">📥 Ya pidieron: ${L.join(', ')}</small>`:'';
+}
+function solBanner(loc,d){
+  const L=solsPend(loc,d.prov);
+  if(d.sols?.length)return `<div class="panel solbox" style="margin-bottom:12px"><b>📥 Este pedido incluye ${d.sols.length} solicitud${d.sols.length>1?'es':''}</b><p class="meta" style="margin:4px 0 0">De ${[...new Set(L.filter(x=>d.sols.includes(x.id)).map(x=>nameOf(x.por)))].map(esc).join(', ')}. Ya están sumadas en las cantidades: revisalas y mandalo.</p></div>`;
+  if(!L.length)return '';
+  if(!canSend())return `<div class="panel solbox" style="margin-bottom:12px"><b>📥 Ya hay ${L.length} solicitud${L.length>1?'es':''} para este proveedor</b><p class="meta" style="margin:4px 0 0">Fijate abajo en cada producto qué pidieron, así no se duplica.</p></div>`;
+  return `<div class="panel solbox" style="margin-bottom:12px"><b>📥 El equipo pidió cosas a este proveedor (${L.length} solicitud${L.length>1?'es':''})</b>
+  <ul class="meta" style="margin:6px 0;padding-left:18px">${solTotales(L).map(t=>`<li><b>${fmt(t.cant)} ${esc(t.unidad)} ${esc(t.nombre)}</b> (${t.quien.map(esc).join(', ')})</li>`).join('')}</ul>
+  <button class="pri" data-act="cargarSols">Sumar todo al pedido</button></div>`;
+}
+function solTotales(L){
+  const m={};L.forEach(x=>x.items.forEach(i=>{const k=(i.pid||i.nombre.toLowerCase())+'|'+i.unidad;(m[k]=m[k]||{nombre:i.nombre,unidad:i.unidad,cant:0,quien:[]});m[k].cant+=num(i.cant);m[k].quien.push(`${nameOf(x.por)} ${fmt(i.cant)}`)}));
+  return Object.values(m);
+}
+function cargarSols(){
+  const d=S.pedir,L=solsPend(workLocal(),d.prov);if(!L.length)return;
+  L.forEach(x=>x.items.forEach(i=>{const p=i.pid&&prod(i.pid);
+    if(p&&p.prov===d.prov&&(!num(d.qty[p.id])||(d.unit[p.id]||p.unidad)===i.unidad)){d.qty[p.id]=String(num(d.qty[p.id])+num(i.cant));if(i.unidad!==p.unidad)d.unit[p.id]=i.unidad}
+    else{const e=d.extra.find(e=>e.n.trim().toLowerCase()===i.nombre.toLowerCase()&&(e.u||'kg')===i.unidad);if(e)e.q=String(num(e.q)+num(i.cant));else d.extra.push({n:i.nombre,q:String(i.cant),u:i.unidad})}}));
+  d.sols=L.map(x=>x.id);
+}
+async function pushUids(uids,title,body,url){
+  const av=S.cat?.avisos||{};if(!av.worker||!av.pushKey||!uids.length)return;
+  try{const sn=await getDocs(collection(db,'avisos'));let subs=[];
+    sn.docs.forEach(d=>{if(uids.includes(d.id))subs.push(...(d.data().subs||[]))});
+    if(uids.includes(S.ownerUid))subs.push(...(av.subs||[]));
+    const seen=new Set();subs=subs.filter(x=>x?.endpoint&&!seen.has(x.endpoint)&&seen.add(x.endpoint));
+    for(let i=0;i<subs.length;i+=10)fetch(av.worker,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:av.pushKey,title,body,url:location.href.split('#')[0]+url,subs:subs.slice(i,i+10)})}).catch(e=>console.warn(e));
+  }catch(e){console.warn('aviso',e)}
+}
+const jefesDe=loc=>{const j=Object.entries(S.equipo).filter(([id,m])=>m.activo&&ENVIA.includes(m.rol)&&(m.local===loc||m.local==='todos')).map(([id])=>id);return j.length?j:[S.ownerUid]};
+async function guardarSolicitud(){
+  const items=pedidoItems();if(!items.length){S.note='Cargá al menos una cantidad.';render(true);return}
+  const loc=workLocal(),d=S.pedir,pv=prov(d.prov);
+  await w(()=>addDoc(collection(db,'solicitudes'),{local:loc,prov:d.prov,items,nota:d.nota.trim(),por:S.uid,creado:Date.now(),estado:'pendiente'}),`Listo, se lo mandaste al ${jefeTxt(loc)}.`);
+  S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};render(true);scrollTo(0,0);
+  pushUids(jefesDe(loc).filter(u=>u!==S.uid),`📥 Solicitud de ${nameOf(S.uid)} · ${locName(loc)}`,`Para ${pv?.nombre||'proveedor'}:\n${items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join('\n')}`,'#solicitudes');
+}
+function vSolicitudes(){
+  const loc=workLocal(),env=canSend(),pend=solsPend(loc),sem=Date.now()-7*864e5;
+  const res=(S.sols||[]).filter(x=>x.local===loc&&x.estado!=='pendiente'&&(x.resp?.t||x.creado)>sem).slice(0,40);
+  const porProv={};pend.forEach(x=>(porProv[x.prov]=porProv[x.prov]||[]).push(x));
+  const solHTML=x=>`<div class="sol"><b>${esc(nameOf(x.por))}</b> <span class="meta">· ${fecha(x.creado)} ${hora(x.creado)}</span><ul>${x.items.map(i=>`<li>${fmt(i.cant)} ${esc(i.unidad)} ${esc(i.nombre)}</li>`).join('')}</ul>${x.nota?`<p class="meta" style="margin:0">Nota: ${esc(x.nota)}</p>`:''}
+    <div class="row" style="margin-top:6px">${x.por===S.uid||env?`<button class="del" data-act="solDel" data-id="${x.id}">Borrar</button>`:''}${env?`<button data-act="solNo" data-id="${x.id}">No se pide</button>`:''}</div></div>`;
+  const grupos=Object.entries(porProv).map(([pv,L])=>`<div class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">${esc(prov(pv)?.nombre||'Proveedor')}</h3><span class="soltag">${L.length} solicitud${L.length>1?'es':''}</span></div>
+    <p class="meta" style="margin:8px 0 2px"><b>Total a pedir:</b></p><ul style="margin:0 0 8px;padding-left:18px">${solTotales(L).map(t=>`<li><b>${fmt(t.cant)} ${esc(t.unidad)} ${esc(t.nombre)}</b> <span class="meta">(${t.quien.map(esc).join(', ')})</span></li>`).join('')}</ul>
+    ${env?`<button class="pri" style="width:100%;margin-bottom:6px" data-act="solArmar" data-id="${pv}">🛒 Armar pedido a ${esc(prov(pv)?.nombre||'proveedor')}</button>`:''}
+    <details open><summary class="meta" style="cursor:pointer">Ver cada solicitud</summary>${L.map(solHTML).join('')}</details></div>`).join('');
+  return `<div class="head"><div><h2>Solicitudes</h2><p class="sub">${env?'Lo que pidió el equipo, sumado por proveedor. Armá el pedido y mandalo.':`Lo que pidió el equipo al ${jefeTxt(loc)}. Fijate acá antes de pedir algo, así no se duplica.`}</p></div>${env?'':'<a class="btn pri" href="#pedir">+ Pedir algo</a>'}</div>
+  ${grupos||'<p class="empty">No hay solicitudes pendientes. 🎉</p>'}
+  ${res.length?`<h3 class="ptit" style="margin-top:22px">Últimos 7 días</h3><div class="list">${res.map(x=>`<div class="li"><div>${esc(prov(x.prov)?.nombre||'Proveedor')} · ${esc(nameOf(x.por))}<small>${x.items.map(i=>`${fmt(i.cant)} ${esc(i.unidad)} ${esc(i.nombre)}`).join(', ')}</small>${x.estado==='no'&&x.resp?.nota?`<small>“${esc(x.resp.nota)}”</small>`:''}</div><span class="badge ${x.estado==='pedido'?'b-recibido':'b-fno'}">${x.estado==='pedido'?'Pedido ✓':'No se pide'}</span></div>`).join('')}</div>`:''}`;
+}
+async function solResolver(ids,estado,nota,pedidoId){
+  const t=Date.now();
+  for(const id of ids){const x=(S.sols||[]).find(y=>y.id===id);if(!x||x.estado!=='pendiente')continue;
+    await updateDoc(doc(db,'solicitudes',id),{estado,resp:{t,por:S.uid,...(nota?{nota}:{})},...(pedidoId?{pedidoId}:{})});
+    if(x.por!==S.uid)pushUids([x.por],estado==='pedido'?`✅ Tu solicitud ya se pidió`:`🚫 Tu solicitud no se pide`,`${prov(x.prov)?.nombre||'Proveedor'}: ${x.items.map(i=>`${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join(', ')}${nota?`\n"${nota}"`:''}`,'#solicitudes');}
 }
 function pedidoItems(){const d=S.pedir;
   return [...prods().filter(p=>p.prov===d.prov&&num(d.qty[p.id])>0).map(p=>{const u=d.unit?.[p.id]||p.unidad;return {pid:p.id,nombre:p.nombre,unidad:u,cant:num(d.qty[p.id]),...(p.precio&&u===p.unidad?{precio:p.precio}:{})}}),
@@ -473,7 +542,7 @@ function vPedido(id){
   const reclamo=falt.length&&pv?'https://wa.me/'+String(pv.tel||'').replace(/\D/g,'')+'?text='+encodeURIComponent(`Hola! En el pedido del ${fecha(p.creado)} para ${locName(p.local)} faltó:\n${falt.map(o=>`• ${fmt(num(o.i.cant)-o.x.rec)} ${o.i.unidad} ${o.i.nombre}`).join('\n')}\n¿Lo podés mandar? Gracias!`):'';
   return `<button data-act="volver" style="margin-bottom:14px">‹ Todos los pedidos</button>
   <div class="head"><div><h2>${esc(pv?.nombre||'Proveedor')}</h2><p class="sub">${esc(locName(p.local))} · pidió ${esc(nameOf(p.por))} el ${fecha(p.creado)} a las ${hora(p.creado)}</p></div>${badgeHTML(p,1)}</div>
-  ${abierto?`<div class="row" style="margin-bottom:16px"><a class="btn wa" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">${p.estado==='pendiente'?'Enviar':'Reenviar'} por WhatsApp</a><button class="dark" data-act="addOpen" data-id="${p.id}">➕ Agregar productos</button><button class="del" data-act="delPed" data-id="${p.id}">🗑 Eliminar pedido</button></div>${S.addOpen===p.id?vAgregar(p):''}`:''}
+  ${abierto&&canSend()?`<div class="row" style="margin-bottom:16px"><a class="btn wa" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">${p.estado==='pendiente'?'Enviar':'Reenviar'} por WhatsApp</a><button class="dark" data-act="addOpen" data-id="${p.id}">➕ Agregar productos</button><button class="del" data-act="delPed" data-id="${p.id}">🗑 Eliminar pedido</button></div>${S.addOpen===p.id?vAgregar(p):''}`:''}
   ${p.nota?`<p class="note">Nota del pedido: ${esc(p.nota)}</p>`:''}
   <div class="detalle">${difsBox(p)}${vRec(p)}
   <div class="panel"><h3>Fotos del remito</h3>
@@ -639,11 +708,12 @@ function render(force){
   $('#chatBtn').hidden=!sec;if(sec){ensureChat(sec);updChatBadge()}
   if(!inApp){$('#tabs').hidden=true;$('#main').innerHTML=vAcceso();return}
   if(!sec){$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vInicio();return}
-  const L=lvl(),views=[...(L<=2?['panel']:[]),'pedir','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
+  const L=lvl();const views=[...(L<=2?['panel']:[]),'pedir','solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
   document.querySelectorAll('#tabs a').forEach(x=>x.hidden=!views.includes(x.dataset.v));
   let v=location.hash.slice(1),pid=null;if(v==='chat'){S.view='chat';document.querySelectorAll('#tabs a').forEach(x=>x.classList.remove('on'));$('#chatBtn').hidden=true;$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vChat();return}if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v=L<=2?'panel':'pedidos';
+  {const n=solsPend(S.local).length,b=$('#solN');b.hidden=!n||!canSend();b.textContent=n>9?'9+':n}
   S.view=v;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
-  const html=pid?vPedido(pid):{panel:vPanel,pedir:vPedir,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo}[v]();
+  const html=pid?vPedido(pid):{panel:vPanel,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo}[v]();
   $('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
 }
 document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(S.pending&&!(a&&a.closest&&a.closest('#main')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))render()},50));
@@ -664,11 +734,14 @@ async function push(title,message,tags){const av=S.cat?.avisos||{};
 const hist=(p,a)=>[...(p.hist||[]),{t:Date.now(),uid:S.uid,a}].slice(-30);
 
 async function guardarPedido(){
+  if(!canSend())return guardarSolicitud();
+  const solIds=S.pedir.sols||[];
   const items=pedidoItems();if(!items.length){S.note='Cargá al menos una cantidad.';render(true);return}
   const loc=workLocal(),t=Date.now();
   const p={local:loc,prov:S.pedir.prov,items,nota:S.pedir.nota.trim(),por:S.uid,creado:t,estado:'pendiente',hist:[{t,uid:S.uid,a:'armó un pedido'}]};
   let ref;await w(async()=>{ref=await addDoc(collection(db,'pedidos'),p)});
   p.id=ref.id;S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};
+  if(solIds.length)solResolver(solIds,'pedido','',p.id).catch(e=>console.warn(e));
   {const tot=items.reduce((a,i)=>a+(i.precio||0)*i.cant,0);push(`🛒 Pedido nuevo · ${locName(loc)}`,`${nameOf(S.uid)} armó un pedido a ${prov(p.prov)?.nombre||'proveedor'}:\n${items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join('\n')}${tot?`\nEstimado: ${money(tot)}`:''}`,['shopping_cart'])}
   $('#sheet').innerHTML=`<div class="sheet"><div><h3>Pedido guardado</h3><p class="sub">Ahora mandalo. Se abre WhatsApp con el mensaje listo.</p><pre>${esc(msgText(p))}</pre>
   <div class="row"><a class="btn wa" style="flex:1" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">Abrir WhatsApp</a><button data-act="copy" data-id="${p.id}">Copiar texto</button></div>
@@ -742,9 +815,15 @@ document.addEventListener('click',e=>{
   if(a==='reintentar'){location.reload();return}
   if(a==='modo'){S.authMode=id;S.note=''}
   if(a==='olvide'){const em=$('#l-e')?.value.trim();if(!em){S.note='Escribí tu mail arriba y tocá de nuevo "Me olvidé la clave".'}else{sendPasswordResetEmail(auth,em).then(()=>{S.note='Te mandamos un mail para cambiar la clave. Fijate en spam si no llega.';render(true)},er=>{S.note=errMsg(er);render(true)});return}}
-  if(a==='prov'){S.pedir.prov=id;S.pedir.qty={};S.pedir.unit={};S.pedir.buscar=''}
+  if(a==='prov'){S.pedir.prov=id;S.pedir.qty={};S.pedir.unit={};S.pedir.extra=[];S.pedir.sols=null;S.pedir.buscar=''}
+  if(a==='cargarSols'){cargarSols()}
   if(a==='sugerir'){const loc=workLocal();prods().filter(p=>p.prov===S.pedir.prov).forEach(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc);if(mn>0&&st<mn)S.pedir.qty[p.id]=String(Math.ceil((mn-st)*10)/10)})}
   if(a==='addExtra')S.pedir.extra.push({n:'',q:'',u:'kg'});
+  if(a==='solArmar'){S.pedir={prov:id,qty:{},unit:{},extra:[],nota:'',buscar:''};cargarSols();location.hash='pedir';return}
+  if(a==='solDel'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Borrar esta solicitud?</h3><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="solDelOk" data-id="${id}">Sí, borrar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
+  if(a==='solDelOk'){$('#sheet').innerHTML='';deleteDoc(doc(db,'solicitudes',id)).catch(e=>{S.note=errMsg(e);render(true)});return}
+  if(a==='solNo'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿No se pide esta solicitud?</h3><p class="sub">Le avisamos a quien la pidió.</p><label for="sno-n">Motivo (opcional)</label><input id="sno-n" placeholder="Ej: hay stock, ya se pidió ayer"><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="solNoOk" data-id="${id}">No se pide</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
+  if(a==='solNoOk'){const n=($('#sno-n')?.value||'').trim().slice(0,200);$('#sheet').innerHTML='';solResolver([id],'no',n).catch(e=>{S.note=errMsg(e);render(true)});return}
   if(a==='guardarPedido'){guardarPedido().catch(()=>{});return}
   if(a==='abrir'){location.hash='p-'+id;return}
   if(a==='volver'){location.hash='pedidos';return}
@@ -842,13 +921,14 @@ function subscribe(){
   const err=e=>{done();console.error(e);if(e.code==='permission-denied'){S.stage='blocked'}else{S.note='Se cortó la conexión con los datos. Recargá la página.'}render(true)};
   S.subs.push(onSnapshot(doc(db,'cfg','catalogo'),s=>{S.cat=s.exists()?s.data():{...SEED,proveedores:[],productos:[]};if(S.catDraft&&S.view!=='catalogo')S.catDraft=null;done();render()},err));
   S.subs.push(onSnapshot(query(collection(db,'pedidos'),orderBy('creado','desc'),limit(300)),s=>{S.pedidos=s.docs.map(d=>({id:d.id,...d.data()}));render()},err));
+  S.subs.push(onSnapshot(query(collection(db,'solicitudes'),orderBy('creado','desc'),limit(300)),s=>{S.sols=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>console.warn('sols',e)));
   S.subs.push(onSnapshot(collection(db,'stock'),s=>{S.stock={};s.docs.forEach(d=>S.stock[d.id]=d.data());render()},err));
   S.subs.push(onSnapshot(collection(db,'equipo'),s=>{S.equipo={};s.docs.forEach(d=>S.equipo[d.id]=d.data());
     const m=S.equipo[S.uid];if(!S.owner&&(!m||!m.activo)){S.stage='blocked'}render()},err));
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 onAuthStateChanged(auth,async u=>{
-  S.subs.forEach(f=>f());S.subs=[];Object.keys(chatSubs).forEach(k=>{chatSubs[k]();delete chatSubs[k]});S.chat={};S.cat=null;S.equipo={};S.pedidos=[];S.stock={};S.note='';
+  S.subs.forEach(f=>f());S.subs=[];Object.keys(chatSubs).forEach(k=>{chatSubs[k]();delete chatSubs[k]});S.chat={};S.sols=[];S.cat=null;S.equipo={};S.pedidos=[];S.stock={};S.note='';
   S.uid=u?.uid||null;
   if(!u){S.stage='login';render(true);return}
   S.stage='loading';render(true);
