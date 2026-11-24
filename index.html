@@ -149,7 +149,7 @@ body[data-sec=villa] .top .out,body[data-sec=mara] .top .out{color:inherit;borde
 <button id="chatBtn" class="chatbtn" data-act="chat" hidden aria-label="Chat del equipo">💬<span id="chatBadge" hidden></span></button><div id="sheet"></div><datalist id="unidades"><option>kg</option><option>u</option><option>bolsa</option><option>cajón</option><option>bulto</option><option>paq</option><option>caja</option><option>botella</option><option>pack</option><option>barril</option><option>maple</option><option>bandeja</option><option>l</option></datalist>
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,sendPasswordResetEmail,updatePassword} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {getFirestore,doc,collection,onSnapshot,getDoc,getDocs,setDoc,updateDoc,addDoc,deleteDoc,query,orderBy,limit,where} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const CFG={apiKey:"AIzaSyAZnrlg52IRYs8FJ3SGIu9hBekbiwdkQ2Y",authDomain:"cocina-villa-alumine.firebaseapp.com",projectId:"cocina-villa-alumine",storageBucket:"cocina-villa-alumine.firebasestorage.app",messagingSenderId:"198736704033",appId:"1:198736704033:web:091d9e26862d441779e960"};
@@ -185,6 +185,10 @@ const locName=id=>locales().find(l=>l.id===id)?.nombre||id;
 const provs=()=>S.cat?.proveedores||[];const prods=()=>S.cat?.productos||[];
 const prov=id=>provs().find(p=>p.id===id);const provsFor=loc=>provs().filter(p=>!p.local||p.local==='ambos'||p.local===loc);const prod=id=>prods().find(p=>p.id===id);
 const me=()=>S.equipo[S.uid]||null;
+const DOM_U='@usuarios.villaalumine.com';
+const userSlug=u=>String(u||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'.').replace(/[^a-z0-9._-]/g,'');
+const loginMail=u=>String(u).includes('@')?String(u).trim().toLowerCase():userSlug(u)+DOM_U;
+const usuarioDe=m=>m?.usuario||(String(m?.email||'').endsWith(DOM_U)?m.email.slice(0,-DOM_U.length):'');
 const ENVIA=['Jefe/a de cocina','Jefe/a de pedidos','Encargado/a','Administración'];
 const canSend=()=>S.owner||ENVIA.includes(me()?.rol);
 const jefeTxt=loc=>loc==='mara'?'jefe de pedidos':'jefe de cocina';
@@ -213,14 +217,14 @@ function vAcceso(){
   if(S.stage==='error')return `<div class="login"><h2>No pudimos conectar</h2><p class="sub">${esc(S.note)}</p><button data-act="reintentar" class="pri" style="margin-top:16px">Probar de nuevo</button></div>`;
   const signup=S.authMode==='dueño';
   return `<div class="login"><h2>${signup?'Crear la cuenta del dueño':'Entrar a la cocina'}</h2>
-  <p class="sub">${signup?'Esto se hace una sola vez. El que crea esta cuenta queda como dueño y es el que da de alta al equipo.':'Usá el mail y la clave que te dio el dueño.'}</p>
+  <p class="sub">${signup?'Esto se hace una sola vez. El que crea esta cuenta queda como dueño y es el que da de alta al equipo.':'Usá el usuario y la contraseña que te dieron.'}</p>
   ${S.note?`<p class="note" style="margin-top:14px">${esc(S.note)}</p>`:''}
   <form data-form="${signup?'signup':'login'}" class="panel" style="margin-top:16px">
   ${signup?'<label for="l-n">Tu nombre</label><input id="l-n" name="nombre" required autocomplete="name">':''}
-  <label for="l-e" ${signup?'style="margin-top:12px"':''}>Mail</label><input id="l-e" name="email" type="email" required autocomplete="email">
-  <label for="l-p" style="margin-top:12px">Clave</label><input id="l-p" name="clave" type="password" required minlength="6" autocomplete="${signup?'new-password':'current-password'}">
+  <label for="l-e" ${signup?'style="margin-top:12px"':''}>${signup?'Mail':'Usuario'}</label><input id="l-e" name="email" ${signup?'type="email" autocomplete="email"':'autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="username" placeholder="Ej: pedro"'} required>
+  <label for="l-p" style="margin-top:12px">Contraseña</label><input id="l-p" name="clave" type="password" required minlength="6" autocomplete="${signup?'new-password':'current-password'}">
   <button class="pri" style="width:100%;margin-top:16px" type="submit">${signup?'Crear cuenta de dueño':'Entrar'}</button></form>
-  <div class="row" style="justify-content:space-between">${signup?'<button data-act="modo" data-id="login">Ya tengo cuenta</button>':'<button data-act="olvide">Me olvidé la clave</button><button data-act="modo" data-id="dueño">Primera vez (dueño)</button>'}</div></div>`;
+  <div class="row" style="justify-content:space-between">${signup?'<button data-act="modo" data-id="login">Ya tengo cuenta</button>':'<button data-act="olvide">Me olvidé la contraseña</button><button data-act="modo" data-id="dueño">Primera vez (dueño)</button>'}</div></div>`;
 }
 
 /* ---------- vistas ---------- */
@@ -571,6 +575,8 @@ function abrirPerfil(){
   <h3>${esc(m.nombre||'')}</h3><p class="sub">${esc(S.owner?'Administrador':m.rol||'')}</p>
   <label class="btn" style="cursor:pointer">📷 Cambiar foto<input type="file" accept="image/*" data-perfilfoto hidden></label>
   <form data-form="perfilNombre" style="text-align:left;margin-top:14px"><label for="pf-n">Nombre de usuario</label><div class="row"><input id="pf-n" name="nombre" required maxlength="40" value="${esc(m.nombre||'')}" style="flex:1"><button class="pri" type="submit" style="width:auto;margin-top:0">Guardar</button></div></form>
+  <form data-form="perfilClave" style="text-align:left;margin-top:14px"><label for="pf-c">Cambiar contraseña</label><div class="row"><input id="pf-c" name="clave" type="password" minlength="6" required autocomplete="new-password" placeholder="Nueva (mínimo 6)" style="flex:1"><button class="pri" type="submit" style="width:auto;margin-top:0">Cambiar</button></div></form>
+  ${usuarioDe(m)?`<p class="meta" style="margin:8px 0 0">Tu usuario para entrar: <b>${esc(usuarioDe(m))}</b></p>`:''}
   <a class="btn wa" href="${esc(sopLink())}" target="_blank" rel="noopener">💬 Soporte</a>
   <button class="dark" data-act="salir">Salir de la cuenta</button>
   <button data-act="closeSheet">Cerrar</button></div></div>`;
@@ -667,20 +673,20 @@ function vEquipo(){
   <details class="panel" style="margin-bottom:16px"><summary><b>Qué puede hacer cada puesto</b></summary><ul class="meta" style="margin:8px 0 0;padding-left:18px">
   <li><b>Administrador (vos):</b> todo, en los dos locales.</li><li><b>Encargado/a y Administración:</b> Panel, mandar pedidos a proveedores, recibir, stock y editar proveedores y precios.</li>
   <li><b>Jefe/a de cocina y Jefe/a de pedidos:</b> mandar pedidos a proveedores (con las solicitudes del equipo), recibir, stock y conteos. Ve el catálogo pero no lo edita.</li><li><b>Cocinero/a y Bartender:</b> le piden al jefe (solicitudes) y reciben mercadería.</li></ul></details>
-  <div class="cols"><section><div class="list">${ms.map(([id,m])=>`<div class="li" style="flex-wrap:wrap"><div style="flex:1 1 180px">${esc(m.nombre)}${m.activo?'':' <span class="badge">Desactivado</span>'}<small>${esc(m.email)}</small></div>
+  <div class="cols"><section><div class="list">${ms.map(([id,m])=>`<div class="li" style="flex-wrap:wrap"><div style="flex:1 1 180px">${esc(m.nombre)}${m.activo?'':' <span class="badge">Desactivado</span>'}<small>${usuarioDe(m)?`Usuario: <b>${esc(usuarioDe(m))}</b> · Contraseña: ${S.verClave===id?`<b>${esc(S.claves?.[id]||'(no guardada)')}</b>`:`<button class="linkbtn" data-act="verClave" data-id="${id}">ver</button>`}`:esc(m.email)}</small></div>
   <div class="row" style="flex:2 1 300px"><select style="flex:1 1 140px" aria-label="Puesto" data-eq="${id}" data-f="rol">${ROLES.map(r=>`<option ${m.rol===r?'selected':''}>${r}</option>`).join('')}</select><select style="flex:1 1 120px" aria-label="Local" data-eq="${id}" data-f="local">${locOpts(m.local)}</select>
-  <button data-act="activo" data-id="${id}">${m.activo?'Desactivar':'Reactivar'}</button><button data-act="reset" data-id="${id}">Mail para cambiar clave</button></div></div>`).join('')||'<p class="empty">Todavía no diste de alta a nadie.</p>'}</div></section>
+  <button data-act="activo" data-id="${id}">${m.activo?'Desactivar':'Reactivar'}</button>${usuarioDe(m)?'':`<button data-act="reset" data-id="${id}">Mail para cambiar clave</button>`}</div></div>`).join('')||'<p class="empty">Todavía no diste de alta a nadie.</p>'}</div></section>
   <aside>
   <div class="panel"><h3>Notificaciones en tu celu</h3><p class="meta">Te llega un aviso con el ícono de Cocina cuando alguien arma un pedido, recibe mercadería o escribe en el chat, aunque la app esté cerrada.</p>
   ${pushInfo()}</div>
   <form class="panel" data-form="alta"><h3>Dar de alta</h3>
   <label for="e-n" style="margin-top:10px">Nombre</label><input id="e-n" name="nombre" required placeholder="Como le dicen en la cocina">
-  <label for="e-e" style="margin-top:10px">Mail</label><input id="e-e" name="email" type="email" required>
-  <label for="e-p" style="margin-top:10px">Clave inicial (mínimo 6)</label><input id="e-p" name="clave" required minlength="6" autocomplete="off">
+  <label for="e-e" style="margin-top:10px">Usuario (para entrar)</label><input id="e-e" name="usuario" required autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="Ej: pedro">
+  <label for="e-p" style="margin-top:10px">Contraseña (mínimo 6)</label><input id="e-p" name="clave" required minlength="6" autocomplete="off">
   <label for="e-r" style="margin-top:10px">Puesto</label><select id="e-r" name="rol">${ROLES.map(r=>`<option>${r}</option>`).join('')}</select>
   <label for="e-l" style="margin-top:10px">Local</label><select id="e-l" name="local">${locOpts(locales()[0].id)}</select>
   <button class="pri" style="width:100%;margin-top:16px" type="submit">Dar de alta</button>
-  <p class="sample">Pasale el link de la app, su mail y la clave. Después puede cambiarla con "Me olvidé la clave".</p></form></aside></div>`;
+  <p class="sample">Pasale el link de la app, su usuario y su contraseña. Las contraseñas quedan guardadas acá, solo vos las ves.</p></form></aside></div>`;
 }
 
 function vInicio(){
@@ -773,11 +779,13 @@ async function guardarCat(){
   await w(()=>setDoc(doc(db,'cfg','catalogo'),{...S.cat,locales:locales(),proveedores:d.proveedores,productos:d.productos}),'Catálogo guardado');S.catDraft=null;render(true);
 }
 async function darAlta(f){
-  const fd=new FormData(f),m={nombre:String(fd.get('nombre')).trim(),email:String(fd.get('email')).trim().toLowerCase(),rol:fd.get('rol'),local:fd.get('local'),activo:true,alta:Date.now()};
+  const fd=new FormData(f),usuario=userSlug(fd.get('usuario')),clave=String(fd.get('clave'));
+  if(!usuario){S.note='El usuario tiene que tener letras o números.';render(true);return}
+  const m={nombre:String(fd.get('nombre')).trim(),usuario,email:usuario+DOM_U,rol:fd.get('rol'),local:fd.get('local'),activo:true,alta:Date.now()};
   let cred;
-  try{cred=await createUserWithEmailAndPassword(auth2,m.email,String(fd.get('clave')))}catch(e){S.note=errMsg(e);render(true);return}
+  try{cred=await createUserWithEmailAndPassword(auth2,m.email,clave)}catch(e){S.note=e?.code==='auth/email-already-in-use'?`Ya existe el usuario "${usuario}". Elegí otro.`:errMsg(e);render(true);return}
   await signOut(auth2).catch(()=>{});
-  await w(()=>setDoc(doc(db,'equipo',cred.user.uid),m),`${m.nombre} ya puede entrar con ${m.email}`);
+  await w(async()=>{await setDoc(doc(db,'equipo',cred.user.uid),m);await setDoc(doc(db,'claves',cred.user.uid),{clave,t:Date.now()})},`${m.nombre} ya puede entrar. Usuario: ${usuario} · Contraseña: ${clave}`);
 }
 
 /* ---------- eventos ---------- */
@@ -814,7 +822,7 @@ document.addEventListener('click',e=>{
   if(a==='entrar'){S.local=id;try{localStorage.setItem('cocina.sec',id)}catch(x){}S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};S.catDraft=null;S.conteo={};location.hash=lvl()<=2?'panel':'pedidos';return}
   if(a==='reintentar'){location.reload();return}
   if(a==='modo'){S.authMode=id;S.note=''}
-  if(a==='olvide'){const em=$('#l-e')?.value.trim();if(!em){S.note='Escribí tu mail arriba y tocá de nuevo "Me olvidé la clave".'}else{sendPasswordResetEmail(auth,em).then(()=>{S.note='Te mandamos un mail para cambiar la clave. Fijate en spam si no llega.';render(true)},er=>{S.note=errMsg(er);render(true)});return}}
+  if(a==='olvide'){const em0=$('#l-e')?.value.trim();if(em0&&!em0.includes('@')){S.note='Pedile tu contraseña al administrador: él tiene guardadas las de todos.';render(true);return}const em=em0;if(!em){S.note='Escribí tu mail arriba y tocá de nuevo "Me olvidé la clave".'}else{sendPasswordResetEmail(auth,em).then(()=>{S.note='Te mandamos un mail para cambiar la clave. Fijate en spam si no llega.';render(true)},er=>{S.note=errMsg(er);render(true)});return}}
   if(a==='prov'){S.pedir.prov=id;S.pedir.qty={};S.pedir.unit={};S.pedir.extra=[];S.pedir.sols=null;S.pedir.buscar=''}
   if(a==='cargarSols'){cargarSols()}
   if(a==='sugerir'){const loc=workLocal();prods().filter(p=>p.prov===S.pedir.prov).forEach(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc);if(mn>0&&st<mn)S.pedir.qty[p.id]=String(Math.ceil((mn-st)*10)/10)})}
@@ -843,6 +851,7 @@ document.addEventListener('click',e=>{
   if(a==='activarPush'){activarPush();return}
   if(a==='probarPush'){push('🔔 Prueba de la cocina','Si ves esto, las notificaciones funcionan.',['bell']).then(()=>toast('Prueba enviada. En unos segundos te tiene que llegar la notificación.'));return}
   if(a==='activo'){const m=S.equipo[id];w(()=>updateDoc(doc(db,'equipo',id),{activo:!m.activo})).catch(()=>{});return}
+  if(a==='verClave'){S.verClave=S.verClave===id?null:id;render(true);return}
   if(a==='reset'){const m=S.equipo[id];sendPasswordResetEmail(auth,m.email).then(()=>toast(`Le mandamos a ${m.nombre} un mail para cambiar la clave.`),er=>{S.note=errMsg(er);render(true)});return}
   render(true);
 });
@@ -900,12 +909,13 @@ document.addEventListener('keydown',e=>{if(!e.target.matches('textarea[data-chat
 document.addEventListener('submit',async e=>{
   const f=e.target;e.preventDefault();const fd=new FormData(f);
   if(f.dataset.form==='chat'){enviarChat(f);return}
+  if(f.dataset.form==='perfilClave'){const c=String(fd.get('clave'));try{await updatePassword(auth.currentUser,c);await setDoc(doc(db,'claves',S.uid),{clave:c,t:Date.now()}).catch(()=>{});$('#sheet').innerHTML='';toast('Contraseña cambiada.')}catch(er){S.note=er?.code==='auth/requires-recent-login'?'Por seguridad, salí y volvé a entrar, y ahí cambiá la contraseña.':errMsg(er);$('#sheet').innerHTML='';render(true)}return}
   if(f.dataset.form==='perfilNombre'){const n=f.nombre.value.trim().slice(0,40);if(!n)return;updateDoc(doc(db,'equipo',S.uid),{nombre:n}).then(()=>{S.equipo[S.uid]={...S.equipo[S.uid],nombre:n};$('#sheet').innerHTML='';toast('Nombre actualizado');render(true)}).catch(err=>{S.note=errMsg(err);render(true)});return}
   if(f.dataset.form==='rec'){guardarRec(f.dataset.id).catch(()=>{});return}
   if(f.dataset.form==='alta'){await darAlta(f);return}
   if(f.dataset.form==='cmb'){w(()=>updateDoc(doc(db,'cfg','catalogo'),{avisos:{...(S.cat?.avisos||{}),cmb:String(fd.get('cmb')).trim()}}),'Guardado. Tocá Probar para ver si te llega.').catch(()=>{});return}
   if(f.dataset.form==='avisos'){let tel=String(fd.get('tel')).replace(/\D/g,'');if(tel&&!tel.startsWith('54'))tel='549'+tel;w(()=>updateDoc(doc(db,'cfg','catalogo'),{avisos:{...(S.cat?.avisos||{}),tel,modo:fd.get('modo')}}),'Avisos guardados').catch(()=>{});return}
-  if(f.dataset.form==='login'){try{await signInWithEmailAndPassword(auth,String(fd.get('email')).trim(),String(fd.get('clave')))}catch(er){S.note=errMsg(er);render(true)}return}
+  if(f.dataset.form==='login'){try{await signInWithEmailAndPassword(auth,loginMail(fd.get('email')),String(fd.get('clave')))}catch(er){S.note=errMsg(er);render(true)}return}
   if(f.dataset.form==='signup'){S.claimName=String(fd.get('nombre')).trim();try{await createUserWithEmailAndPassword(auth,String(fd.get('email')).trim(),String(fd.get('clave')))}catch(er){S.note=errMsg(er);render(true)}return}
 });
 
@@ -922,6 +932,7 @@ function subscribe(){
   S.subs.push(onSnapshot(doc(db,'cfg','catalogo'),s=>{S.cat=s.exists()?s.data():{...SEED,proveedores:[],productos:[]};if(S.catDraft&&S.view!=='catalogo')S.catDraft=null;done();render()},err));
   S.subs.push(onSnapshot(query(collection(db,'pedidos'),orderBy('creado','desc'),limit(300)),s=>{S.pedidos=s.docs.map(d=>({id:d.id,...d.data()}));render()},err));
   S.subs.push(onSnapshot(query(collection(db,'solicitudes'),orderBy('creado','desc'),limit(300)),s=>{S.sols=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>console.warn('sols',e)));
+  if(S.owner)S.subs.push(onSnapshot(collection(db,'claves'),s=>{S.claves={};s.docs.forEach(d=>S.claves[d.id]=d.data().clave);render()},e=>console.warn('claves',e)));
   S.subs.push(onSnapshot(collection(db,'stock'),s=>{S.stock={};s.docs.forEach(d=>S.stock[d.id]=d.data());render()},err));
   S.subs.push(onSnapshot(collection(db,'equipo'),s=>{S.equipo={};s.docs.forEach(d=>S.equipo[d.id]=d.data());
     const m=S.equipo[S.uid];if(!S.owner&&(!m||!m.activo)){S.stage='blocked'}render()},err));
