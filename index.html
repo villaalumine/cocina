@@ -318,17 +318,25 @@ function vPedido(id){
   <aside><div class="panel"><h3>Fotos del remito</h3>
   <div class="fotos">${fotos.map(f=>`<button class="foto" data-act="verfoto" data-id="${f.id}"><img src="${f.data}" alt="Foto del remito"></button>`).join('')||'<p class="meta">Todavía no hay fotos.</p>'}</div>
   <label class="btn" style="margin-top:10px;cursor:pointer">📷 Agregar foto<input type="file" accept="image/*" capture="environment" data-foto="${p.id}" hidden></label>
-  <p class="meta" id="fotomsg"></p></div>
+  <p class="meta" id="fotomsg">Las fotos se borran solas a los 6 meses.</p></div>
   <div class="panel"><h3>Historial</h3><div class="list" style="margin-top:8px">${(p.hist||[]).slice().reverse().map(h=>`<div class="li"><div>${esc(nameOf(h.uid))} ${esc(h.a)}</div><span class="meta q">${fecha(h.t)} ${hora(h.t)}</span></div>`).join('')}</div></div></aside></div>`;
+}
+async function limpiarFotosViejas(){
+  if(!S.owner)return;
+  try{const hoy=dayKey(Date.now());if(localStorage.getItem('cocina.limpieza')===hoy)return;localStorage.setItem('cocina.limpieza',hoy)}catch(e){}
+  try{const corte=Date.now()-182*864e5;const sn=await getDocs(query(collection(db,'fotos'),where('t','<',corte),limit(200)));
+    const porPedido={};for(const d of sn.docs){await deleteDoc(d.ref);const pid=d.data().pid;porPedido[pid]=(porPedido[pid]||0)+1}
+    for(const [pid,n] of Object.entries(porPedido)){const p=S.pedidos.find(x=>x.id===pid);if(p)await updateDoc(doc(db,'pedidos',pid),{fotos:Math.max(0,(p.fotos||0)-n)}).catch(()=>{})}
+    if(sn.size)console.info('Fotos viejas borradas:',sn.size)}catch(e){console.warn('limpieza fotos',e)}
 }
 function loadFotos(id){
   if(S.fotos[id]!==undefined)return;S.fotos[id]=[];
   getDocs(query(collection(db,'fotos'),where('pid','==',id))).then(s=>{S.fotos[id]=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.t-b.t);render()}).catch(e=>console.warn('fotos',e));
 }
 async function comprimir(file){
-  const img=await createImageBitmap(file);let w=img.width,h=img.height;const m=1400/Math.max(w,h);if(m<1){w=Math.round(w*m);h=Math.round(h*m)}
+  const img=await createImageBitmap(file);let w=img.width,h=img.height;const m=1100/Math.max(w,h);if(m<1){w=Math.round(w*m);h=Math.round(h*m)}
   const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
-  let q=.72,u=c.toDataURL('image/jpeg',q);while(u.length>650000&&q>.3){q-=.1;u=c.toDataURL('image/jpeg',q)}return u;
+  let q=.6,u=c.toDataURL('image/jpeg',q);while(u.length>220000&&q>.25){q-=.08;u=c.toDataURL('image/jpeg',q)}return u;
 }
 async function subirFoto(pid,file){
   const msg=$('#fotomsg');if(msg)msg.textContent='Subiendo foto…';
@@ -608,7 +616,7 @@ onAuthStateChanged(auth,async u=>{
     }
     S.owner=o.data().uid===u.uid;
     if(!S.owner){const m=await getDoc(doc(db,'equipo',u.uid));if(!m.exists()||!m.data().activo){S.stage='blocked';render(true);return}}
-    S.stage='app';if(!location.hash||location.hash==='#')history.replaceState(null,'','#inicio');subscribe();render(true);
+    S.stage='app';if(!location.hash||location.hash==='#')history.replaceState(null,'','#inicio');subscribe();render(true);setTimeout(limpiarFotosViejas,8000);
   }catch(e){console.error(e);if(e.code==='permission-denied'){S.stage='blocked'}else{S.stage='error';S.note=errMsg(e)+(e.code?` (${e.code})`:'')}render(true)}
 });
 </script></body></html>
