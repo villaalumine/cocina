@@ -76,6 +76,7 @@ td.n,th.n{text-align:right}td input{min-height:40px}
 @media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7em;margin-inline-start:-7.5em;color:var(--mute);font-size:13px}.stack td:empty{display:none}}
 @media(prefers-reduced-motion:no-preference){.tk{animation:drop .35s ease-out both}@keyframes drop{from{transform:translateY(-10px);opacity:0}}}
 .login{max-width:460px;margin:6vh auto}.out{min-height:36px;padding:6px 12px;background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 35%,transparent)}[hidden]{display:none!important}
+.agregar{border:2px solid var(--ink);margin-bottom:16px}
 .difs{border:2px solid var(--red);background:color-mix(in srgb,var(--red) 7%,var(--bg))}.difs ul{margin:8px 0 0;padding-left:18px}.difs li{margin:6px 0}
 .detalle{max-width:760px}.detalle .guardar{width:100%;min-height:52px;font-size:18px;margin-top:4px}
 .del{background:var(--bg);color:var(--redink);border-color:var(--redink)}
@@ -136,7 +137,7 @@ const ROLES=['Encargado/a','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','
 const NIVEL={'Encargado/a':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
 const lvl=()=>S.owner?1:(NIVEL[me()?.rol]||4);
 const myLocs=()=>S.owner||!me()?.local||me().local==='todos'?locales().map(l=>l.id):[me().local];
-const S={fotos:{},fProv:'',fDia:'',stage:'boot',authMode:'login',cat:null,pedidos:[],stock:{},equipo:{},uid:null,owner:false,local:'todos',view:'',subs:[],
+const S={agr:{},addOpen:null,fotos:{},fProv:'',fDia:'',stage:'boot',authMode:'login',cat:null,pedidos:[],stock:{},equipo:{},uid:null,owner:false,local:'todos',view:'',subs:[],
   pedir:{prov:null,qty:{},extra:[],nota:''},recOpen:null,rec:{},conteo:{},catDraft:null,pending:false,note:'',claimName:''};
 try{S.local=localStorage.getItem('cocina.sec')||''}catch(e){}
 
@@ -303,6 +304,36 @@ function vPedidos(){
   <span class="pinfo"><b>${esc(prov(p.prov)?.nombre||'Proveedor')}</b><small>${p.items.length} producto${p.items.length>1?'s':''} · ${esc(nameOf(p.por))}${r&&num(r.monto)?' · '+money(num(r.monto)):''}${p.fotos?' · 📷':''}</small></span>
   <span class="badge b-${p.estado}">${ESTADOS[p.estado]||p.estado}</span></button>`}).join('')||'<p class="empty">No hay pedidos con esos filtros.</p>'}</div>`;
 }
+function vAgregar(p){
+  const a=S.agr[p.id]||(S.agr[p.id]={qty:{},unit:{},extra:{n:'',q:'',u:'kg'}});
+  const list=prods().filter(x=>x.prov===p.prov);
+  return `<div class="panel agregar"><h3>Agregar al pedido</h3><p class="meta">Cargá solo lo que te olvidaste. ${p.estado==='enviado'?'Después se abre WhatsApp con un mensaje para el proveedor con lo agregado.':'Se suma al pedido antes de mandarlo.'}</p>
+  <input type="search" data-buscar placeholder="Buscar producto…" aria-label="Buscar producto" style="margin:8px 0">
+  ${list.map(x=>`<div class="pitem" data-n="${esc(x.nombre.toLowerCase())}"><div>${esc(x.nombre)}${p.items.some(i=>i.pid===x.id)?`<small>Ya en el pedido: ${fmt(p.items.filter(i=>i.pid===x.id).reduce((s,i)=>s+num(i.cant),0))} ${esc(x.unidad)}</small>`:''}</div>
+  <div class="qbox"><input inputmode="decimal" aria-label="Agregar ${esc(x.nombre)}" data-aq="${x.id}" value="${esc(a.qty[x.id]||'')}" placeholder="0"><select class="usel" data-au="${x.id}" aria-label="Unidad">${[...new Set([x.unidad,...UNIDADES])].map(u=>`<option ${(a.unit[x.id]||x.unidad)===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div></div>`).join('')}
+  <div class="row" style="margin-top:10px"><input style="flex:3 1 150px" placeholder="Otro producto" data-axn value="${esc(a.extra.n)}"><input style="flex:1 1 70px" inputmode="decimal" placeholder="Cant." data-axq value="${esc(a.extra.q)}"><select style="flex:1 1 84px" data-axu aria-label="Unidad">${UNIDADES.map(u=>`<option ${a.extra.u===u?'selected':''}>${u}</option>`).join('')}</select></div>
+  <div class="row" style="margin-top:12px"><button class="pri" data-act="addOk" data-id="${p.id}">Agregar al pedido</button><button data-act="addCancel">Cancelar</button></div></div>`;
+}
+async function agregarItems(id){
+  const p=S.pedidos.find(x=>x.id===id),a=S.agr[id];if(!p||!a||p.recepcion)return;
+  const nuevos=[...prods().filter(x=>x.prov===p.prov&&num(a.qty[x.id])>0).map(x=>{const u=a.unit[x.id]||x.unidad;return {pid:x.id,nombre:x.nombre,unidad:u,cant:num(a.qty[x.id]),...(x.precio&&u===x.unidad?{precio:x.precio}:{})}}),
+    ...(a.extra.n.trim()&&num(a.extra.q)>0?[{pid:null,nombre:a.extra.n.trim(),unidad:a.extra.u||'u',cant:num(a.extra.q)}]:[])];
+  if(!nuevos.length){S.note='Cargá al menos una cantidad para agregar.';render(true);return}
+  const items=p.items.map(i=>({...i}));
+  nuevos.forEach(n=>{const e=items.find(i=>i.pid&&i.pid===n.pid&&i.unidad===n.unidad);if(e)e.cant=num(e.cant)+n.cant;else items.push(n)});
+  const resumen=nuevos.map(n=>`${fmt(n.cant)} ${n.unidad} ${n.nombre}`).join(', ');
+  await w(()=>updateDoc(doc(db,'pedidos',id),{items,agregados:[...(p.agregados||[]),{t:Date.now(),uid:S.uid,items:nuevos}],hist:hist(p,'agregó '+resumen)}));
+  S.addOpen=null;delete S.agr[id];
+  push(`➕ Agregado al pedido · ${locName(p.local)}`,`${nameOf(S.uid)} agregó al pedido de ${prov(p.prov)?.nombre||'proveedor'}:\n${nuevos.map(n=>`• ${fmt(n.cant)} ${n.unidad} ${n.nombre}`).join('\n')}`,['heavy_plus_sign']);
+  if(p.estado==='enviado'){
+    const t=String(prov(p.prov)?.tel||'').replace(/\D/g,'');
+    const msg=[`*Agregado al pedido de ${locName(p.local)}* · ${fecha(p.creado)}`,'Hola! Me olvidé de esto, ¿lo podés sumar al pedido?',...nuevos.map(n=>`• ${fmt(n.cant)} ${n.unidad} ${n.nombre}`),'','Gracias! '+nameOf(S.uid)].join('\n');
+    $('#sheet').innerHTML=`<div class="sheet"><div><h3>Agregado al pedido</h3><p class="sub">Ahora avisale al proveedor. El mensaje ya está armado.</p><pre>${esc(msg)}</pre>
+    <a class="btn wa" style="width:100%" href="${esc('https://wa.me/'+t+'?text='+encodeURIComponent(msg))}" target="_blank" rel="noopener" data-act="closeSheet">Mandar por WhatsApp</a>
+    <button style="margin-top:10px;width:100%" data-act="closeSheet">Lo mando después</button></div></div>`;
+  }else toast('Agregado al pedido. Acordate de mandarlo por WhatsApp.');
+  render(true);
+}
 function difsBox(p){
   const r=p.recepcion;if(!r||p.estado!=='diferencias')return '';
   const L=p.items.map((i,k)=>{const x=r.items?.[k];if(!x)return '';const parts=[],df=x.rec-num(i.cant);
@@ -322,7 +353,7 @@ function vPedido(id){
   const reclamo=falt.length&&pv?'https://wa.me/'+String(pv.tel||'').replace(/\D/g,'')+'?text='+encodeURIComponent(`Hola! En el pedido del ${fecha(p.creado)} para ${locName(p.local)} faltó:\n${falt.map(o=>`• ${fmt(num(o.i.cant)-o.x.rec)} ${o.i.unidad} ${o.i.nombre}`).join('\n')}\n¿Lo podés mandar? Gracias!`):'';
   return `<button data-act="volver" style="margin-bottom:14px">‹ Todos los pedidos</button>
   <div class="head"><div><h2>${esc(pv?.nombre||'Proveedor')}</h2><p class="sub">${esc(locName(p.local))} · pidió ${esc(nameOf(p.por))} el ${fecha(p.creado)} a las ${hora(p.creado)}</p></div><span class="badge b-${p.estado}" style="font-size:15px">${ESTADOS[p.estado]||p.estado}</span></div>
-  ${abierto?`<div class="row" style="margin-bottom:16px"><a class="btn wa" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">${p.estado==='pendiente'?'Enviar':'Reenviar'} por WhatsApp</a><button class="del" data-act="delPed" data-id="${p.id}">🗑 Eliminar pedido</button></div>`:''}
+  ${abierto?`<div class="row" style="margin-bottom:16px"><a class="btn wa" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">${p.estado==='pendiente'?'Enviar':'Reenviar'} por WhatsApp</a><button class="dark" data-act="addOpen" data-id="${p.id}">➕ Agregar productos</button><button class="del" data-act="delPed" data-id="${p.id}">🗑 Eliminar pedido</button></div>${S.addOpen===p.id?vAgregar(p):''}`:''}
   ${p.nota?`<p class="note">Nota del pedido: ${esc(p.nota)}</p>`:''}
   <div class="detalle">${difsBox(p)}${vRec(p)}
   <div class="panel"><h3>Fotos del remito</h3>
@@ -531,6 +562,9 @@ document.addEventListener('click',e=>{
   if(a==='delPed'){const p=S.pedidos.find(x=>x.id===id);if(!p)return;$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Eliminar este pedido?</h3><p class="sub">Pedido a ${esc(prov(p.prov)?.nombre||'proveedor')} del ${fecha(p.creado)}, ${p.items.length} producto${p.items.length>1?'s':''}. No se puede deshacer.</p>${p.estado==='enviado'?'<p class="note">Este pedido ya se mandó por WhatsApp: avisale al proveedor que lo cancelás.</p>':''}<div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="delPedOk" data-id="${id}">Sí, eliminar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
   if(a==='delPedOk'){const p=S.pedidos.find(x=>x.id===id);$('#sheet').innerHTML='';if(!p||p.recepcion)return;
     w(async()=>{try{const fs=await getDocs(query(collection(db,'fotos'),where('pid','==',id)));for(const f of fs.docs)await deleteDoc(f.ref).catch(()=>{})}catch(e){}await deleteDoc(doc(db,'pedidos',id));delete S.fotos[id];delete S.rec[id]},'Pedido eliminado.').then(()=>{location.hash='pedidos'}).catch(()=>{});return}
+  if(a==='addOpen'){S.addOpen=S.addOpen===id?null:id;render(true);return}
+  if(a==='addCancel'){S.addOpen=null;render(true);return}
+  if(a==='addOk'){agregarItems(id).catch(()=>{});return}
   if(a==='psel'){S.panelSel=S.panelSel===id?null:id;render(true);return}
   if(a==='dia'){const n=+id;S.panelDia=n===0?null:shiftDay(S.panelDia||dayKey(Date.now()),n);if(S.panelDia&&S.panelDia>=dayKey(Date.now()))S.panelDia=null;render(true);return}
   if(a==='inicio'){if(location.hash==='#inicio')render(true);else location.hash='inicio';return}
@@ -564,6 +598,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{
   const t=e.target,ds=t.dataset;
+  if(ds.aq!==undefined||ds.axn!==undefined||ds.axq!==undefined){const a=S.agr[S.addOpen];if(a){if(ds.aq!==undefined)a.qty[ds.aq]=t.value;if(ds.axn!==undefined)a.extra.n=t.value;if(ds.axq!==undefined)a.extra.q=t.value}return}
   if(ds.filtro!==undefined){const q=t.value.trim().toLowerCase();document.querySelectorAll('#main tr[data-n]').forEach(r=>r.hidden=!!r.dataset.off||(!!q&&!r.dataset.n.includes(q)));document.querySelectorAll('#main .grp').forEach(g=>g.hidden=!!q&&!g.querySelector('tr[data-n]:not([hidden])'));return}
   if(ds.buscar!==undefined){S.pedir.buscar=t.value;const q=t.value.trim().toLowerCase();document.querySelectorAll('#main .pitem').forEach(el=>{const inp=el.querySelector('input');el.hidden=!!q&&!el.dataset.n.includes(q)&&!(num(inp.value)>0)});document.querySelectorAll('#main h4.rubro').forEach(h=>h.hidden=!!q)}
   else if(ds.q!==undefined){S.pedir.qty[ds.q]=t.value;const c=$('#pcount');if(c)c.textContent=countPedido()}
@@ -582,6 +617,8 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',e=>{
   const t=e.target;
+  if(t.matches('select[data-au]')){const a=S.agr[S.addOpen];if(a)a.unit[t.dataset.au]=t.value}
+  if(t.matches('select[data-axu]')){const a=S.agr[S.addOpen];if(a)a.extra.u=t.value}
   if(t.matches('select[data-fprov]')){S.fProv=t.value;t.blur();render(true)}
   if(t.matches('select[data-festado]')){S.fEstado=t.value;t.blur();render(true)}
   if(t.matches('input[data-fdia]')){S.fDia=t.value;t.blur();render(true)}
