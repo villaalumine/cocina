@@ -100,6 +100,9 @@ body[data-sec=villa] .chatbtn{background:#f93604}body[data-sec=mara] .chatbtn{ba
 nav.tabs{padding:8px 6px calc(8px + env(safe-area-inset-bottom));gap:4px}
 nav.tabs a{font-size:18px;min-height:56px;display:flex;align-items:center;justify-content:center;padding:8px 2px;color:var(--ink);opacity:.72}
 nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;background:#25a244;color:#fff;font:700 11px system-ui;border-radius:9px;min-width:18px;height:18px;line-height:18px;padding:0 4px}
+.accesos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 22px}.acc{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:16px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:96px}.acc .ai{font-size:28px;line-height:1}.acc b{font:700 22px "Barlow Condensed",sans-serif;margin-top:6px}.acc small{color:#1f7a3a;font-weight:600;font-size:13px}
+body[data-sec=villa] .acc{border-left:6px solid #f93604}body[data-sec=mara] .acc{border-left:6px solid #a17a57}
+@media(max-width:480px){.accesos{grid-template-columns:1fr 1fr}}
 .soltag{color:#1f7a3a;font-weight:600}.solbox{border:2px solid #25a244;background:#eef8ef}.sol{border-top:1px solid var(--line);padding:10px 0}.sol:first-of-type{border-top:0}.sol ul{margin:4px 0;padding-left:18px}
 nav.tabs a.on{opacity:1}body{padding-bottom:96px}
 @media(max-width:420px){nav.tabs a{font-size:16.5px;letter-spacing:-.01em}}@media(max-width:480px){nav.tabs{gap:2px}nav.tabs a{font-size:14.5px;padding:8px 1px}}
@@ -235,6 +238,12 @@ function prowHTML(p,extra){const r=p.recepcion;return `<button class="prow" data
   ${badgeHTML(p)}</button>`}
 const badgeHTML=(p,big)=>`<span class="bwrap"${big?' style="font-size:15px"':''}><span class="badge b-${p.estado}">${ESTADOS[p.estado]||p.estado}</span>${p.estado==='diferencias'?(p.faltaOk?(p.faltaOk.tipo==='no'?'<span class="badge b-fno">Faltante sin entregar</span>':'<span class="badge b-fok">Faltante entregado ✓</span>'):'<span class="badge b-dif">Con diferencias</span>'):''}</span>`;
 const faltantes=p=>p.recepcion?p.items.map((i,k)=>({i,x:p.recepcion.items?.[k]})).filter(o=>o.x&&o.x.rec<num(o.i.cant)):[];
+function accesos(nPend){
+  const L=lvl(),ns=solsPend(workLocal()).length,room=workLocal(),nc=(S.chat[room]||[]).filter(m=>m.uid!==S.uid&&m.t>lastRead(room)).length;
+  const B=[['pedir','🛒','Pedir',''],['solicitudes','📥','Solicitudes',ns?`${ns} pendiente${ns>1?'s':''}`:''],['pedidos','📦','Pedidos',nPend?`${nPend} por recibir`:''],
+    ...(L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(S.owner?[['equipo','👥','Equipo','']]:[]),['chat','💬','Chat',nc?`${nc} sin leer`:'']];
+  return `<div class="accesos">${B.map(([v,i,t,n])=>`<a class="acc" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
+}
 function vPanel(){
   const hoy=dayKey(Date.now()),dia=S.panelDia||hoy,esHoy=dia===hoy;
   const ps=S.pedidos.filter(inLocal);
@@ -250,6 +259,7 @@ function vPanel(){
   if(sel==='pend')lista=`<h3 class="ptit">Pendientes de entrega</h3><p class="meta">Pedidos que todavía no se recibieron, de cualquier fecha.</p>${pend.length?`<div class="plist">${pend.map(p=>prowHTML(p,p.estado==='pendiente'?'Todavía no se mandó por WhatsApp':`Enviado ${fecha(p.enviado||p.creado)} ${hora(p.enviado||p.creado)} · ${p.items.length} producto${p.items.length>1?'s':''}`)).join('')}</div>`:'<p class="empty">No hay pedidos pendientes.</p>'}`;
   if(sel==='falt')lista=`<h3 class="ptit">Faltantes por recibir</h3><p class="meta">Pedidos de los últimos 30 días que llegaron incompletos. Entrá para reclamarle al proveedor.</p>${falt.length?`<div class="plist">${falt.map(p=>prowHTML(p,'Faltó: '+faltantes(p).map(o=>`${fmt(num(o.i.cant)-o.x.rec)} ${esc(o.i.unidad)} ${esc(o.i.nombre)}`).join(', '))).join('')}</div>`:'<p class="empty">No hay faltantes. 🎉</p>'}`;
   return `<div class="head" style="margin-bottom:6px"><div><h2>Hola, ${esc(me()?.nombre||'Matías')}</h2><p class="sub">${esc(rol)} · ${esc(locName(workLocal()))}</p></div></div>
+  ${accesos(pend.length)}
   <div class="row diasel" style="margin:10px 0 18px"><button data-act="dia" data-id="-1" aria-label="Día anterior">‹</button><input type="date" data-dia value="${dia}" max="${hoy}" aria-label="Día"><button data-act="dia" data-id="1" aria-label="Día siguiente" ${esHoy?'disabled':''}>›</button>${esHoy?'':'<button data-act="dia" data-id="0">Hoy</button>'}</div>
   <div class="kpis k3">${cards.map(([k,n,t,c])=>`<button class="kpi ${c} ${n&&c==='r'?'':''} ${sel===k?'sel':''}" data-act="psel" data-id="${k}" aria-pressed="${sel===k}"><b>${n}</b><span>${t}</span></button>`).join('')}</div>
   ${lista||'<p class="empty">Tocá un cuadro para ver el detalle.</p>'}`;
