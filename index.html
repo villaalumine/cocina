@@ -76,6 +76,16 @@ td.n,th.n{text-align:right}td input{min-height:40px}
 @media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7em;margin-inline-start:-7.5em;color:var(--mute);font-size:13px}.stack td:empty{display:none}}
 @media(prefers-reduced-motion:no-preference){.tk{animation:drop .35s ease-out both}@keyframes drop{from{transform:translateY(-10px);opacity:0}}}
 .login{max-width:460px;margin:6vh auto}.out{min-height:36px;padding:6px 12px;background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 35%,transparent)}[hidden]{display:none!important}
+.chatbtn{position:fixed;right:16px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:7;width:58px;height:58px;border-radius:50%;font-size:26px;padding:0;background:var(--ink);color:var(--bg);border:0;box-shadow:0 8px 22px -8px #000a}
+body[data-sec=villa] .chatbtn{background:#f93604}body[data-sec=mara] .chatbtn{background:#1d1712}
+@media(min-width:900px){.chatbtn{bottom:24px;right:24px}}
+#chatBadge{position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;border-radius:11px;background:#1fa855;color:#fff;font:700 13px Barlow,sans-serif;display:grid;place-items:center;padding:0 5px}
+.chatbox{display:flex;flex-direction:column;height:calc(100vh - 290px);min-height:340px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card)}
+.chatlist{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:80%;align-self:flex-start;background:var(--bg);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:8px 12px;display:flex;flex-direction:column;gap:2px}
+.msg.mine{align-self:flex-end;background:#dcf8c6;color:#17130f;border-color:#c5e8ad;border-radius:14px 14px 4px 14px}.msg b{font-size:13px;color:var(--redink)}.msg small{font-size:11.5px;color:var(--mute);align-self:flex-end}.msg.mine small{color:#5b6b52}
+.chatday{align-self:center;font-size:12px;color:var(--mute);background:var(--bg);border-radius:10px;padding:2px 10px;margin:6px 0}
+.chatform{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:var(--bg)}.chatform textarea{min-height:46px;max-height:120px;resize:none}
 .pvdatos{background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:10px}.pvdatos summary{cursor:pointer;font-weight:600}
 .prodlist{display:grid;gap:6px}.prodrow{display:grid;grid-template-columns:minmax(0,1fr) 74px 104px 64px 40px;gap:6px;align-items:center}
 .prodrow input{min-height:42px}.prodrow .pp{display:flex;align-items:center;gap:3px}.prodrow .pp input,.prodrow .pm{text-align:right}.prodrow .pq{min-height:42px;padding:0;color:var(--redink)}
@@ -126,7 +136,7 @@ body[data-sec=villa] .top .out,body[data-sec=mara] .top .out{color:inherit;borde
 <header class="top"><button class="brand" id="brand" data-act="inicio" aria-label="Volver al inicio"><span class="back" hidden>‹</span><img id="brandImg" alt="" hidden><span id="brandTxt"><i></i>Cocina</span></button><div class="sp"></div><span class="who" id="who"></span><select id="localSel" aria-label="Local"></select><a class="out sop" id="soporte" hidden target="_blank" rel="noopener" aria-label="Soporte por WhatsApp">Soporte</a><button class="out" id="salir" hidden>Salir</button></header>
 <nav class="tabs" id="tabs" hidden><a href="#panel" data-v="panel">Panel</a><a href="#pedir" data-v="pedir">Pedir</a><a href="#pedidos" data-v="pedidos">Pedidos</a><a href="#stock" data-v="stock">Stock</a><a href="#catalogo" data-v="catalogo">Catálogo</a><a href="#equipo" data-v="equipo" id="tabEquipo" hidden>Equipo</a></nav>
 <main id="main"><p class="empty">Cargando la cocina…</p></main>
-<div id="sheet"></div><datalist id="unidades"><option>kg</option><option>u</option><option>bolsa</option><option>cajón</option><option>bulto</option><option>paq</option><option>caja</option><option>botella</option><option>pack</option><option>barril</option><option>maple</option><option>bandeja</option><option>l</option></datalist>
+<button id="chatBtn" class="chatbtn" data-act="chat" hidden aria-label="Chat del equipo">💬<span id="chatBadge" hidden></span></button><div id="sheet"></div><datalist id="unidades"><option>kg</option><option>u</option><option>bolsa</option><option>cajón</option><option>bulto</option><option>paq</option><option>caja</option><option>botella</option><option>pack</option><option>barril</option><option>maple</option><option>bandeja</option><option>l</option></datalist>
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -156,7 +166,7 @@ const ROLES=['Encargado/a','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','
 const NIVEL={'Encargado/a':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
 const lvl=()=>S.owner?1:(NIVEL[me()?.rol]||4);
 const myLocs=()=>S.owner||!me()?.local||me().local==='todos'?locales().map(l=>l.id):[me().local];
-const S={agr:{},addOpen:null,fotos:{},fProv:'',fDia:'',stage:'boot',authMode:'login',cat:null,pedidos:[],stock:{},equipo:{},uid:null,owner:false,local:'todos',view:'',subs:[],
+const S={chat:{},agr:{},addOpen:null,fotos:{},fProv:'',fDia:'',stage:'boot',authMode:'login',cat:null,pedidos:[],stock:{},equipo:{},uid:null,owner:false,local:'todos',view:'',subs:[],
   pedir:{prov:null,qty:{},extra:[],nota:''},recOpen:null,rec:{},conteo:{},catDraft:null,pending:false,note:'',claimName:''};
 try{S.local=localStorage.getItem('cocina.sec')||''}catch(e){}
 
@@ -360,6 +370,35 @@ async function agregarItems(id){
   }else toast('Agregado al pedido. Acordate de mandarlo por WhatsApp.');
   render(true);
 }
+const chatSubs={};
+function ensureChat(room){
+  if(!room||chatSubs[room])return;S.chat[room]=S.chat[room]||[];
+  chatSubs[room]=onSnapshot(query(collection(db,'chats',room,'msgs'),orderBy('t','desc'),limit(150)),sn=>{
+    S.chat[room]=sn.docs.map(d=>({id:d.id,...d.data()})).reverse();
+    if(location.hash==='#chat'&&S.local===room){markRead(room);const l=$('#chatlist');if(l){l.innerHTML=chatListHTML(room);l.scrollTop=l.scrollHeight}}
+    updChatBadge();
+  },e=>console.warn('chat',e));
+}
+const lastRead=room=>{try{return +localStorage.getItem('cocina.chat.'+room)||0}catch(e){return 0}};
+function markRead(room){const m=S.chat[room]||[];const t=m.length?m[m.length-1].t:Date.now();try{localStorage.setItem('cocina.chat.'+room,String(t))}catch(e){}}
+function updChatBadge(){const room=S.local,b=$('#chatBadge');if(!b)return;const n=(S.chat[room]||[]).filter(m=>m.uid!==S.uid&&m.t>lastRead(room)).length;b.hidden=!n||location.hash==='#chat';b.textContent=n>9?'9+':n}
+function chatListHTML(room){
+  let last='';
+  return (S.chat[room]||[]).map(m=>{const dk=dayKey(m.t),sep=dk!==last?`<div class="chatday">${dk===dayKey(Date.now())?'Hoy':fecha(m.t)}</div>`:'';last=dk;const mine=m.uid===S.uid;
+    return `${sep}<div class="msg ${mine?'mine':''}">${mine?'':`<b>${esc(nameOf(m.uid))}</b>`}<span>${esc(m.txt).replace(/\n/g,'<br>')}</span><small>${hora(m.t)}${mine||S.owner?` · <button class="linkbtn" data-act="chatDel" data-id="${m.id}">borrar</button>`:''}</small></div>`}).join('')||'<p class="empty">Todavía no hay mensajes. ¡Escribí el primero!</p>';
+}
+function vChat(){
+  const room=workLocal();ensureChat(room);markRead(room);
+  setTimeout(()=>{const l=$('#chatlist');if(l)l.scrollTop=l.scrollHeight},0);
+  return `<div class="head"><div><h2>Chat · ${esc(locName(room))}</h2><p class="sub">Lo ven todos los que trabajan en ${esc(locName(room))}.</p></div></div>
+  <div class="chatbox"><div class="chatlist" id="chatlist">${chatListHTML(room)}</div>
+  <form class="chatform" data-form="chat"><textarea name="txt" rows="1" placeholder="Escribí un mensaje…" aria-label="Mensaje" data-chatin></textarea><button class="pri" type="submit" aria-label="Enviar">Enviar</button></form></div>`;
+}
+async function enviarChat(f){
+  const ta=f.querySelector('textarea'),txt=ta.value.trim();if(!txt)return;const room=workLocal();
+  ta.value='';try{await addDoc(collection(db,'chats',room,'msgs'),{t:Date.now(),uid:S.uid,txt:txt.slice(0,1500)})}catch(e){ta.value=txt;S.note=errMsg(e);render(true)}
+  ta.focus();
+}
 function difsBox(p){
   const r=p.recepcion;if(!r||p.estado!=='diferencias')return '';
   const L=p.items.map((i,k)=>{const x=r.items?.[k];if(!x)return '';const parts=[],df=x.rec-num(i.cant);
@@ -517,11 +556,12 @@ function render(force){
   document.body.dataset.sec=sec;$('#tabs').hidden=!sec;
   $('#brandImg').hidden=!sec;$('#brandTxt').hidden=!!sec;document.querySelector('#brand .back').hidden=!sec||(inApp&&myLocs().length<2);
   if(sec){$('#brandImg').src=sec==='mara'?'logo-mara.png':'logo-villa-blanco.png';$('#brandImg').alt=locName(sec)}
+  $('#chatBtn').hidden=!sec;if(sec){ensureChat(sec);updChatBadge()}
   if(!inApp){$('#tabs').hidden=true;$('#main').innerHTML=vAcceso();return}
   if(!sec){$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vInicio();return}
   const L=lvl(),views=[...(L<=2?['panel']:[]),'pedir','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
   document.querySelectorAll('#tabs a').forEach(x=>x.hidden=!views.includes(x.dataset.v));
-  let v=location.hash.slice(1),pid=null;if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v=L<=2?'panel':'pedidos';
+  let v=location.hash.slice(1),pid=null;if(v==='chat'){S.view='chat';document.querySelectorAll('#tabs a').forEach(x=>x.classList.remove('on'));$('#chatBtn').hidden=true;$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vChat();return}if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v=L<=2?'panel':'pedidos';
   S.view=v;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   const html=pid?vPedido(pid):{panel:vPanel,pedir:vPedir,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo}[v]();
   $('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
@@ -606,6 +646,8 @@ document.addEventListener('click',e=>{
   if(a==='pOpen'){S.pOpen=S.pOpen===id?null:id;render(true);return}
   if(a==='fSet'){const [k,v]=id.split(/:(.*)/s);if(k==='dia')S.fDia=v;if(k==='prov')S.fProv=v;if(k==='est')S.fEstado=v||'todos';S.pVer=true;S.pOpen=null;render(true);return}
   if(a==='fClear'){S.fDia='';S.fProv='';S.fEstado='todos';render(true);return}
+  if(a==='chat'){location.hash='chat';return}
+  if(a==='chatDel'){const room=workLocal();deleteDoc(doc(db,'chats',room,'msgs',id)).catch(e=>{S.note=errMsg(e);render(true)});return}
   if(a==='psel'){S.panelSel=S.panelSel===id?null:id;render(true);return}
   if(a==='dia'){const n=+id;S.panelDia=n===0?null:shiftDay(S.panelDia||dayKey(Date.now()),n);if(S.panelDia&&S.panelDia>=dayKey(Date.now()))S.panelDia=null;render(true);return}
   if(a==='inicio'){if(location.hash==='#inicio')render(true);else location.hash='inicio';return}
@@ -670,8 +712,10 @@ document.addEventListener('change',e=>{
   if(t.matches('select[data-cal],select[data-pr],select[data-rf],select[data-xu]'))t.dispatchEvent(new Event('input',{bubbles:true}));
   if(t.matches('select[data-eq]'))w(()=>updateDoc(doc(db,'equipo',t.dataset.eq),{[t.dataset.f]:t.value})).catch(()=>{});
 });
+document.addEventListener('keydown',e=>{if(e.target.matches('textarea[data-chatin]')&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();e.target.form.requestSubmit()}});
 document.addEventListener('submit',async e=>{
   const f=e.target;e.preventDefault();const fd=new FormData(f);
+  if(f.dataset.form==='chat'){enviarChat(f);return}
   if(f.dataset.form==='rec'){guardarRec(f.dataset.id).catch(()=>{});return}
   if(f.dataset.form==='alta'){await darAlta(f);return}
   if(f.dataset.form==='cmb'){w(()=>updateDoc(doc(db,'cfg','catalogo'),{avisos:{...(S.cat?.avisos||{}),cmb:String(fd.get('cmb')).trim()}}),'Guardado. Tocá Probar para ver si te llega.').catch(()=>{});return}
@@ -698,7 +742,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 onAuthStateChanged(auth,async u=>{
-  S.subs.forEach(f=>f());S.subs=[];S.cat=null;S.equipo={};S.pedidos=[];S.stock={};S.note='';
+  S.subs.forEach(f=>f());S.subs=[];Object.keys(chatSubs).forEach(k=>{chatSubs[k]();delete chatSubs[k]});S.chat={};S.cat=null;S.equipo={};S.pedidos=[];S.stock={};S.note='';
   S.uid=u?.uid||null;
   if(!u){S.stage='login';render(true);return}
   S.stage='loading';render(true);
