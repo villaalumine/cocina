@@ -513,7 +513,7 @@ function ensureRec(){
 function costoIng(i){
   const c=num(i.cant);if(!c)return 0;
   if(String(i.costo||'').trim()!=='')return num(i.costo);
-  const p=i.pid&&prod(i.pid);if(!p||!p.precio)return 0;
+  const nm=String(i.nombre||'').trim().toLowerCase(),p=(i.pid&&prod(i.pid))||(nm&&prods().find(x=>x.nombre.toLowerCase()===nm));if(!p||!p.precio)return 0;
   const pr=num(p.precio),pu=p.unidad,u=i.unidad,ml=num(p.info?.ml);
   if(pu===u)return pr*c;
   if(pu==='kg'){if(u==='g')return pr/1000*c}
