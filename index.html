@@ -112,6 +112,8 @@ body[data-sec=todos] .top{background:#24303f;color:#fff}body[data-sec=todos] .pr
 .rtab{width:100%;border-collapse:collapse;font-size:15px}.rtab th{text-align:left;font-size:12px;color:var(--mute);font-weight:600;padding:4px 6px}.rtab td{padding:7px 6px;border-top:1px solid var(--line)}.rtab td:nth-child(n+2),.rtab th:nth-child(n+2){text-align:right;white-space:nowrap}.rtab .rtot td{font-weight:700;border-top:2px solid var(--ink)}
 .pc-ok{background:#e8f5e0;color:#2f6b1f;border-color:#b9dca3}.pc-mid{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}.pc-hi{background:#fde3e0;color:#b3261e;border-color:#f0a39b}.ringr{margin-bottom:8px;flex-wrap:wrap}
 #nuevaV{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));z-index:80;background:#1f7a3a;color:#fff;border:0;border-radius:14px;padding:14px 16px;font-size:16px;box-shadow:0 8px 24px #0004;text-align:center}
+.recfoto{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0 16px}.recfoto img,.recfoto>span{width:120px;height:120px;border-radius:16px;object-fit:cover;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:44px}
+.rechero{width:100%;max-height:360px;object-fit:cover;border-radius:18px;margin:4px 0 14px;display:block}.recthumb{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:26px;margin-right:4px}
 .soltag{color:#1f7a3a;font-weight:600}.solbox{border:2px solid #25a244;background:#eef8ef}.sol{border-top:1px solid var(--line);padding:10px 0}.sol:first-of-type{border-top:0}.sol ul{margin:4px 0;padding-left:18px}
 nav.tabs a.on{opacity:1}body{padding-bottom:24px}nav.tabs{display:none!important}.volver{display:inline-flex;margin-bottom:14px;text-decoration:none}
 @media(max-width:420px){nav.tabs a{font-size:16.5px;letter-spacing:-.01em}}@media(max-width:480px){nav.tabs{gap:2px}nav.tabs a{font-size:14.5px;padding:8px 1px}}
@@ -535,7 +537,7 @@ function vRecetario(){
   const cats=[...new Set(L.map(r=>r.cat||'Sin categoría'))];
   return `${locChips('vLoc')}<div class="head"><div><h2>📖 Recetario · ${esc(locName(loc))}</h2><p class="sub">${loc==='mara'?'Tragos y bebidas':'Platos y preparaciones'} con su costo actualizado según el Catálogo.</p></div>${canEditRec()?'<button class="pri" data-act="recNueva">+ Nueva receta</button>':''}</div>
   <input type="search" placeholder="Buscar receta o categoría…" value="${esc(S.recBus||'')}" data-recbus style="margin-bottom:14px">
-  ${cats.map(c=>`<h3 class="ptit">${esc(c)}</h3><div class="plist">${L.filter(r=>(r.cat||'Sin categoría')===c).map(r=>{const k=recCalc(r);return `<button class="prow" data-act="recVer" data-id="${r.id}"><span class="pinfo"><b>${esc(r.nombre)}</b><small>Costo ${money(k.porc)}${num(r.rinde)>1?' por porción':''}${k.venta?` · Venta ${money(k.venta)}`:''}${k.sinPrecio?` · ⚠️ ${k.sinPrecio} sin precio`:''}</small></span>${k.venta?`<span class="badge ${pctCls(k.pct)}">${Math.round(k.pct)}%</span>`:''}</button>`}).join('')}</div>`).join('')||`<p class="empty">${q?'No hay recetas con esa búsqueda.':'Todavía no hay recetas cargadas.'+(canEditRec()?' Tocá "+ Nueva receta".':'')}</p>`}`;
+  ${cats.map(c=>`<h3 class="ptit">${esc(c)}</h3><div class="plist">${L.filter(r=>(r.cat||'Sin categoría')===c).map(r=>{const k=recCalc(r);return `<button class="prow" data-act="recVer" data-id="${r.id}">${r.foto?`<img class="recthumb" src="${r.foto}" alt="">`:`<span class="recthumb">${r.local==='mara'?'🍸':'🍽️'}</span>`}<span class="pinfo"><b>${esc(r.nombre)}</b><small>Costo ${money(k.porc)}${num(r.rinde)>1?' por porción':''}${k.venta?` · Venta ${money(k.venta)}`:''}${k.sinPrecio?` · ⚠️ ${k.sinPrecio} sin precio`:''}</small></span>${k.venta?`<span class="badge ${pctCls(k.pct)}">${Math.round(k.pct)}%</span>`:''}</button>`}).join('')}</div>`).join('')||`<p class="empty">${q?'No hay recetas con esa búsqueda.':'Todavía no hay recetas cargadas.'+(canEditRec()?' Tocá "+ Nueva receta".':'')}</p>`}`;
 }
 function vReceta(id){
   const nueva=id==='nueva',r=nueva?(S.recDraft||{}):(S.recetas||[]).find(x=>x.id===id);
@@ -543,13 +545,13 @@ function vReceta(id){
   if(S.recEdit){return recForm(r,nueva)}
   const k=recCalc(r),fotos=S.fotos[r.id]||[];loadFotos(r.id);
   return `<button class="btn volver" data-act="recCerrar">‹ Recetario</button>
+  ${r.foto?`<img class="rechero" src="${r.foto}" alt="${esc(r.nombre)}">`:''}
   <div class="head"><div><h2>${esc(r.nombre)}</h2><p class="sub">${esc(r.cat||'Sin categoría')} · ${esc(locName(r.local))}${num(r.rinde)>1?` · Rinde ${fmt(num(r.rinde))} porciones`:''}</p></div>${canEditRec()?'<button data-act="recEditar">✏️ Editar</button>':''}</div>
   ${fotos.length?`<div class="fotos" style="margin-bottom:14px">${fotos.map(fo=>`<button class="foto" data-act="verfoto" data-id="${fo.id}"><img src="${fo.data}" alt="Foto"></button>`).join('')}</div>`:''}
   <div class="kpis k3" style="margin-bottom:16px"><div class="kpi"><b>${money(k.porc)}</b><span>Costo${num(r.rinde)>1?' por porción':''}</span></div><div class="kpi y"><b>${k.venta?money(k.venta):'–'}</b><span>Precio de venta</span></div><div class="kpi ${k.pct>40?'r':''}"><b>${k.venta?Math.round(k.pct)+'%':'–'}</b><span>% de costo</span></div></div>
   <div class="panel" style="margin-bottom:14px"><h3>Ingredientes</h3><table class="rtab"><tr><th>Ingrediente</th><th>Cantidad</th><th>Costo</th></tr>${(r.ing||[]).map(i=>{const c=costoIng(i);return `<tr><td>${esc(i.nombre)}${i.pid?'':' <small class="meta">(no está en Catálogo)</small>'}</td><td>${fmt(num(i.cant))} ${esc(uTxt(i.unidad))}</td><td>${c?money(c):'<span class="lowtag">sin precio</span>'}</td></tr>`}).join('')}<tr class="rtot"><td>Total</td><td></td><td>${money(k.total)}</td></tr></table>
   ${k.sinPrecio?`<p class="meta">⚠️ ${k.sinPrecio} ingrediente${k.sinPrecio>1?'s':''} sin precio: cargalo en el Catálogo o poné el costo a mano en la receta.</p>`:''}</div>
   ${r.proc?`<div class="panel" style="margin-bottom:14px"><h3>Procedimiento</h3><p style="white-space:pre-wrap;margin:0">${esc(r.proc)}</p></div>`:''}
-  ${canEditRec()?`<label class="btn" style="cursor:pointer">📷 Agregar foto<input type="file" accept="image/*" data-mfoto="${r.id}" hidden></label>`:''}
   <p class="meta" style="margin-top:14px">Última edición: ${esc(nameOf(r.editadoPor||r.por))} · ${fecha(r.editado||r.creado)}</p>`;
 }
 function recForm(r,nueva){
@@ -558,6 +560,7 @@ function recForm(r,nueva){
   const cats=[...new Set((S.recetas||[]).filter(x=>x.local===loc).map(x=>x.cat).filter(Boolean))];
   return `<button class="btn volver" data-act="recCancelar">‹ Cancelar</button><h2>${nueva?'Nueva receta':'Editar receta'}${uni()?` · ${esc(locName(loc))}`:''}</h2>
   <datalist id="recprods">${lista.map(p=>`<option value="${esc(p.nombre)}">`).join('')}</datalist><datalist id="reccats">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+  <div class="recfoto">${d.foto?`<img src="${d.foto}" alt="Foto del plato">`:`<span>${loc==='mara'?'🍸':'🍽️'}</span>`}<label class="btn" style="cursor:pointer">📷 ${d.foto?'Cambiar foto':'Foto del plato'}<input type="file" accept="image/*" data-recfoto hidden></label>${d.foto?'<button class="linkbtn" data-act="recSinFoto">Quitar foto</button>':''}</div>
   <div class="grid2"><div><label>Nombre</label><input data-rf2="nombre" value="${esc(d.nombre||'')}" placeholder="${loc==='mara'?'Ej: Negroni':'Ej: Risotto de hongos'}"></div>
   <div><label>Categoría</label><input data-rf2="cat" list="reccats" value="${esc(d.cat||'')}" placeholder="${loc==='mara'?'Ej: Clásicos, Sin alcohol':'Ej: Entradas, Principales, Postres'}"></div>
   <div><label>Rinde (porciones)</label><input inputmode="decimal" data-rf2="rinde" value="${esc(d.rinde||'1')}"></div>
@@ -569,10 +572,15 @@ function recForm(r,nueva){
   <div class="row" style="margin-top:16px"><button class="pri" style="flex:1" data-act="recGuardar">Guardar receta</button>${nueva?'':'<button class="del" data-act="recBorrar">Borrar</button>'}</div>`;
 }
 function recRowCosto(k){const i=S.recDraft?.ing?.[k],e=document.querySelector(`[data-ri="${k}"][data-rk="costo"]`);if(!i||!e)return;const c=costoIng({...i,costo:''});e.placeholder=c?'Auto '+money(c):'Costo $'}
+async function fotoReceta(file){
+  try{const img=await createImageBitmap(file),k=Math.min(1,720/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);let q=.7,u=c.toDataURL('image/jpeg',q);while(u.length>140000&&q>.35){q-=.1;u=c.toDataURL('image/jpeg',q)}
+    S.recDraft.foto=u;render(true)}catch(e){console.error(e);S.note='No se pudo cargar la foto.';render(true)}
+}
 async function recGuardar(){
   const d=S.recDraft,nueva=S.recOpen==='nueva';if(!String(d.nombre||'').trim()){S.note='Ponele un nombre a la receta.';render(true);return}
   const ing=(d.ing||[]).filter(i=>String(i.nombre||'').trim()).map(i=>{const p=prods().find(x=>x.nombre.toLowerCase()===String(i.nombre).trim().toLowerCase());return {nombre:String(i.nombre).trim(),cant:num(i.cant),unidad:i.unidad||'g',...(p?{pid:p.id}:{}),...(String(i.costo||'').trim()!==''?{costo:num(i.costo)}:{})}});
-  const x={nombre:String(d.nombre).trim(),cat:String(d.cat||'').trim(),rinde:num(d.rinde)||1,venta:num(d.venta)||0,proc:String(d.proc||''),ing,editado:Date.now(),editadoPor:S.uid};
+  const x={foto:d.foto||'',nombre:String(d.nombre).trim(),cat:String(d.cat||'').trim(),rinde:num(d.rinde)||1,venta:num(d.venta)||0,proc:String(d.proc||''),ing,editado:Date.now(),editadoPor:S.uid};
   try{if(nueva){const ref=await addDoc(collection(db,'recetas'),{...x,local:d.local||workLocal(),creado:Date.now(),por:S.uid});S.recOpen=ref.id}else await updateDoc(doc(db,'recetas',S.recOpen),x);
     S.recEdit=false;S.recDraft=null;toast('Receta guardada.');render(true)}catch(e){S.note=errMsg(e);render(true)}
 }
@@ -1032,6 +1040,7 @@ document.addEventListener('click',e=>{
   if(a==='recAddIng'){S.recDraft.ing=[...(S.recDraft.ing||[]),{nombre:'',cant:'',unidad:(S.recDraft.local||workLocal())==='mara'?'ml':'g'}];render(true);return}
   if(a==='recDelIng'){S.recDraft.ing.splice(+id,1);render(true);return}
   if(a==='recGuardar'){recGuardar();return}
+  if(a==='recSinFoto'){S.recDraft.foto='';render(true);return}
   if(a==='recBorrar'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Borrar esta receta?</h3><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="recBorrarOk">Sí, borrar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
   if(a==='recBorrarOk'){$('#sheet').innerHTML='';const rid0=S.recOpen;S.recOpen=null;S.recEdit=false;S.recDraft=null;deleteDoc(doc(db,'recetas',rid0)).then(()=>toast('Receta borrada.')).catch(e=>{S.note=errMsg(e)});render(true);return}
   if(a==='recargar'){b.textContent='Actualizando…';navigator.serviceWorker?.getRegistration().then(r=>r?.update()).catch(()=>{}).finally(()=>setTimeout(()=>location.reload(),300));return}
@@ -1112,6 +1121,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',e=>{
   const t=e.target;
+  if(t.matches('input[data-recfoto]')&&t.files?.[0]&&S.recDraft){fotoReceta(t.files[0]);t.value='';return}
   if(t.matches('[data-ri]')&&S.recDraft){S.recDraft.ing[+t.dataset.ri][t.dataset.rk]=t.value;recRowCosto(+t.dataset.ri);return}
   if(t.matches('select[data-au]')){const a=S.agr[S.addOpen];if(a)a.unit[t.dataset.au]=t.value}
   if(t.matches('select[data-axu]')){const a=S.agr[S.addOpen];if(a)a.extra.u=t.value}
@@ -1165,7 +1175,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-25b';
+const APP_V='2026-11-25c';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
