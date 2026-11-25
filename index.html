@@ -104,6 +104,7 @@ nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;backgroun
 body[data-sec=villa] .acc{border-left:6px solid #f93604}body[data-sec=mara] .acc{border-left:6px solid #a17a57}
 @media(max-width:480px){.accesos{grid-template-columns:1fr 1fr}}
 .pinfo2{display:block;margin:-2px 0 8px 2px}
+.mcard.urg{border-left:6px solid #d62d20}.mb-pendiente{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}.mb-curso{background:#e3eefc;color:#1d4f91;border-color:#9cbbe6}.mb-hecho{background:var(--ok);color:#fff;border-color:var(--ok)}label.chip{display:inline-flex;gap:6px;align-items:center;cursor:pointer}label.chip input{width:auto;min-height:0;margin:0}
 .soltag{color:#1f7a3a;font-weight:600}.solbox{border:2px solid #25a244;background:#eef8ef}.sol{border-top:1px solid var(--line);padding:10px 0}.sol:first-of-type{border-top:0}.sol ul{margin:4px 0;padding-left:18px}
 nav.tabs a.on{opacity:1}body{padding-bottom:24px}nav.tabs{display:none!important}.volver{display:inline-flex;margin-bottom:14px;text-decoration:none}
 @media(max-width:420px){nav.tabs a{font-size:16.5px;letter-spacing:-.01em}}@media(max-width:480px){nav.tabs{gap:2px}nav.tabs a{font-size:14.5px;padding:8px 1px}}
@@ -178,7 +179,7 @@ const sopLink=()=>'https://wa.me/'+SOPORTE+'?text='+encodeURIComponent(`Hola Mat
 const UNIDADES=['kg','u','caja','bolsa','cajón','bulto'];
 const uTxt=u=>u==='u'?'unidad':u;
 const unidadesDe=loc=>loc==='mara'?['u','caja']:UNIDADES;
-const ROLES=['Encargado/a','Administración','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
+const ROLES=['Encargado/a','Administración','Mantenimiento','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
 const NIVEL={'Encargado/a':2,'Administración':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
 const lvl=()=>S.owner?1:(NIVEL[me()?.rol]||4);
 const myLocs=()=>S.owner||!me()?.local||me().local==='todos'?locales().map(l=>l.id):[me().local];
@@ -248,8 +249,10 @@ const badgeHTML=(p,big)=>`<span class="bwrap"${big?' style="font-size:15px"':''}
 const faltantes=p=>p.recepcion?p.items.map((i,k)=>({i,x:p.recepcion.items?.[k]})).filter(o=>o.x&&o.x.rec<num(o.i.cant)):[];
 function accesos(nPend){
   const L=lvl(),ns=solsPend(workLocal()).length,room=workLocal(),nc=(S.chat[room]||[]).filter(m=>m.uid!==S.uid&&m.t>lastRead(room)).length;
+  ensureMant();const nm=mantDe(workLocal()).filter(x=>x.estado!=='hecho').length,MB=['mant','🔧','Mantenimiento',nm?`${nm} por hacer`:''];
+  if(esMant())return `<div class="accesos">${[MB].map(([v,i,t,n])=>`<a class="acc" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
   const B=[['pedir','🛒','Pedir',''],['solicitudes','📥','Solicitudes',ns?`${ns} pendiente${ns>1?'s':''}`:''],['pedidos','📦','Pedidos',nPend?`${nPend} por recibir`:''],
-    ...(L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(S.owner?[['equipo','👥','Equipo','']]:[])];
+    ...(L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(canMant()?[MB]:[]),...(S.owner?[['equipo','👥','Equipo','']]:[])];
   return `<div class="accesos">${B.map(([v,i,t,n])=>`<a class="acc" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
 }
 function vPanel(){
@@ -417,6 +420,64 @@ async function solResolver(ids,estado,nota,pedidoId){
   for(const id of ids){const x=(S.sols||[]).find(y=>y.id===id);if(!x||x.estado!=='pendiente')continue;
     await updateDoc(doc(db,'solicitudes',id),{estado,resp:{t,por:S.uid,...(nota?{nota}:{})},...(pedidoId?{pedidoId}:{})});
     if(x.por!==S.uid)pushUids([x.por],estado==='pedido'?`✅ Tu solicitud ya se pidió`:`🚫 Tu solicitud no se pide`,`${prov(x.prov)?.nombre||'Proveedor'}: ${x.items.map(i=>`${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join(', ')}${nota?`\n"${nota}"`:''}`,'#solicitudes');}
+}
+const MANT_ROL='Mantenimiento';
+const canMant=()=>S.owner||['Encargado/a',MANT_ROL].includes(me()?.rol);
+const canCargarMant=()=>S.owner||me()?.rol==='Encargado/a';
+const esMant=()=>!S.owner&&me()?.rol===MANT_ROL;
+let mantSub=null;
+function ensureMant(){
+  if(mantSub||!canMant())return;
+  mantSub=onSnapshot(query(collection(db,'mant'),orderBy('creado','desc'),limit(300)),s=>{S.mant=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>console.warn('mant',e));
+  S.subs.push(()=>{mantSub&&mantSub();mantSub=null});
+}
+const mantDe=loc=>(S.mant||[]).filter(x=>x.local===loc);
+const MEST={pendiente:'Pendiente',curso:'En curso',hecho:'Hecho'};
+function vMant(){
+  ensureMant();
+  const loc=workLocal(),f=S.fMant||'abiertos',todas=mantDe(loc),mes=Date.now()-30*864e5;
+  const L=todas.filter(x=>f==='abiertos'?x.estado!=='hecho':(x.estado==='hecho'&&(x.resp?.t||x.creado)>mes))
+    .sort((a,b)=>f==='abiertos'?((b.urg==='urgente')-(a.urg==='urgente')||a.creado-b.creado):(b.resp?.t||0)-(a.resp?.t||0));
+  const nA=todas.filter(x=>x.estado!=='hecho').length;
+  const card=x=>{const fotos=S.fotos[x.id]||[];if(S.mantOpen===x.id)loadFotos(x.id);
+    const puedeEstado=S.owner||me()?.rol===MANT_ROL||me()?.rol==='Encargado/a',puedeBorrar=canCargarMant();
+    return `<div class="panel mcard ${x.urg==='urgente'&&x.estado!=='hecho'?'urg':''}" style="margin-bottom:12px">
+    <div class="row" style="justify-content:space-between;align-items:flex-start"><div style="flex:1"><b style="font-size:18px">${esc(x.titulo)}</b>${x.lugar?`<div class="meta">📍 ${esc(x.lugar)}</div>`:''}</div>
+    <span class="bwrap"><span class="badge mb-${x.estado}">${MEST[x.estado]||x.estado}</span>${x.urg==='urgente'&&x.estado!=='hecho'?'<span class="badge b-dif">Urgente</span>':''}</span></div>
+    ${x.detalle?`<p style="margin:8px 0 4px;white-space:pre-wrap">${esc(x.detalle)}</p>`:''}
+    <p class="meta" style="margin:4px 0 0">Lo cargó ${esc(nameOf(x.por))} · ${fecha(x.creado)} ${hora(x.creado)}${x.inicio?` · Empezó ${esc(nameOf(x.inicio.por))} ${fecha(x.inicio.t)} ${hora(x.inicio.t)}`:''}</p>
+    ${x.estado==='hecho'&&x.resp?`<div class="panel ok" style="margin-top:8px;padding:10px 12px"><b>✅ Hecho por ${esc(nameOf(x.resp.por))}</b> <span class="meta">· ${fecha(x.resp.t)} ${hora(x.resp.t)}</span>${x.resp.nota?`<p style="margin:4px 0 0">${esc(x.resp.nota)}</p>`:''}</div>`:''}
+    ${S.mantOpen===x.id?`<div class="fotos" style="margin-top:8px">${fotos.map(fo=>`<button class="foto" data-act="verfoto" data-id="${fo.id}"><img src="${fo.data}" alt="Foto"></button>`).join('')||'<p class="meta">Sin fotos.</p>'}</div>
+      <label class="btn" style="margin-top:8px;cursor:pointer">📷 Agregar foto<input type="file" accept="image/*" data-mfoto="${x.id}" hidden></label>`:`<button class="linkbtn" style="margin-top:6px" data-act="mantOpen" data-id="${x.id}">📷 Fotos${x.fotos?` (${x.fotos})`:''}</button>`}
+    <div class="row" style="margin-top:10px">${puedeEstado&&x.estado==='pendiente'?`<button data-act="mantCurso" data-id="${x.id}">🔨 Empezar</button>`:''}${puedeEstado&&x.estado!=='hecho'?`<button class="pri" data-act="mantHecho" data-id="${x.id}">✅ Hecho</button>`:''}${S.owner&&x.estado==='hecho'?`<button data-act="mantReabrir" data-id="${x.id}">Reabrir</button>`:''}${puedeBorrar&&x.estado!=='hecho'?`<button class="del" data-act="mantDel" data-id="${x.id}">Borrar</button>`:''}</div></div>`};
+  const form=canCargarMant()?`<details class="panel" style="margin-bottom:16px" ${S.mantForm?'open':''}><summary style="cursor:pointer;font-weight:700;font-size:18px">+ Cargar trabajo de mantenimiento</summary>
+    <form data-form="mant" style="margin-top:10px"><label for="mt-t">¿Qué hay que hacer?</label><input id="mt-t" name="titulo" required maxlength="120" placeholder="Ej: Cambiar la lámpara de la cámara de frío">
+    <label for="mt-l" style="margin-top:10px">¿Dónde?</label><input id="mt-l" name="lugar" maxlength="80" placeholder="Ej: Cocina, baño del salón Falucho…">
+    <label for="mt-d" style="margin-top:10px">Detalle (opcional)</label><textarea id="mt-d" name="detalle" maxlength="1500" placeholder="Contá qué pasa, desde cuándo, qué se probó…"></textarea>
+    <label style="margin-top:10px">Urgencia</label><div class="chips"><label class="chip"><input type="radio" name="urg" value="normal" checked> Normal</label><label class="chip"><input type="radio" name="urg" value="urgente"> 🔴 Urgente</label></div>
+    <label style="margin-top:10px">Foto (opcional)</label><input type="file" name="foto" accept="image/*">
+    <button class="pri" style="width:100%;margin-top:14px" type="submit">Cargar trabajo</button></form></details>`:'';
+  return `<div class="head"><div><h2>🔧 Mantenimiento · ${esc(locName(loc))}</h2><p class="sub">${canCargarMant()?'Cargá lo que hay que arreglar. Al de mantenimiento le llega el aviso.':'Trabajos que hay que hacer. Marcalos cuando empezás y cuando terminás.'}</p></div></div>
+  ${form}
+  <div class="chips" style="margin-bottom:14px"><button class="chip ${f==='abiertos'?'on':''}" data-act="fMant" data-id="abiertos">Por hacer (${nA})</button><button class="chip ${f==='hechos'?'on':''}" data-act="fMant" data-id="hechos">Hechos (últimos 30 días)</button></div>
+  ${L.map(card).join('')||`<p class="empty">${f==='abiertos'?'No hay trabajos pendientes. 🎉':'No hay trabajos terminados en los últimos 30 días.'}</p>`}`;
+}
+const mantUids=loc=>Object.entries(S.equipo).filter(([id,m])=>m.activo&&m.rol===MANT_ROL&&(m.local===loc||m.local==='todos')).map(([id])=>id);
+async function cargarMant(f){
+  const fd=new FormData(f),loc=workLocal(),t=Date.now();
+  const x={local:loc,titulo:String(fd.get('titulo')).trim(),lugar:String(fd.get('lugar')||'').trim(),detalle:String(fd.get('detalle')||'').trim(),urg:fd.get('urg')==='urgente'?'urgente':'normal',por:S.uid,creado:t,estado:'pendiente'};
+  if(!x.titulo)return;const file=fd.get('foto');
+  let ref;try{ref=await addDoc(collection(db,'mant'),x)}catch(e){S.note=errMsg(e);render(true);return}
+  if(file&&file.size){try{const data=await comprimir(file);await addDoc(collection(db,'fotos'),{pid:ref.id,data,t:Date.now(),por:S.uid});await updateDoc(doc(db,'mant',ref.id),{fotos:1})}catch(e){console.warn(e)}}
+  S.mantForm=false;toast('Trabajo cargado. Le avisamos a mantenimiento.');render(true);
+  pushUids([...mantUids(loc),S.ownerUid].filter(u=>u&&u!==S.uid),`🔧 ${x.urg==='urgente'?'URGENTE · ':''}Mantenimiento · ${locName(loc)}`,`${x.titulo}${x.lugar?' · '+x.lugar:''}\nLo cargó ${nameOf(S.uid)}`,'#mant');
+}
+async function mantEstado(id,estado,nota){
+  const x=(S.mant||[]).find(y=>y.id===id);if(!x)return;const t=Date.now();
+  const upd=estado==='curso'?{estado,inicio:{t,por:S.uid}}:estado==='hecho'?{estado,resp:{t,por:S.uid,...(nota?{nota}:{})}}:{estado:'pendiente',resp:null,inicio:null};
+  try{await updateDoc(doc(db,'mant',id),upd)}catch(e){S.note=errMsg(e);render(true);return}
+  if(estado==='hecho'){toast('¡Bien! Trabajo terminado.');pushUids([x.por,S.ownerUid].filter(u=>u&&u!==S.uid),`✅ Mantenimiento hecho · ${locName(x.local)}`,`${x.titulo}\nLo hizo ${nameOf(S.uid)}${nota?`: "${nota}"`:''}`,'#mant')}
+  if(estado==='curso')pushUids([x.por].filter(u=>u&&u!==S.uid),`🔨 Empezaron un trabajo · ${locName(x.local)}`,`${x.titulo}\n${nameOf(S.uid)} ya está en eso.`,'#mant');
 }
 function pedidoItems(){const d=S.pedir;
   return [...prods().filter(p=>p.prov===d.prov&&num(d.qty[p.id])>0).map(p=>{const u=d.unit?.[p.id]||p.unidad;return {pid:p.id,nombre:p.nombre,unidad:u,cant:num(d.qty[p.id]),...(p.precio&&u===p.unidad?{precio:p.precio}:{})}}),
@@ -618,7 +679,7 @@ async function subirFoto(pid,file){
   const msg=$('#fotomsg');if(msg)msg.textContent='Subiendo foto…';
   try{const data=await comprimir(file);const ref=await addDoc(collection(db,'fotos'),{pid,data,t:Date.now(),por:S.uid});
     (S.fotos[pid]=S.fotos[pid]||[]).push({id:ref.id,pid,data,t:Date.now(),por:S.uid});
-    const p=S.pedidos.find(x=>x.id===pid);await updateDoc(doc(db,'pedidos',pid),{fotos:(S.fotos[pid]||[]).length,hist:hist(p,'subió una foto del remito')});render(true)}
+    const p=S.pedidos.find(x=>x.id===pid);if(p)await updateDoc(doc(db,'pedidos',pid),{fotos:(S.fotos[pid]||[]).length,hist:hist(p,'subió una foto del remito')});else if((S.mant||[]).some(x=>x.id===pid))await updateDoc(doc(db,'mant',pid),{fotos:(S.fotos[pid]||[]).length}).catch(()=>{});render(true)}
   catch(e){console.error(e);if(msg)msg.textContent='No se pudo subir la foto: '+errMsg(e)}
 }
 function vStock(){
@@ -693,7 +754,7 @@ function vEquipo(){
   return `<div class="head"><div><h2>Equipo</h2><p class="sub">Vos das de alta a cada persona con su mail y una clave inicial, le elegís el puesto y a qué local entra. Si alguien se va, lo desactivás y no entra más.</p></div></div>
   <details class="panel" style="margin-bottom:16px"><summary><b>Qué puede hacer cada puesto</b></summary><ul class="meta" style="margin:8px 0 0;padding-left:18px">
   <li><b>Administrador (vos):</b> todo, en los dos locales.</li><li><b>Encargado/a y Administración:</b> Panel, mandar pedidos a proveedores, recibir, stock y editar proveedores y precios.</li>
-  <li><b>Jefe/a de cocina y Jefe/a de pedidos:</b> mandar pedidos a proveedores (con las solicitudes del equipo), recibir, stock y conteos. Ve el catálogo pero no lo edita.</li><li><b>Cocinero/a y Bartender:</b> le piden al jefe (solicitudes) y reciben mercadería.</li></ul></details>
+  <li><b>Jefe/a de cocina y Jefe/a de pedidos:</b> mandar pedidos a proveedores (con las solicitudes del equipo), recibir, stock y conteos. Ve el catálogo pero no lo edita.</li><li><b>Cocinero/a y Bartender:</b> le piden al jefe (solicitudes) y reciben mercadería.</li><li><b>Mantenimiento:</b> ve los trabajos que cargan vos y los encargados, y los marca como empezados y hechos.</li></ul></details>
   <div class="cols"><section><div class="list">${ms.map(([id,m])=>`<div class="li" style="flex-wrap:wrap"><div style="flex:1 1 180px">${esc(m.nombre)}${m.activo?'':' <span class="badge">Desactivado</span>'}<small>${usuarioDe(m)?`Usuario: <b>${esc(usuarioDe(m))}</b> · Contraseña: ${S.verClave===id?`<b>${esc(S.claves?.[id]||'(no guardada)')}</b>`:`<button class="linkbtn" data-act="verClave" data-id="${id}">ver</button>`}`:esc(m.email)}</small></div>
   <div class="row" style="flex:2 1 300px"><select style="flex:1 1 140px" aria-label="Puesto" data-eq="${id}" data-f="rol">${ROLES.map(r=>`<option ${m.rol===r?'selected':''}>${r}</option>`).join('')}</select><select style="flex:1 1 120px" aria-label="Local" data-eq="${id}" data-f="local">${locOpts(m.local)}</select>
   <button data-act="activo" data-id="${id}">${m.activo?'Desactivar':'Reactivar'}</button>${usuarioDe(m)?'':`<button data-act="reset" data-id="${id}">Mail para cambiar clave</button>`}</div></div>`).join('')||'<p class="empty">Todavía no diste de alta a nadie.</p>'}</div></section>
@@ -735,12 +796,12 @@ function render(force){
   $('#chatBtn').hidden=!sec;if(sec){ensureChat(sec);updChatBadge()}
   if(!inApp){$('#tabs').hidden=true;$('#main').innerHTML=vAcceso();return}
   if(!sec){$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vInicio();return}
-  const L=lvl();const views=['panel','pedir','solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
+  const L=lvl();const views=esMant()?['panel','mant']:['panel',...(canMant()?['mant']:[]),'pedir','solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
   document.querySelectorAll('#tabs a').forEach(x=>x.hidden=!views.includes(x.dataset.v));
   let v=location.hash.slice(1),pid=null;if(v==='chat'){S.view='chat';document.querySelectorAll('#tabs a').forEach(x=>x.classList.remove('on'));$('#chatBtn').hidden=true;$('#main').innerHTML=volverBtn()+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vChat();return}if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v='panel';
   {const n=solsPend(S.local).length,b=$('#solN');b.hidden=!n||!canSend();b.textContent=n>9?'9+':n}
   S.view=v;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
-  const html=pid?vPedido(pid):{panel:vPanel,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo}[v]();
+  const html=pid?vPedido(pid):{panel:vPanel,mant:vMant,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo}[v]();
   $('#main').innerHTML=(v!=='panel'&&!pid?volverBtn():'')+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
 }
 const volverBtn=()=>'<a class="btn volver" href="#panel">‹ Inicio</a>';
@@ -851,6 +912,14 @@ document.addEventListener('click',e=>{
   if(a==='sugerir'){const loc=workLocal();prods().filter(p=>p.prov===S.pedir.prov).forEach(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc);if(mn>0&&st<mn)S.pedir.qty[p.id]=String(Math.ceil((mn-st)*10)/10)})}
   if(a==='addExtra')S.pedir.extra.push({n:'',q:'',u:workLocal()==='mara'?'u':'kg'});
   if(a==='fSolU'){S.fSolU=id||'';render(true);return}
+  if(a==='fMant'){S.fMant=id;render(true);return}
+  if(a==='mantOpen'){S.mantOpen=S.mantOpen===id?null:id;render(true);return}
+  if(a==='mantCurso'){mantEstado(id,'curso');return}
+  if(a==='mantReabrir'){mantEstado(id,'pendiente');return}
+  if(a==='mantHecho'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Trabajo terminado?</h3><label for="mh-n">Comentario (opcional)</label><input id="mh-n" placeholder="Ej: cambié la lámpara, quedó andando"><div class="row" style="margin-top:14px"><button class="pri" style="flex:1" data-act="mantHechoOk" data-id="${id}">Sí, está hecho</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
+  if(a==='mantHechoOk'){const n=($('#mh-n')?.value||'').trim().slice(0,300);$('#sheet').innerHTML='';mantEstado(id,'hecho',n);return}
+  if(a==='mantDel'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Borrar este trabajo?</h3><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="mantDelOk" data-id="${id}">Sí, borrar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
+  if(a==='mantDelOk'){$('#sheet').innerHTML='';deleteDoc(doc(db,'mant',id)).catch(e=>{S.note=errMsg(e);render(true)});return}
   if(a==='solArmar'){S.pedir={prov:id,qty:{},unit:{},extra:[],nota:'',buscar:''};cargarSols();location.hash='pedir';return}
   if(a==='solDel'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Borrar esta solicitud?</h3><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="solDelOk" data-id="${id}">Sí, borrar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
   if(a==='solDelOk'){$('#sheet').innerHTML='';deleteDoc(doc(db,'solicitudes',id)).catch(e=>{S.note=errMsg(e);render(true)});return}
@@ -920,6 +989,7 @@ document.addEventListener('change',e=>{
   if(t.matches('select[data-fprov]')){S.fProv=t.value;t.blur();render(true)}
   if(t.matches('select[data-festado]')){S.fEstado=t.value;t.blur();render(true)}
   if(t.matches('input[data-fdia]')){S.fDia=t.value;S.pVer=true;S.pOpen=null;t.blur();render(true)}
+  if(t.matches('input[data-mfoto]')&&t.files?.[0]){subirFoto(t.dataset.mfoto,t.files[0]);t.value='';return}
   if(t.matches('input[data-perfilfoto]')&&t.files?.[0]){fotoPerfil(t.files[0]);t.value='';return}
   if(t.matches('input[data-foto]')&&t.files?.[0]){subirFoto(t.dataset.foto,t.files[0]);t.value=''}
   if(t.matches('input[data-dia]')){S.panelDia=t.value&&t.value<dayKey(Date.now())?t.value:null;t.blur();render(true)}
@@ -934,6 +1004,7 @@ document.addEventListener('keydown',e=>{if(!e.target.matches('textarea[data-chat
 document.addEventListener('submit',async e=>{
   const f=e.target;e.preventDefault();const fd=new FormData(f);
   if(f.dataset.form==='chat'){enviarChat(f);return}
+  if(f.dataset.form==='mant'){cargarMant(f);return}
   if(f.dataset.form==='perfilClave'){const c=String(fd.get('clave'));try{await updatePassword(auth.currentUser,c);await setDoc(doc(db,'claves',S.uid),{clave:c,t:Date.now()}).catch(()=>{});$('#sheet').innerHTML='';toast('Contraseña cambiada.')}catch(er){S.note=er?.code==='auth/requires-recent-login'?'Por seguridad, salí y volvé a entrar, y ahí cambiá la contraseña.':errMsg(er);$('#sheet').innerHTML='';render(true)}return}
   if(f.dataset.form==='perfilNombre'){const n=f.nombre.value.trim().slice(0,40);if(!n)return;updateDoc(doc(db,'equipo',S.uid),{nombre:n}).then(()=>{S.equipo[S.uid]={...S.equipo[S.uid],nombre:n};$('#sheet').innerHTML='';toast('Nombre actualizado');render(true)}).catch(err=>{S.note=errMsg(err);render(true)});return}
   if(f.dataset.form==='rec'){guardarRec(f.dataset.id).catch(()=>{});return}
