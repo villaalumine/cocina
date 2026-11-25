@@ -567,6 +567,7 @@ function recForm(r,nueva){
   <label style="margin-top:16px">Procedimiento</label><textarea data-rf2="proc" rows="6" placeholder="Paso a paso…">${esc(d.proc||'')}</textarea>
   <div class="row" style="margin-top:16px"><button class="pri" style="flex:1" data-act="recGuardar">Guardar receta</button>${nueva?'':'<button class="del" data-act="recBorrar">Borrar</button>'}</div>`;
 }
+function recRowCosto(k){const i=S.recDraft?.ing?.[k],e=document.querySelector(`[data-ri="${k}"][data-rk="costo"]`);if(!i||!e)return;const c=costoIng({...i,costo:''});e.placeholder=c?'Auto '+money(c):'Costo $'}
 async function recGuardar(){
   const d=S.recDraft,nueva=S.recOpen==='nueva';if(!String(d.nombre||'').trim()){S.note='Ponele un nombre a la receta.';render(true);return}
   const ing=(d.ing||[]).filter(i=>String(i.nombre||'').trim()).map(i=>{const p=prods().find(x=>x.nombre.toLowerCase()===String(i.nombre).trim().toLowerCase());return {nombre:String(i.nombre).trim(),cant:num(i.cant),unidad:i.unidad||'g',...(p?{pid:p.id}:{}),...(String(i.costo||'').trim()!==''?{costo:num(i.costo)}:{})}});
@@ -1086,7 +1087,7 @@ document.addEventListener('input',e=>{
   const t=e.target,ds=t.dataset;
   if(ds.chatin!==undefined){menUpdate(t);return}
   if(ds.rf2!==undefined&&S.recDraft){S.recDraft[ds.rf2]=t.value;return}
-  if(ds.ri!==undefined&&S.recDraft){S.recDraft.ing[+ds.ri][ds.rk]=t.value;return}
+  if(ds.ri!==undefined&&S.recDraft){S.recDraft.ing[+ds.ri][ds.rk]=t.value;recRowCosto(+ds.ri);return}
   if(ds.recbus!==undefined){S.recBus=t.value;render(true);const n=document.querySelector('input[data-recbus]');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}return}
   if(ds.usrchk!==undefined){const u=userSlug(t.value),m=$('#usrmsg'),ya=u&&Object.values(S.equipo).some(x=>usuarioDe(x)===u);if(m){m.textContent=!u?'':ya?`❌ El usuario "${u}" ya existe. Elegí otro.`:`✅ "${u}" está libre.`;m.style.color=ya?'var(--redink)':'var(--ok)'}return}
   if(ds.aq!==undefined||ds.axn!==undefined||ds.axq!==undefined){const a=S.agr[S.addOpen];if(a){if(ds.aq!==undefined)a.qty[ds.aq]=t.value;if(ds.axn!==undefined)a.extra.n=t.value;if(ds.axq!==undefined)a.extra.q=t.value}return}
@@ -1108,7 +1109,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',e=>{
   const t=e.target;
-  if(t.matches('[data-ri]')&&S.recDraft){S.recDraft.ing[+t.dataset.ri][t.dataset.rk]=t.value;if(t.dataset.rk!=='costo')render(true);return}
+  if(t.matches('[data-ri]')&&S.recDraft){S.recDraft.ing[+t.dataset.ri][t.dataset.rk]=t.value;recRowCosto(+t.dataset.ri);return}
   if(t.matches('select[data-au]')){const a=S.agr[S.addOpen];if(a)a.unit[t.dataset.au]=t.value}
   if(t.matches('select[data-axu]')){const a=S.agr[S.addOpen];if(a)a.extra.u=t.value}
   if(t.matches('select[data-fprov]')){S.fProv=t.value;t.blur();render(true)}
