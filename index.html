@@ -100,12 +100,15 @@ body[data-sec=villa] .chatbtn{background:#f93604}body[data-sec=mara] .chatbtn{ba
 nav.tabs{padding:8px 6px calc(8px + env(safe-area-inset-bottom));gap:4px}
 nav.tabs a{font-size:18px;min-height:56px;display:flex;align-items:center;justify-content:center;padding:8px 2px;color:var(--ink);opacity:.72}
 nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;background:#25a244;color:#fff;font:700 11px system-ui;border-radius:9px;min-width:18px;height:18px;line-height:18px;padding:0 4px}
-.accesos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 22px}.acc{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:16px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:96px}.acc .ai{font-size:28px;line-height:1}.acc b{font:700 22px "Barlow Condensed",sans-serif;margin-top:6px}.acc small{color:#1f7a3a;font-weight:600;font-size:13px}
-body[data-sec=villa] .acc{border-left:6px solid #f93604}body[data-sec=mara] .acc{border-left:6px solid #a17a57}
+.accesos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 22px}.acc2{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:16px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:96px}.acc2 .ai{font-size:28px;line-height:1}.acc2 b{font:700 22px "Barlow Condensed",sans-serif;margin-top:6px}.acc2 small{color:#1f7a3a;font-weight:600;font-size:13px}
+body[data-sec=villa] .acc2{border-left:6px solid #f93604}body[data-sec=mara] .acc2{border-left:6px solid #a17a57}body[data-sec=todos] .acc2{border-left:6px solid #24303f}
 @media(max-width:480px){.accesos{grid-template-columns:1fr 1fr}}
 .pinfo2{display:block;margin:-2px 0 8px 2px}
 .mcard.urg{border-left:6px solid #d62d20}.mb-pendiente{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}.mb-curso{background:#e3eefc;color:#1d4f91;border-color:#9cbbe6}.mb-hecho{background:var(--ok);color:#fff;border-color:var(--ok)}label.chip{display:inline-flex;gap:6px;align-items:center;cursor:pointer}label.chip input{width:auto;min-height:0;margin:0}
 .btn.app{background:#1f2a44;color:#fff;border-color:#1f2a44}
+.ltag{display:inline-block;font:700 11px system-ui;letter-spacing:.02em;text-transform:uppercase;border-radius:6px;padding:2px 6px;margin-right:6px;vertical-align:2px;color:#fff}.lt-villa{background:#f93604}.lt-mara{background:#a17a57}
+.lchips{margin-bottom:12px}.chip.lc-villa.on{background:#f93604;border-color:#f93604;color:#fff}.chip.lc-mara.on{background:#a17a57;border-color:#a17a57;color:#fff}.kdes{display:block;font-size:12px;opacity:.75;margin-top:2px}
+body[data-sec=todos] .top{background:#24303f;color:#fff}body[data-sec=todos] .provbtn{border-left:6px solid #24303f}body[data-sec=todos] #brandTxt{color:#fff;font:600 20px Georgia,serif}body[data-sec=todos] .chatbtn{background:#24303f}
 .soltag{color:#1f7a3a;font-weight:600}.solbox{border:2px solid #25a244;background:#eef8ef}.sol{border-top:1px solid var(--line);padding:10px 0}.sol:first-of-type{border-top:0}.sol ul{margin:4px 0;padding-left:18px}
 nav.tabs a.on{opacity:1}body{padding-bottom:24px}nav.tabs{display:none!important}.volver{display:inline-flex;margin-bottom:14px;text-decoration:none}
 @media(max-width:420px){nav.tabs a{font-size:16.5px;letter-spacing:-.01em}}@media(max-width:480px){nav.tabs{gap:2px}nav.tabs a{font-size:14.5px;padding:8px 1px}}
@@ -180,8 +183,8 @@ const sopLink=()=>'https://wa.me/'+SOPORTE+'?text='+encodeURIComponent(`Hola Mat
 const UNIDADES=['kg','u','caja','bolsa','cajón','bulto'];
 const uTxt=u=>u==='u'?'unidad':u;
 const unidadesDe=loc=>loc==='mara'?['u','caja']:UNIDADES;
-const ROLES=['Encargado/a','Administración','Mantenimiento','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
-const NIVEL={'Encargado/a':2,'Administración':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
+const ROLES=['Gerente','Encargado/a','Administración','Mantenimiento','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
+const NIVEL={'Gerente':2,'Encargado/a':2,'Administración':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
 const lvl=()=>S.owner?1:(NIVEL[me()?.rol]||4);
 const myLocs=()=>S.owner||!me()?.local||me().local==='todos'?locales().map(l=>l.id):[me().local];
 const S={chat:{},agr:{},addOpen:null,fotos:{},fProv:'',fDia:'',stage:'boot',authMode:'login',cat:null,pedidos:[],stock:{},equipo:{},uid:null,owner:false,local:'todos',view:'',subs:[],
@@ -191,7 +194,7 @@ try{S.local=localStorage.getItem('cocina.sec')||''}catch(e){}
 const locales=()=>S.cat?.locales?.length?S.cat.locales:SEED.locales;
 const locName=id=>locales().find(l=>l.id===id)?.nombre||id;
 const provs=()=>S.cat?.proveedores||[];const prods=()=>S.cat?.productos||[];
-const prov=id=>provs().find(p=>p.id===id);const provsFor=loc=>provs().filter(p=>!p.local||p.local==='ambos'||p.local===loc);const prod=id=>prods().find(p=>p.id===id);
+const prov=id=>provs().find(p=>p.id===id);const provsFor=loc=>provs().filter(p=>loc==='todos'||!p.local||p.local==='ambos'||p.local===loc);const prod=id=>prods().find(p=>p.id===id);
 const me=()=>S.equipo[S.uid]||null;
 const DOM_U='@usuarios.villaalumine.com';
 const userSlug=u=>String(u||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'.').replace(/[^a-z0-9._-]/g,'');
@@ -205,16 +208,24 @@ function infoTxt(p,corto){const f=p.info;if(!f)return '';const L=[];
 const ENVIA=['Jefe/a de cocina','Jefe/a de pedidos','Encargado/a','Administración'];
 const canSend=()=>S.owner||ENVIA.includes(me()?.rol);
 const jefeTxt=loc=>loc==='mara'?'jefe de pedidos':'jefe de cocina';
-const solsPend=(loc,pv)=>(S.sols||[]).filter(x=>x.local===loc&&x.estado==='pendiente'&&(!pv||x.prov===pv));
+const solsPend=(loc,pv)=>(S.sols||[]).filter(x=>(loc==='todos'||x.local===loc)&&x.estado==='pendiente'&&(!pv||x.prov===pv));
 const iniciales=n=>(String(n||'').match(/\p{L}+/gu)||['?']).slice(0,2).map(x=>x[0]).join('').toUpperCase();
 const avatarIn=uid=>{const m=S.equipo[uid];return m?.foto?`<img src="${m.foto}" alt="">`:esc(iniciales(m?.nombre))};
 const nameOf=uid=>S.equipo[uid]?.nombre||'Alguien';
-const canAdmin=()=>lvl()<=2;
-const workLocal=()=>S.local||locales()[0].id;
+const canAdmin=()=>lvl()<=2&&me()?.rol!=='Gerente';
+const soloVer=()=>!S.owner&&me()?.rol==='Gerente';
+const UNI_ROLES=['Administración','Gerente'];
+const uniUser=()=>S.owner||UNI_ROLES.includes(me()?.rol);
+const uni=()=>S.local==='todos';
+const listLoc=()=>uni()?(S.fLoc||'todos'):workLocal();
+const pedLoc=()=>{if(!uni())return workLocal();const l=prov(S.pedir?.prov)?.local;return l==='villa'||l==='mara'?l:(S.vLoc||'villa')};
+const locTag=l=>uni()&&(l==='villa'||l==='mara')?`<span class="ltag lt-${l}">${l==='mara'?'Mara':'Villa'}</span>`:'';
+const locChips=(key,todos)=>uni()?`<div class="chips lchips">${[...(todos?[['todos','Todo']]:[]),['villa','Villa Aluminé'],['mara','Mara']].map(([v,t])=>`<button class="chip ${((key==='fLoc'?(S.fLoc||'todos'):(S.vLoc||'villa'))===v)?'on':''} lc-${v}" data-act="${key}" data-id="${v}">${t}</button>`).join('')}</div>`:'';
+const workLocal=()=>S.local==='todos'?(S.vLoc||'villa'):(S.local||locales()[0].id);
 const stockOf=(loc,pid)=>num(S.stock[loc]?.items?.[pid]);
 const minOf=(p,loc)=>num(p.min?.[loc]);
 const lowList=loc=>prods().filter(p=>minOf(p,loc)>0&&stockOf(loc,p.id)<minOf(p,loc));
-const inLocal=p=>p.local===workLocal();
+const inLocal=p=>uni()?(!S.fLoc||S.fLoc==='todos'||p.local===S.fLoc):p.local===workLocal();
 
 function msgText(p){
   const L=[`*Pedido ${locName(p.local)}* · ${fecha(p.creado)}`,'Hola! Te paso el pedido:',...p.items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`)];
@@ -251,17 +262,17 @@ function vAcceso(){
 const dayKey=t=>{const d=new Date(t);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 const shiftDay=(k,n)=>{const [y,m,d]=k.split('-').map(Number);return dayKey(new Date(y,m-1,d+n))};
 function prowHTML(p,extra){const r=p.recepcion;return `<button class="prow" data-act="abrir" data-id="${p.id}"><span class="pfecha"><b>${new Date(p.creado).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})}</b><small>${hora(p.creado)}</small></span>
-  <span class="pinfo"><b>${esc(prov(p.prov)?.nombre||'Proveedor')}</b><small>${extra||`${p.items.length} producto${p.items.length>1?'s':''} · ${esc(nameOf(p.por))}${r&&num(r.monto)?' · '+money(num(r.monto)):''}${p.fotos?' · 📷':''}`}</small></span>
+  <span class="pinfo"><b>${locTag(p.local)}${esc(prov(p.prov)?.nombre||'Proveedor')}</b><small>${extra||`${p.items.length} producto${p.items.length>1?'s':''} · ${esc(nameOf(p.por))}${r&&num(r.monto)?' · '+money(num(r.monto)):''}${p.fotos?' · 📷':''}`}</small></span>
   ${badgeHTML(p)}</button>`}
 const badgeHTML=(p,big)=>`<span class="bwrap"${big?' style="font-size:15px"':''}><span class="badge b-${p.estado}">${ESTADOS[p.estado]||p.estado}</span>${p.estado==='diferencias'?(p.faltaOk?(p.faltaOk.tipo==='no'?'<span class="badge b-fno">Faltante sin entregar</span>':'<span class="badge b-fok">Faltante entregado ✓</span>'):'<span class="badge b-dif">Con diferencias</span>'):''}</span>`;
 const faltantes=p=>p.recepcion?p.items.map((i,k)=>({i,x:p.recepcion.items?.[k]})).filter(o=>o.x&&o.x.rec<num(o.i.cant)):[];
 function accesos(nPend){
-  const L=lvl(),ns=solsPend(workLocal()).length,room=workLocal(),nc=(S.chat[room]||[]).filter(m=>m.uid!==S.uid&&m.t>lastRead(room)).length;
-  ensureMant();const nm=mantDe(workLocal()).filter(x=>x.estado!=='hecho').length,MB=['mant','🔧','Mantenimiento',nm?`${nm} por hacer`:''];
-  if(esMant())return `<div class="accesos">${[MB].map(([v,i,t,n])=>`<a class="acc" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
-  const B=[['pedir','🛒','Pedir',''],['solicitudes','📥','Solicitudes',ns?`${ns} pendiente${ns>1?'s':''}`:''],['pedidos','📦','Pedidos',nPend?`${nPend} por recibir`:''],
+  const L=lvl(),ns=solsPend(listLoc()).length,room=workLocal(),nc=(S.chat[room]||[]).filter(m=>m.uid!==S.uid&&m.t>lastRead(room)).length;
+  ensureMant();const nm=mantDe(listLoc()).filter(x=>x.estado!=='hecho').length,MB=['mant','🔧','Mantenimiento',nm?`${nm} por hacer`:''];
+  if(esMant())return `<div class="accesos">${[MB].map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
+  const B=[...(soloVer()?[]:[['pedir','🛒','Pedir','']]),['solicitudes','📥','Solicitudes',ns?`${ns} pendiente${ns>1?'s':''}`:''],['pedidos','📦','Pedidos',nPend?`${nPend} por recibir`:''],
     ...(L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(canMant()?[MB]:[]),...(S.owner?[['equipo','👥','Equipo','']]:[])];
-  return `<div class="accesos">${B.map(([v,i,t,n])=>`<a class="acc" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
+  return `<div class="accesos">${B.map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
 }
 function vPanel(){
   if(lvl()>2)return `<div class="head" style="margin-bottom:6px"><div><h2>Hola, ${esc(me()?.nombre||'')}</h2><p class="sub">${esc(me()?.rol||'')} · ${esc(locName(workLocal()))}</p></div></div>${accesos(S.pedidos.filter(inLocal).filter(p=>p.estado==='enviado'||p.estado==='pendiente').length)}`;
@@ -273,15 +284,16 @@ function vPanel(){
   const [y,m,d]=dia.split('-').map(Number),diaTxt=esHoy?'Hoy':new Date(y,m-1,d).toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
   const rol=S.owner?'Administrador':(me()?.rol||'');
   const sel=S.panelSel;
+  const desglose=k=>{const L=k==='env'?enviados:k==='pend'?pend:falt;return ['villa','mara'].map(l=>`${l==='mara'?'Mara':'Villa'} ${L.filter(p=>p.local===l).length}`).join(' · ')};
   const cards=[['env',enviados.length,`Pedidos enviados ${esHoy?'hoy':'ese día'}`,''],['pend',pend.length,'Pendientes de entrega','y'],['falt',falt.length,'Faltantes por recibir','r']];
   let lista='';
   if(sel==='env')lista=`<h3 class="ptit">Enviados ${esHoy?'hoy':'el '+esc(diaTxt)}</h3>${enviados.length?`<div class="plist">${enviados.map(p=>prowHTML(p)).join('')}</div>`:'<p class="empty">No se envió ningún pedido ese día.</p>'}`;
   if(sel==='pend')lista=`<h3 class="ptit">Pendientes de entrega</h3><p class="meta">Pedidos que todavía no se recibieron, de cualquier fecha.</p>${pend.length?`<div class="plist">${pend.map(p=>prowHTML(p,p.estado==='pendiente'?'Todavía no se mandó por WhatsApp':`Enviado ${fecha(p.enviado||p.creado)} ${hora(p.enviado||p.creado)} · ${p.items.length} producto${p.items.length>1?'s':''}`)).join('')}</div>`:'<p class="empty">No hay pedidos pendientes.</p>'}`;
   if(sel==='falt')lista=`<h3 class="ptit">Faltantes por recibir</h3><p class="meta">Pedidos de los últimos 30 días que llegaron incompletos. Entrá para reclamarle al proveedor.</p>${falt.length?`<div class="plist">${falt.map(p=>prowHTML(p,'Faltó: '+faltantes(p).map(o=>`${fmt(num(o.i.cant)-o.x.rec)} ${esc(o.i.unidad)} ${esc(o.i.nombre)}`).join(', '))).join('')}</div>`:'<p class="empty">No hay faltantes. 🎉</p>'}`;
-  return `<div class="head" style="margin-bottom:6px"><div><h2>Hola, ${esc(me()?.nombre||'Matías')}</h2><p class="sub">${esc(rol)} · ${esc(locName(workLocal()))}</p></div></div>
-  ${accesos(pend.length)}
+  return `<div class="head" style="margin-bottom:6px"><div><h2>Hola, ${esc(me()?.nombre||'Matías')}</h2><p class="sub">${esc(rol)} · ${uni()?'Villa Aluminé y Mara':esc(locName(workLocal()))}</p></div></div>
+  ${locChips('fLoc',1)}${accesos(pend.length)}
   <div class="row diasel" style="margin:10px 0 18px"><button data-act="dia" data-id="-1" aria-label="Día anterior">‹</button><input type="date" data-dia value="${dia}" max="${hoy}" aria-label="Día"><button data-act="dia" data-id="1" aria-label="Día siguiente" ${esHoy?'disabled':''}>›</button>${esHoy?'':'<button data-act="dia" data-id="0">Hoy</button>'}</div>
-  <div class="kpis k3">${cards.map(([k,n,t,c])=>`<button class="kpi ${c} ${n&&c==='r'?'':''} ${sel===k?'sel':''}" data-act="psel" data-id="${k}" aria-pressed="${sel===k}"><b>${n}</b><span>${t}</span></button>`).join('')}</div>
+  <div class="kpis k3">${cards.map(([k,n,t,c])=>`<button class="kpi ${c} ${n&&c==='r'?'':''} ${sel===k?'sel':''}" data-act="psel" data-id="${k}" aria-pressed="${sel===k}"><b>${n}</b><span>${t}</span>${uni()&&(S.fLoc||'todos')==='todos'&&n?`<small class="kdes">${desglose(k)}</small>`:''}</button>`).join('')}</div>
   ${lista||'<p class="empty">Tocá un cuadro para ver el detalle.</p>'}`;
 }
 
@@ -337,12 +349,12 @@ function vRec(p){
 }function stLabel(ped,rec,u){const d=num(rec)-num(ped);return d===0?'Llegó justo':d<0?`Faltó ${fmt(-d)} ${u}`:`Sobró ${fmt(d)} ${u}`}
 
 function vPedir(){
-  const loc=workLocal(),d=S.pedir;
+  const d=S.pedir,loc=d.prov?pedLoc():listLoc();
   const pvs=provsFor(loc);
   if(!pvs.length)return `<div class="head"><h2>Nuevo pedido para ${esc(locName(loc))}</h2></div><p class="empty">${esc(locName(loc))} todavía no tiene proveedores. Cargalos en Catálogo.</p>`;
   if(d.prov&&!pvs.some(p=>p.id===d.prov)){d.prov=null;d.qty={};d.unit={}}
-  if(!d.prov)return `<div class="head"><div><h2>${canSend()?'Nuevo pedido':'Pedir al '+jefeTxt(loc)}</h2><p class="sub">${canSend()?'Elegí a qué proveedor le querés pedir.':`Elegí el proveedor, cargá lo que necesitás y se lo mandás al ${jefeTxt(loc)}. Él arma el pedido.`}</p></div></div>
-  <div class="provgrid">${pvs.map(p=>{const n=prods().filter(x=>x.prov===p.id).length,low=prods().filter(x=>x.prov===p.id&&minOf(x,loc)>0&&stockOf(loc,x.id)<minOf(x,loc)).length;const ns=solsPend(loc,p.id).length;return `<button class="provbtn" data-act="prov" data-id="${p.id}">${p.sector?`<small>${esc(p.sector)}</small>`:''}<b>${esc(p.nombre)}</b><span>${n} producto${n===1?'':'s'}${low?` · <span class="lowtag">${low} bajo el mínimo</span>`:''}${ns?` · <span class="soltag">📥 ${ns} solicitud${ns>1?'es':''}</span>`:''}</span></button>`}).join('')}</div>`;
+  if(!d.prov)return locChips('fLoc',1)+`<div class="head"><div><h2>${canSend()?'Nuevo pedido':'Pedir al '+jefeTxt(loc)}</h2><p class="sub">${canSend()?'Elegí a qué proveedor le querés pedir.':`Elegí el proveedor, cargá lo que necesitás y se lo mandás al ${jefeTxt(loc)}. Él arma el pedido.`}</p></div></div>
+  <div class="provgrid">${pvs.map(p=>{const n=prods().filter(x=>x.prov===p.id).length,low=prods().filter(x=>x.prov===p.id&&minOf(x,loc)>0&&stockOf(loc,x.id)<minOf(x,loc)).length;const ns=solsPend(loc,p.id).length;return `<button class="provbtn" data-act="prov" data-id="${p.id}">${p.sector?`<small>${esc(p.sector)}</small>`:''}<b>${locTag(p.local)}${esc(p.nombre)}</b><span>${n} producto${n===1?'':'s'}${low?` · <span class="lowtag">${low} bajo el mínimo</span>`:''}${ns?` · <span class="soltag">📥 ${ns} solicitud${ns>1?'es':''}</span>`:''}</span></button>`}).join('')}</div>`;
   const list=prods().filter(p=>p.prov===d.prov),pvSel=prov(d.prov);
   const lowN=list.filter(p=>minOf(p,loc)>0&&stockOf(loc,p.id)<minOf(p,loc)).length;
   return `<button data-act="provBack" style="margin-bottom:12px">‹ Proveedores</button>
@@ -384,7 +396,7 @@ function solTotales(L){
   return Object.values(m);
 }
 function cargarSols(){
-  const d=S.pedir,L=solsPend(workLocal(),d.prov);if(!L.length)return;
+  const d=S.pedir,L=solsPend(pedLoc(),d.prov);if(!L.length)return;
   L.forEach(x=>x.items.forEach(i=>{const p=i.pid&&prod(i.pid);
     if(p&&p.prov===d.prov&&(!num(d.qty[p.id])||(d.unit[p.id]||p.unidad)===i.unidad)){d.qty[p.id]=String(num(d.qty[p.id])+num(i.cant));if(i.unidad!==p.unidad)d.unit[p.id]=i.unidad}
     else{const e=d.extra.find(e=>e.n.trim().toLowerCase()===i.nombre.toLowerCase()&&(e.u||'kg')===i.unidad);if(e)e.q=String(num(e.q)+num(i.cant));else d.extra.push({n:i.nombre,q:String(i.cant),u:i.unidad})}}));
@@ -402,25 +414,25 @@ async function pushUids(uids,title,body,url){
 const jefesDe=loc=>{const j=Object.entries(S.equipo).filter(([id,m])=>m.activo&&ENVIA.includes(m.rol)&&(m.local===loc||m.local==='todos')).map(([id])=>id);return j.length?j:[S.ownerUid]};
 async function guardarSolicitud(){
   const items=pedidoItems();if(!items.length){S.note='Cargá al menos una cantidad.';render(true);return}
-  const loc=workLocal(),d=S.pedir,pv=prov(d.prov);
+  const loc=pedLoc(),d=S.pedir,pv=prov(d.prov);
   await w(()=>addDoc(collection(db,'solicitudes'),{local:loc,prov:d.prov,items,nota:d.nota.trim(),por:S.uid,creado:Date.now(),estado:'pendiente'}),`Listo, se lo mandaste al ${jefeTxt(loc)}.`);
   S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};render(true);scrollTo(0,0);
   pushUids(jefesDe(loc).filter(u=>u!==S.uid),`📥 Solicitud de ${nameOf(S.uid)} · ${locName(loc)}`,`Para ${pv?.nombre||'proveedor'}:\n${items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join('\n')}`,'#solicitudes');
 }
 function vSolicitudes(){
-  const loc=workLocal(),env=canSend(),todas=solsPend(loc);
+  const loc=listLoc(),env=canSend(),todas=solsPend(loc);
   const gente=[...new Set(todas.map(x=>x.por))].sort((a,b)=>nameOf(a).localeCompare(nameOf(b)));
   if(S.fSolU&&!gente.includes(S.fSolU))S.fSolU='';
   const pend=S.fSolU?todas.filter(x=>x.por===S.fSolU):todas;
   const porProv={};pend.forEach(x=>(porProv[x.prov]=porProv[x.prov]||[]).push(x));
   const solHTML=x=>`<div class="sol"><b>${esc(nameOf(x.por))}</b> <span class="meta">· ${fecha(x.creado)} ${hora(x.creado)}</span><ul>${x.items.map(i=>`<li>${fmt(i.cant)} ${esc(i.unidad)} ${esc(i.nombre)}</li>`).join('')}</ul>${x.nota?`<p class="meta" style="margin:0">Nota: ${esc(x.nota)}</p>`:''}
     ${x.por===S.uid||env?`<div class="row" style="margin-top:6px">${x.por===S.uid||env?`<button class="del" data-act="solDel" data-id="${x.id}">Borrar</button>`:''}${env?`<button data-act="solNo" data-id="${x.id}">No se pide</button>`:''}</div>`:''}</div>`;
-  const grupos=Object.entries(porProv).map(([pv,L])=>{const all=solsPend(loc,pv);return `<div class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">${esc(prov(pv)?.nombre||'Proveedor')}</h3><span class="soltag">${L.length} solicitud${L.length>1?'es':''}</span></div>
+  const grupos=Object.entries(porProv).map(([pv,L])=>{const all=solsPend(loc,pv);return `<div class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">${locTag(prov(pv)?.local)}${esc(prov(pv)?.nombre||'Proveedor')}</h3><span class="soltag">${L.length} solicitud${L.length>1?'es':''}</span></div>
     ${L.map(solHTML).join('')}
     ${!S.fSolU&&L.length>1?`<div class="solbox panel" style="margin:10px 0 0;padding:10px 12px"><p class="meta" style="margin:0 0 4px"><b>Total sumado:</b></p><ul style="margin:0;padding-left:18px">${solTotales(L).map(t=>`<li><b>${fmt(t.cant)} ${esc(t.unidad)} ${esc(t.nombre)}</b> <span class="meta">(${t.quien.map(esc).join(', ')})</span></li>`).join('')}</ul></div>`:''}
     ${env?`<button class="pri" style="width:100%;margin-top:12px" data-act="solArmar" data-id="${pv}">🛒 Armar pedido a ${esc(prov(pv)?.nombre||'proveedor')}${S.fSolU&&all.length>L.length?` (incluye las ${all.length} solicitudes)`:''}</button>`:''}</div>`}).join('');
   const filtro=gente.length?`<div class="chips" style="margin-bottom:16px"><button class="chip ${S.fSolU?'':'on'}" data-act="fSolU" data-id="">Todos (${todas.length})</button>${gente.map(u=>`<button class="chip ${S.fSolU===u?'on':''}" data-act="fSolU" data-id="${u}">${esc(nameOf(u))} (${todas.filter(x=>x.por===u).length})</button>`).join('')}</div>`:'';
-  return `<div class="head"><div><h2>Solicitudes</h2><p class="sub">${env?'Lo que pidió el equipo, por proveedor. Revisá y armá el pedido.':`Lo que pidió el equipo al ${jefeTxt(loc)}. Fijate acá antes de pedir algo, así no se duplica.`}</p></div>${env?'':'<a class="btn pri" href="#pedir">+ Pedir algo</a>'}</div>
+  return locChips('fLoc',1)+`<div class="head"><div><h2>Solicitudes</h2><p class="sub">${env?'Lo que pidió el equipo, por proveedor. Revisá y armá el pedido.':`Lo que pidió el equipo al ${jefeTxt(loc)}. Fijate acá antes de pedir algo, así no se duplica.`}</p></div>${env?'':'<a class="btn pri" href="#pedir">+ Pedir algo</a>'}</div>
   ${filtro}${grupos||'<p class="empty">No hay solicitudes pendientes. 🎉</p>'}`;
 }
 async function solResolver(ids,estado,nota,pedidoId){
@@ -430,7 +442,7 @@ async function solResolver(ids,estado,nota,pedidoId){
     if(x.por!==S.uid)pushUids([x.por],estado==='pedido'?`✅ Tu solicitud ya se pidió`:`🚫 Tu solicitud no se pide`,`${prov(x.prov)?.nombre||'Proveedor'}: ${x.items.map(i=>`${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join(', ')}${nota?`\n"${nota}"`:''}`,'#solicitudes');}
 }
 const MANT_ROL='Mantenimiento';
-const canMant=()=>S.owner||['Encargado/a',MANT_ROL].includes(me()?.rol);
+const canMant=()=>S.owner||['Encargado/a',MANT_ROL,'Administración','Gerente'].includes(me()?.rol);
 const canCargarMant=()=>S.owner||me()?.rol==='Encargado/a';
 const esMant=()=>!S.owner&&me()?.rol===MANT_ROL;
 let mantSub=null;
@@ -439,18 +451,18 @@ function ensureMant(){
   mantSub=onSnapshot(query(collection(db,'mant'),orderBy('creado','desc'),limit(300)),s=>{S.mant=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>console.warn('mant',e));
   S.subs.push(()=>{mantSub&&mantSub();mantSub=null});
 }
-const mantDe=loc=>(S.mant||[]).filter(x=>x.local===loc);
+const mantDe=loc=>(S.mant||[]).filter(x=>loc==='todos'||x.local===loc);
 const MEST={pendiente:'Pendiente',curso:'En curso',hecho:'Hecho'};
 function vMant(){
   ensureMant();
-  const loc=workLocal(),f=S.fMant||'abiertos',todas=mantDe(loc),mes=Date.now()-30*864e5;
+  const loc=listLoc(),f=S.fMant||'abiertos',todas=mantDe(loc),mes=Date.now()-30*864e5;
   const L=todas.filter(x=>f==='abiertos'?x.estado!=='hecho':(x.estado==='hecho'&&(x.resp?.t||x.creado)>mes))
     .sort((a,b)=>f==='abiertos'?((b.urg==='urgente')-(a.urg==='urgente')||a.creado-b.creado):(b.resp?.t||0)-(a.resp?.t||0));
   const nA=todas.filter(x=>x.estado!=='hecho').length;
   const card=x=>{const fotos=S.fotos[x.id]||[];if(S.mantOpen===x.id)loadFotos(x.id);
     const puedeEstado=S.owner||me()?.rol===MANT_ROL||me()?.rol==='Encargado/a',puedeBorrar=canCargarMant();
     return `<div class="panel mcard ${x.urg==='urgente'&&x.estado!=='hecho'?'urg':''}" style="margin-bottom:12px">
-    <div class="row" style="justify-content:space-between;align-items:flex-start"><div style="flex:1"><b style="font-size:18px">${esc(x.titulo)}</b>${x.lugar?`<div class="meta">📍 ${esc(x.lugar)}</div>`:''}</div>
+    <div class="row" style="justify-content:space-between;align-items:flex-start"><div style="flex:1"><b style="font-size:18px">${locTag(x.local)}${esc(x.titulo)}</b>${x.lugar?`<div class="meta">📍 ${esc(x.lugar)}</div>`:''}</div>
     <span class="bwrap"><span class="badge mb-${x.estado}">${MEST[x.estado]||x.estado}</span>${x.urg==='urgente'&&x.estado!=='hecho'?'<span class="badge b-dif">Urgente</span>':''}</span></div>
     ${x.detalle?`<p style="margin:8px 0 4px;white-space:pre-wrap">${esc(x.detalle)}</p>`:''}
     <p class="meta" style="margin:4px 0 0">Lo cargó ${esc(nameOf(x.por))} · ${fecha(x.creado)} ${hora(x.creado)}${x.inicio?` · Empezó ${esc(nameOf(x.inicio.por))} ${fecha(x.inicio.t)} ${hora(x.inicio.t)}`:''}</p>
@@ -459,20 +471,20 @@ function vMant(){
       <label class="btn" style="margin-top:8px;cursor:pointer">📷 Agregar foto<input type="file" accept="image/*" data-mfoto="${x.id}" hidden></label>`:`<button class="linkbtn" style="margin-top:6px" data-act="mantOpen" data-id="${x.id}">📷 Fotos${x.fotos?` (${x.fotos})`:''}</button>`}
     <div class="row" style="margin-top:10px">${puedeEstado&&x.estado==='pendiente'?`<button data-act="mantCurso" data-id="${x.id}">🔨 Empezar</button>`:''}${puedeEstado&&x.estado!=='hecho'?`<button class="pri" data-act="mantHecho" data-id="${x.id}">✅ Hecho</button>`:''}${S.owner&&x.estado==='hecho'?`<button data-act="mantReabrir" data-id="${x.id}">Reabrir</button>`:''}${puedeBorrar&&x.estado!=='hecho'?`<button class="del" data-act="mantDel" data-id="${x.id}">Borrar</button>`:''}</div></div>`};
   const form=canCargarMant()?`<details class="panel" style="margin-bottom:16px" ${S.mantForm?'open':''}><summary style="cursor:pointer;font-weight:700;font-size:18px">+ Cargar trabajo de mantenimiento</summary>
-    <form data-form="mant" style="margin-top:10px"><label for="mt-t">¿Qué hay que hacer?</label><input id="mt-t" name="titulo" required maxlength="120" placeholder="Ej: Cambiar la lámpara de la cámara de frío">
+    <form data-form="mant" style="margin-top:10px">${uni()?`<label for="mt-loc">Local</label><select id="mt-loc" name="local"><option value="villa" ${(S.fLoc||'')!=='mara'?'selected':''}>Villa Aluminé</option><option value="mara" ${S.fLoc==='mara'?'selected':''}>Mara</option></select>`:''}<label for="mt-t">¿Qué hay que hacer?</label><input id="mt-t" name="titulo" required maxlength="120" placeholder="Ej: Cambiar la lámpara de la cámara de frío">
     <label for="mt-l" style="margin-top:10px">¿Dónde?</label><input id="mt-l" name="lugar" maxlength="80" placeholder="Ej: Cocina, baño del salón Falucho…">
     <label for="mt-d" style="margin-top:10px">Detalle (opcional)</label><textarea id="mt-d" name="detalle" maxlength="1500" placeholder="Contá qué pasa, desde cuándo, qué se probó…"></textarea>
     <label style="margin-top:10px">Urgencia</label><div class="chips"><label class="chip"><input type="radio" name="urg" value="normal" checked> Normal</label><label class="chip"><input type="radio" name="urg" value="urgente"> 🔴 Urgente</label></div>
     <label style="margin-top:10px">Foto (opcional)</label><input type="file" name="foto" accept="image/*">
     <button class="pri" style="width:100%;margin-top:14px" type="submit">Cargar trabajo</button></form></details>`:'';
-  return `<div class="head"><div><h2>🔧 Mantenimiento · ${esc(locName(loc))}</h2><p class="sub">${canCargarMant()?'Cargá lo que hay que arreglar. Al de mantenimiento le llega el aviso.':'Trabajos que hay que hacer. Marcalos cuando empezás y cuando terminás.'}</p></div></div>
+  return locChips('fLoc',1)+`<div class="head"><div><h2>🔧 Mantenimiento${uni()?'':' · '+esc(locName(loc))}</h2><p class="sub">${canCargarMant()?'Cargá lo que hay que arreglar. Al de mantenimiento le llega el aviso.':'Trabajos que hay que hacer. Marcalos cuando empezás y cuando terminás.'}</p></div></div>
   ${form}
   <div class="chips" style="margin-bottom:14px"><button class="chip ${f==='abiertos'?'on':''}" data-act="fMant" data-id="abiertos">Por hacer (${nA})</button><button class="chip ${f==='hechos'?'on':''}" data-act="fMant" data-id="hechos">Hechos (últimos 30 días)</button></div>
   ${L.map(card).join('')||`<p class="empty">${f==='abiertos'?'No hay trabajos pendientes. 🎉':'No hay trabajos terminados en los últimos 30 días.'}</p>`}`;
 }
 const mantUids=loc=>Object.entries(S.equipo).filter(([id,m])=>m.activo&&m.rol===MANT_ROL&&(m.local===loc||m.local==='todos')).map(([id])=>id);
 async function cargarMant(f){
-  const fd=new FormData(f),loc=workLocal(),t=Date.now();
+  const fd=new FormData(f),loc=uni()?(fd.get('local')||'villa'):workLocal(),t=Date.now();
   const x={local:loc,titulo:String(fd.get('titulo')).trim(),lugar:String(fd.get('lugar')||'').trim(),detalle:String(fd.get('detalle')||'').trim(),urg:fd.get('urg')==='urgente'?'urgente':'normal',por:S.uid,creado:t,estado:'pendiente'};
   if(!x.titulo)return;const file=fd.get('foto');
   let ref;try{ref=await addDoc(collection(db,'mant'),x)}catch(e){S.note=errMsg(e);render(true);return}
@@ -499,12 +511,12 @@ function pedFiltrados(){
 const EST_OPTS=[['todos','Todos'],['pendiente','Sin enviar'],['enviado','Esperando'],['recibido','Recibidos OK'],['diferencias','Con diferencias']];
 function vPedidos(){
   const hoy=dayKey(Date.now()),ayer=shiftDay(hoy,-1),f=S.fEstado||'todos',o=S.pOpen;
-  const pvIds=[...new Set([...provsFor(workLocal()).map(p=>p.id),...S.pedidos.filter(inLocal).map(p=>p.prov)])];
+  const pvIds=[...new Set([...provsFor(listLoc()).map(p=>p.id),...S.pedidos.filter(inLocal).map(p=>p.prov)])];
   const diaTxt=!S.fDia?'Todas':S.fDia==='7d'?'Últimos 7 días':S.fDia===hoy?'Hoy':S.fDia===ayer?'Ayer':(()=>{const [y,m,d]=S.fDia.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('es-AR',{day:'numeric',month:'short'})})();
   const chip=(act,val,txt,on)=>`<button class="chip ${on?'on':''}" data-act="${act}" data-id="${esc(val)}">${esc(txt)}</button>`;
   const sec=(k,ico,tit,val,body)=>`<div class="acc ${o===k?'open':''}"><button class="acchead" data-act="pOpen" data-id="${k}" aria-expanded="${o===k}"><span>${ico} ${tit}</span><b>${esc(val)}</b><i>${o===k?'▲':'▼'}</i></button>${o===k?`<div class="accbody">${body}</div>`:''}</div>`;
   const ps=pedFiltrados(),ver=S.pVer;
-  return `<div class="head"><div><h2>Pedidos</h2><p class="sub">Elegí la fecha, el proveedor o el estado para ver los pedidos.</p></div></div>
+  return locChips('fLoc',1)+`<div class="head"><div><h2>Pedidos</h2><p class="sub">Elegí la fecha, el proveedor o el estado para ver los pedidos.</p></div></div>
   <div class="accs">
   ${sec('fecha','📅','Fecha',diaTxt,`<div class="chips">${chip('fSet','dia:'+hoy,'Hoy',S.fDia===hoy)}${chip('fSet','dia:'+ayer,'Ayer',S.fDia===ayer)}${chip('fSet','dia:7d','Últimos 7 días',S.fDia==='7d')}${chip('fSet','dia:','Todas',!S.fDia)}</div><label style="margin-top:10px">Otro día</label><input type="date" data-fdia value="${S.fDia&&S.fDia!=='7d'?S.fDia:''}" max="${hoy}" aria-label="Otro día">`)}
   ${sec('prov','🏪','Proveedor',S.fProv?(prov(S.fProv)?.nombre||'Proveedor'):'Todos',`<div class="chips">${chip('fSet','prov:','Todos',!S.fProv)}${pvIds.map(id=>chip('fSet','prov:'+id,prov(id)?.nombre||'Proveedor borrado',S.fProv===id)).join('')}</div>`)}
@@ -558,7 +570,7 @@ function ensureChat(room){
 }
 const lastRead=room=>{try{return +localStorage.getItem('cocina.chat.'+room)||0}catch(e){return 0}};
 function markRead(room){const m=S.chat[room]||[];const t=m.length?m[m.length-1].t:Date.now();try{localStorage.setItem('cocina.chat.'+room,String(t))}catch(e){}}
-function updChatBadge(){const room=S.local,b=$('#chatBadge');if(!b)return;const n=(S.chat[room]||[]).filter(m=>m.uid!==S.uid&&m.t>lastRead(room)).length;b.hidden=!n||location.hash==='#chat';b.textContent=n>9?'9+':n}
+function updChatBadge(){const b=$('#chatBadge');if(!b)return;const n=(S.local==='todos'?['villa','mara']:[S.local]).reduce((a,room)=>a+(S.chat[room]||[]).filter(m=>m.uid!==S.uid&&m.t>lastRead(room)).length,0);b.hidden=!n||location.hash==='#chat';b.textContent=n>9?'9+':n}
 const chatGente=room=>Object.entries(S.equipo).filter(([id,m])=>m.activo&&(id===S.ownerUid||m.local===room||m.local==='todos')).map(([id,m])=>({id,nombre:m.nombre,rol:id===S.ownerUid?'Administrador':m.rol})).sort((a,b)=>a.nombre.localeCompare(b.nombre));
 function marcarMenciones(html,room){
   const g=chatGente(room).sort((a,b)=>b.nombre.length-a.nombre.length);
@@ -579,7 +591,7 @@ function chatAvisoHTML(){
 function vChat(){
   const room=workLocal();ensureChat(room);markRead(room);
   setTimeout(()=>{const l=$('#chatlist');if(l)l.scrollTop=l.scrollHeight},0);
-  return `<div class="head"><div><h2>Chat · ${esc(locName(room))}</h2><p class="sub">Lo ven todos los que trabajan en ${esc(locName(room))}.</p></div>${chatAvisoHTML()}</div>
+  return locChips('vLoc')+`<div class="head"><div><h2>Chat · ${esc(locName(room))}</h2><p class="sub">Lo ven todos los que trabajan en ${esc(locName(room))}.</p></div>${chatAvisoHTML()}</div>
   <div class="chatbox"><div class="chatlist" id="chatlist">${chatListHTML(room)}</div>
   <div class="mentions" id="mentions" hidden></div>
   <form class="chatform" data-form="chat"><textarea name="txt" rows="1" placeholder="Escribí un mensaje… (con @ nombrás a alguien)" aria-label="Mensaje" data-chatin></textarea><button class="pri" type="submit" aria-label="Enviar">Enviar</button></form></div>`;
@@ -697,9 +709,8 @@ async function subirFoto(pid,file){
 function vStock(){
   const loc=workLocal(),groups=provsFor(loc).map(pv=>({pv,list:prods().filter(p=>p.prov===pv.id)})).filter(g=>g.list.length);
   const t=S.stock[loc]?.t;
-  return `<div class="head"><div><h2>Stock de ${esc(locName(loc))}</h2><p class="sub">Suma solo cuando se recibe un pedido. Hacé un conteo para corregirlo.${t?` Último cambio: ${fecha(t)} ${hora(t)}.`:''}</p></div>
-  <button class="pri" data-act="guardarConteo">Guardar conteo</button></div>
-  ${S.local==='todos'?`<p class="note">Mostrando ${esc(locName(loc))}. Elegí el local arriba para ver el otro.</p>`:''}
+  return locChips('vLoc')+`<div class="head"><div><h2>Stock de ${esc(locName(loc))}</h2><p class="sub">Suma solo cuando se recibe un pedido. Hacé un conteo para corregirlo.${t?` Último cambio: ${fecha(t)} ${hora(t)}.`:''}</p></div>
+  ${soloVer()?'':'<button class="pri" data-act="guardarConteo">Guardar conteo</button>'}</div>
   <input type="search" data-filtro="st" placeholder="Buscar producto…" aria-label="Buscar producto" style="margin-bottom:6px">
   ${groups.map(g=>`<div class="grp"><h3 style="margin:18px 0 6px">${esc(g.pv.nombre)}</h3><table class="stack"><thead><tr><th>Producto</th><th class="n">Hay</th><th class="n">Mínimo</th><th>Conteo</th></tr></thead><tbody>
   ${g.list.map(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc),low=mn>0&&st<mn;return `<tr data-n="${esc(p.nombre.toLowerCase())}"><td>${esc(p.nombre)}${low?' <span class="lowtag">bajo</span>':''}</td><td class="n q">${fmt(st)} ${esc(p.unidad)}</td><td class="n q">${mn?fmt(mn):'·'}</td><td><input inputmode="decimal" aria-label="Conteo ${esc(p.nombre)}" data-c="${p.id}" value="${esc(S.conteo[p.id]??'')}" placeholder="${fmt(st)}"></td></tr>`}).join('')}</tbody></table></div>`).join('')||'<p class="empty">Cargá productos en Catálogo.</p>'}`;
@@ -710,7 +721,7 @@ function vCatalogo(){
   const ed=canAdmin(),dis=ed?'':'disabled',loc=workLocal(),o=S.catOpen;
   const pvs=d.proveedores.map((p,k)=>({p,k})).filter(({p})=>!p.local||p.local==='ambos'||p.local===loc);
   const locOpts=v=>[...locales().map(l=>[l.id,l.nombre]),['ambos','Los dos']].map(([x,n])=>`<option value="${x}" ${(v||'ambos')===x?'selected':''}>${esc(n)}</option>`).join('');
-  return `<div class="head"><div><h2>Catálogo</h2><p class="sub">Tocá un proveedor para ver sus productos y precios.</p></div>
+  return locChips('vLoc')+`<div class="head"><div><h2>Catálogo${uni()?' · '+esc(locName(loc)):''}</h2><p class="sub">Tocá un proveedor para ver sus productos y precios.</p></div>
   ${ed?`<button class="pri" data-act="guardarCat">Guardar catálogo</button>`:''}</div>
   ${ed?'':'<p class="note">Solo el administrador y los encargados pueden cambiar el catálogo.</p>'}
   <div class="accs">${pvs.map(({p,k})=>{const items=d.productos.map((x,pk)=>({x,pk})).filter(({x})=>x.prov===p.id),open=o===p.id;
@@ -767,7 +778,7 @@ function vEquipo(){
   const locOpts=v=>locales().map(l=>`<option value="${l.id}" ${v===l.id?'selected':''}>Solo ${esc(l.nombre)}</option>`).join('')+`<option value="todos" ${v==='todos'?'selected':''}>Los dos locales</option>`;
   return `<div class="head"><div><h2>Equipo</h2><p class="sub">Vos das de alta a cada persona con su mail y una clave inicial, le elegís el puesto y a qué local entra. Si alguien se va, lo desactivás y no entra más.</p></div></div>
   <details class="panel" style="margin-bottom:16px"><summary><b>Qué puede hacer cada puesto</b></summary><ul class="meta" style="margin:8px 0 0;padding-left:18px">
-  <li><b>Administrador (vos):</b> todo, en los dos locales.</li><li><b>Encargado/a y Administración:</b> Panel, mandar pedidos a proveedores, recibir, stock y editar proveedores y precios.</li>
+  <li><b>Administrador (vos):</b> todo, en los dos locales.</li><li><b>Gerente:</b> ve todo de los dos locales juntos (pedidos, solicitudes, stock, catálogo, mantenimiento), sin modificar nada.</li><li><b>Encargado/a y Administración:</b> Panel, mandar pedidos a proveedores, recibir, stock y editar proveedores y precios.</li>
   <li><b>Jefe/a de cocina y Jefe/a de pedidos:</b> mandar pedidos a proveedores (con las solicitudes del equipo), recibir, stock y conteos. Ve el catálogo pero no lo edita.</li><li><b>Cocinero/a y Bartender:</b> le piden al jefe (solicitudes) y reciben mercadería.</li><li><b>Mantenimiento:</b> ve los trabajos que cargan vos y los encargados, y los marca como empezados y hechos.</li></ul></details>
   <div class="cols"><section><div class="list">${ms.map(([id,m])=>`<div class="li" style="flex-wrap:wrap"><div style="flex:1 1 180px">${esc(m.nombre)}${m.activo?'':' <span class="badge">Desactivado</span>'}<small>${usuarioDe(m)?`Usuario: <b>${esc(usuarioDe(m))}</b> · Contraseña: ${S.verClave===id?`<b>${esc(S.claves?.[id]||'(no guardada)')}</b>`:`<button class="linkbtn" data-act="verClave" data-id="${id}">ver</button>`}`:esc(m.email)}</small></div>
   <div class="row" style="flex:2 1 300px"><select style="flex:1 1 140px" aria-label="Puesto" data-eq="${id}" data-f="rol">${ROLES.map(r=>`<option ${m.rol===r?'selected':''}>${r}</option>`).join('')}</select><select style="flex:1 1 120px" aria-label="Local" data-eq="${id}" data-f="local">${locOpts(m.local)}</select>
@@ -801,16 +812,18 @@ function render(force){
   {const pb=$('#perfilBtn');pb.hidden=!inApp;if(inApp)pb.innerHTML=avatarIn(S.uid)}
   const so=$('#soporte');so.hidden=true;so.href=sopLink();
   $('#who').textContent=me()?.nombre||'';
-  if(inApp&&S.equipo[S.uid]||S.owner){const ok=myLocs();if(S.local&&!ok.includes(S.local))S.local='';if(ok.length===1&&(!S.local||location.hash==='#inicio'||!location.hash)){S.local=ok[0];if(location.hash==='#inicio'||!location.hash)history.replaceState(null,'','#'+('panel'))}}
-  if(inApp&&location.hash.startsWith('#chat-')){const r=location.hash.slice(6);if(myLocs().includes(r))S.local=r;history.replaceState(null,'','#chat')}
+  if(inApp&&uniUser()){S.local='todos';if(!location.hash||location.hash==='#inicio')history.replaceState(null,'','#panel')}
+  else if(inApp&&S.equipo[S.uid]||S.owner){const ok=myLocs();if(S.local&&!ok.includes(S.local))S.local='';if(ok.length===1&&(!S.local||location.hash==='#inicio'||!location.hash)){S.local=ok[0];if(location.hash==='#inicio'||!location.hash)history.replaceState(null,'','#'+('panel'))}}
+  if(inApp&&location.hash.startsWith('#chat-')){const r=location.hash.slice(6);if(uni())S.vLoc=r;else if(myLocs().includes(r))S.local=r;history.replaceState(null,'','#chat')}
   const sec=inApp&&S.local&&location.hash!=='#inicio'&&location.hash!==''?S.local:'';
   document.body.dataset.sec=sec;$('#tabs').hidden=!sec;
-  $('#brandImg').hidden=!sec;$('#brandTxt').hidden=!!sec;document.querySelector('#brand .back').hidden=!sec||(inApp&&myLocs().length<2);
-  if(sec){$('#brandImg').src=sec==='mara'?'logo-mara.png':'logo-villa-blanco.png';$('#brandImg').alt=locName(sec)}
-  $('#chatBtn').hidden=!sec;if(sec){ensureChat(sec);updChatBadge()}
+  $('#brandImg').hidden=!sec||sec==='todos';$('#brandTxt').hidden=!!sec&&sec!=='todos';document.querySelector('#brand .back').hidden=!sec||sec==='todos'||(inApp&&myLocs().length<2);
+  {const bt=$('#brandTxt');if(sec==='todos'){if(!bt.dataset.o)bt.dataset.o=bt.innerHTML;bt.innerHTML='Villa Aluminé · Mara'}else if(bt.dataset.o){bt.innerHTML=bt.dataset.o;delete bt.dataset.o}}
+  if(sec&&sec!=='todos'){$('#brandImg').src=sec==='mara'?'logo-mara.png':'logo-villa-blanco.png';$('#brandImg').alt=locName(sec)}
+  $('#chatBtn').hidden=!sec;if(sec){(sec==='todos'?['villa','mara']:[sec]).forEach(ensureChat);updChatBadge()}
   if(!inApp){$('#tabs').hidden=true;$('#main').innerHTML=vAcceso();return}
   if(!sec){$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vInicio();return}
-  const L=lvl();const views=esMant()?['panel','mant']:['panel',...(canMant()?['mant']:[]),'pedir','solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
+  const L=lvl();const views=esMant()?['panel','mant']:['panel',...(canMant()?['mant']:[]),...(soloVer()?[]:['pedir']),'solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
   document.querySelectorAll('#tabs a').forEach(x=>x.hidden=!views.includes(x.dataset.v));
   let v=location.hash.slice(1),pid=null;if(v==='chat'){S.view='chat';document.querySelectorAll('#tabs a').forEach(x=>x.classList.remove('on'));$('#chatBtn').hidden=true;$('#main').innerHTML=volverBtn()+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vChat();return}if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v='panel';
   {const n=solsPend(S.local).length,b=$('#solN');b.hidden=!n||!canSend();b.textContent=n>9?'9+':n}
@@ -840,7 +853,7 @@ async function guardarPedido(){
   if(!canSend())return guardarSolicitud();
   const solIds=S.pedir.sols||[];
   const items=pedidoItems();if(!items.length){S.note='Cargá al menos una cantidad.';render(true);return}
-  const loc=workLocal(),t=Date.now();
+  const loc=pedLoc(),t=Date.now();
   const p={local:loc,prov:S.pedir.prov,items,nota:S.pedir.nota.trim(),por:S.uid,creado:t,estado:'pendiente',hist:[{t,uid:S.uid,a:'armó un pedido'}]};
   let ref;await w(async()=>{ref=await addDoc(collection(db,'pedidos'),p)});
   p.id=ref.id;S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};
@@ -930,9 +943,11 @@ document.addEventListener('click',e=>{
   if(a==='olvide'){const em0=$('#l-e')?.value.trim();if(em0&&!em0.includes('@')){S.note='Pedile tu contraseña al administrador: él tiene guardadas las de todos.';render(true);return}const em=em0;if(!em){S.note='Escribí tu mail arriba y tocá de nuevo "Me olvidé la clave".'}else{sendPasswordResetEmail(auth,em).then(()=>{S.note='Te mandamos un mail para cambiar la clave. Fijate en spam si no llega.';render(true)},er=>{S.note=errMsg(er);render(true)});return}}
   if(a==='prov'){S.pedir.prov=id;S.pedir.qty={};S.pedir.unit={};S.pedir.extra=[];S.pedir.sols=null;S.pedir.buscar=''}
   if(a==='cargarSols'){cargarSols()}
-  if(a==='sugerir'){const loc=workLocal();prods().filter(p=>p.prov===S.pedir.prov).forEach(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc);if(mn>0&&st<mn)S.pedir.qty[p.id]=String(Math.ceil((mn-st)*10)/10)})}
-  if(a==='addExtra')S.pedir.extra.push({n:'',q:'',u:workLocal()==='mara'?'u':'kg'});
+  if(a==='sugerir'){const loc=pedLoc();prods().filter(p=>p.prov===S.pedir.prov).forEach(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc);if(mn>0&&st<mn)S.pedir.qty[p.id]=String(Math.ceil((mn-st)*10)/10)})}
+  if(a==='addExtra')S.pedir.extra.push({n:'',q:'',u:pedLoc()==='mara'?'u':'kg'});
   if(a==='fSolU'){S.fSolU=id||'';render(true);return}
+  if(a==='fLoc'){S.fLoc=id;S.panelSel=S.panelSel;render(true);return}
+  if(a==='vLoc'){S.vLoc=id;S.catDraft=null;S.conteo={};render(true);return}
   if(a==='fMant'){S.fMant=id;render(true);return}
   if(a==='mantOpen'){S.mantOpen=S.mantOpen===id?null:id;render(true);return}
   if(a==='mantCurso'){mantEstado(id,'curso');return}
