@@ -176,6 +176,7 @@ const ESTADOS={pendiente:'Sin enviar',enviado:'Esperando',recibido:'Recibido',di
 const SOPORTE='5492236918566';
 const sopLink=()=>'https://wa.me/'+SOPORTE+'?text='+encodeURIComponent(`Hola Matías, soy ${me()?.nombre||''}. Tengo una consulta sobre la app de cocina: `);
 const UNIDADES=['kg','u','caja','bolsa','cajón','bulto'];
+const unidadesDe=loc=>loc==='mara'?['u','caja']:UNIDADES;
 const ROLES=['Encargado/a','Administración','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
 const NIVEL={'Encargado/a':2,'Administración':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
 const lvl=()=>S.owner?1:(NIVEL[me()?.rol]||4);
@@ -343,9 +344,9 @@ function vPedir(){
     const vis=list.filter(p=>!q||p.nombre.toLowerCase().includes(q)||num(d.qty[p.id])>0);
     return vis.map(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc),low=mn>0&&st<mn;const h=p.cat&&p.cat!==last?`<h4 class="rubro">${esc(p.cat)}</h4>`:'';last=p.cat||last;
     return `${h}<div class="pitem ${low?'low':''}" data-n="${esc(p.nombre.toLowerCase())}"><div>${esc(p.nombre)}<small>Hay ${fmt(st)} ${esc(p.unidad)}${mn?` · mínimo ${fmt(mn)}`:''}${p.precio?` · ${money(p.precio)}/${esc(p.unidad)}`:''}${p.info?` · ${esc(infoTxt(p,1))}`:''}</small>${yaPidieron(loc,p.id,d)}</div>
-  <div class="qbox"><input inputmode="decimal" aria-label="Cantidad ${esc(p.nombre)}" data-q="${p.id}" value="${esc(d.qty[p.id]||'')}" placeholder="0"><select class="usel" data-u="${p.id}" aria-label="Unidad ${esc(p.nombre)}">${[...new Set([p.unidad,d.unit?.[p.id],...UNIDADES].filter(Boolean))].map(u=>`<option ${(d.unit?.[p.id]||p.unidad)===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div></div>`}).join('')||(q?'<p class="empty">No hay productos con ese nombre.</p>':'<p class="empty">Este proveedor no tiene productos cargados.</p>')})()}</div>
+  <div class="qbox"><input inputmode="decimal" aria-label="Cantidad ${esc(p.nombre)}" data-q="${p.id}" value="${esc(d.qty[p.id]||'')}" placeholder="0"><select class="usel" data-u="${p.id}" aria-label="Unidad ${esc(p.nombre)}">${(loc==='mara'?unidadesDe(loc):[...new Set([p.unidad,d.unit?.[p.id],...UNIDADES].filter(Boolean))]).map(u=>`<option ${(d.unit?.[p.id]||p.unidad)===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div></div>`}).join('')||(q?'<p class="empty">No hay productos con ese nombre.</p>':'<p class="empty">Este proveedor no tiene productos cargados.</p>')})()}</div>
   <h3 style="margin:22px 0 8px;font-size:19px">Algo que no está en la lista</h3>
-  ${d.extra.map((x,k)=>`<div class="row" style="margin-bottom:8px"><input style="flex:3 1 150px" placeholder="Producto" data-xn="${k}" value="${esc(x.n)}"><input style="flex:1 1 70px" inputmode="decimal" placeholder="Cant." data-xq="${k}" value="${esc(x.q)}"><select style="flex:1 1 84px" data-xu="${k}" aria-label="Unidad">${[...new Set([x.u||'kg',...UNIDADES])].map(u=>`<option ${(x.u||'kg')===u?'selected':''}>${u}</option>`).join('')}</select></div>`).join('')}
+  ${d.extra.map((x,k)=>`<div class="row" style="margin-bottom:8px"><input style="flex:3 1 150px" placeholder="Producto" data-xn="${k}" value="${esc(x.n)}"><input style="flex:1 1 70px" inputmode="decimal" placeholder="Cant." data-xq="${k}" value="${esc(x.q)}"><select style="flex:1 1 84px" data-xu="${k}" aria-label="Unidad">${(loc==='mara'?unidadesDe(loc):[...new Set([x.u||'kg',...UNIDADES])]).map(u=>`<option ${(x.u||'kg')===u?'selected':''}>${u}</option>`).join('')}</select></div>`).join('')}
   <button data-act="addExtra">+ Agregar otro</button></section>
   <aside><div class="panel"><label for="pnota">${canSend()?'Nota para el proveedor':'Nota para el '+jefeTxt(loc)}</label><textarea id="pnota" data-pnota placeholder="Entregar antes de las 10, por la puerta de Falucho…">${esc(d.nota)}</textarea>
   <p class="meta" id="pcount" style="margin:12px 0">${countPedido()}</p>
@@ -847,7 +848,7 @@ document.addEventListener('click',e=>{
   if(a==='prov'){S.pedir.prov=id;S.pedir.qty={};S.pedir.unit={};S.pedir.extra=[];S.pedir.sols=null;S.pedir.buscar=''}
   if(a==='cargarSols'){cargarSols()}
   if(a==='sugerir'){const loc=workLocal();prods().filter(p=>p.prov===S.pedir.prov).forEach(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc);if(mn>0&&st<mn)S.pedir.qty[p.id]=String(Math.ceil((mn-st)*10)/10)})}
-  if(a==='addExtra')S.pedir.extra.push({n:'',q:'',u:'kg'});
+  if(a==='addExtra')S.pedir.extra.push({n:'',q:'',u:workLocal()==='mara'?'u':'kg'});
   if(a==='fSolU'){S.fSolU=id||'';render(true);return}
   if(a==='solArmar'){S.pedir={prov:id,qty:{},unit:{},extra:[],nota:'',buscar:''};cargarSols();location.hash='pedir';return}
   if(a==='solDel'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Borrar esta solicitud?</h3><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="solDelOk" data-id="${id}">Sí, borrar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
