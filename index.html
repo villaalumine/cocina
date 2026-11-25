@@ -846,7 +846,7 @@ async function guardarPedido(){
   p.id=ref.id;S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};
   if(solIds.length)solResolver(solIds,'pedido','',p.id).catch(e=>console.warn(e));
   {const tot=items.reduce((a,i)=>a+(i.precio||0)*i.cant,0);push(`🛒 Pedido nuevo · ${locName(loc)}`,`${nameOf(S.uid)} armó un pedido a ${prov(p.prov)?.nombre||'proveedor'}:\n${items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join('\n')}${tot?`\nEstimado: ${money(tot)}`:''}`,['shopping_cart'])}
-  if(esApp(prov(p.prov))){const pv=prov(p.prov);$('#sheet').innerHTML=`<div class="sheet"><div><h3>Pedido guardado</h3><p class="sub">${esc(pv.nombre)} se pide por <b>${esc(appNom(pv))}</b>. Cargá esto en la app y después tocá "Ya lo cargué".</p><pre>${esc(listaApp(p))}</pre>
+  if(esApp(prov(p.prov))){const pv=prov(p.prov);$('#sheet').innerHTML=`<div class="sheet"><div><h3>Pedido guardado</h3><p class="sub">${esc(pv.nombre)} se pide por <b>${esc(appNom(pv))}</b>. ${appLink(pv)?'Cargá esto en la app':`Copiá la lista, abrí la app de ${esc(appNom(pv))} en tu celu y cargalo`}. Después tocá "Ya lo cargué".</p><pre>${esc(listaApp(p))}</pre>
   <div class="row"><button data-act="copyApp" data-id="${p.id}">📋 Copiar lista</button>${appLink(pv)?`<a class="btn app" style="flex:1" href="${esc(appLink(pv))}" target="_blank" rel="noopener">📲 Abrir ${esc(appNom(pv))}</a>`:''}</div>
   <button class="pri" style="margin-top:10px;width:100%" data-act="appHecho" data-id="${p.id}" data-go="1">✅ Ya lo cargué en ${esc(appNom(pv))}</button>
   <button style="margin-top:10px;width:100%" data-act="closeSheet" data-go="pedidos">Lo cargo después</button></div></div>`;render(true);return}
