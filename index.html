@@ -103,6 +103,7 @@ nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;backgroun
 .accesos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 22px}.acc{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:16px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:96px}.acc .ai{font-size:28px;line-height:1}.acc b{font:700 22px "Barlow Condensed",sans-serif;margin-top:6px}.acc small{color:#1f7a3a;font-weight:600;font-size:13px}
 body[data-sec=villa] .acc{border-left:6px solid #f93604}body[data-sec=mara] .acc{border-left:6px solid #a17a57}
 @media(max-width:480px){.accesos{grid-template-columns:1fr 1fr}}
+.pinfo2{display:block;margin:-2px 0 8px 2px}
 .soltag{color:#1f7a3a;font-weight:600}.solbox{border:2px solid #25a244;background:#eef8ef}.sol{border-top:1px solid var(--line);padding:10px 0}.sol:first-of-type{border-top:0}.sol ul{margin:4px 0;padding-left:18px}
 nav.tabs a.on{opacity:1}body{padding-bottom:24px}nav.tabs{display:none!important}.volver{display:inline-flex;margin-bottom:14px;text-decoration:none}
 @media(max-width:420px){nav.tabs a{font-size:16.5px;letter-spacing:-.01em}}@media(max-width:480px){nav.tabs{gap:2px}nav.tabs a{font-size:14.5px;padding:8px 1px}}
@@ -174,7 +175,7 @@ const hora=t=>new Date(t).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-d
 const ESTADOS={pendiente:'Sin enviar',enviado:'Esperando',recibido:'Recibido',diferencias:'Recibido'};
 const SOPORTE='5492236918566';
 const sopLink=()=>'https://wa.me/'+SOPORTE+'?text='+encodeURIComponent(`Hola Matías, soy ${me()?.nombre||''}. Tengo una consulta sobre la app de cocina: `);
-const UNIDADES=['kg','u','bolsa','cajón','bulto'];
+const UNIDADES=['kg','u','caja','bolsa','cajón','bulto'];
 const ROLES=['Encargado/a','Administración','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
 const NIVEL={'Encargado/a':2,'Administración':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
 const lvl=()=>S.owner?1:(NIVEL[me()?.rol]||4);
@@ -192,6 +193,11 @@ const DOM_U='@usuarios.villaalumine.com';
 const userSlug=u=>String(u||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'.').replace(/[^a-z0-9._-]/g,'');
 const loginMail=u=>String(u).includes('@')?String(u).trim().toLowerCase():userSlug(u)+DOM_U;
 const usuarioDe=m=>m?.usuario||(String(m?.email||'').endsWith(DOM_U)?m.email.slice(0,-DOM_U.length):'');
+function infoTxt(p,corto){const f=p.info;if(!f)return '';const L=[];
+  if(f.xcaja)L.push(`Caja x${fmt(f.xcaja)}${!corto&&f.caja?` (${money(f.caja)})`:''}`);
+  if(f.dto)L.push(`Dto ${f.dto}`);if(f.cond)L.push(f.cond);
+  if(!corto){if(f.costo&&f.costo!==p.precio)L.push(`Costo c/desc. ${money(f.costo)}`);if(f.ml)L.push(`${fmt(f.ml)} ml`);if(f.litro)L.push(`${money(f.litro)}/L`);if(f.gan)L.push(`Ganancia x${f.gan}`);if(f.carta)L.push(`Carta ${money(f.carta)}`)}
+  return L.join(' · ');}
 const ENVIA=['Jefe/a de cocina','Jefe/a de pedidos','Encargado/a','Administración'];
 const canSend=()=>S.owner||ENVIA.includes(me()?.rol);
 const jefeTxt=loc=>loc==='mara'?'jefe de pedidos':'jefe de cocina';
@@ -336,7 +342,7 @@ function vPedir(){
   <div>${(()=>{const q=(d.buscar||'').trim().toLowerCase();let last=null;
     const vis=list.filter(p=>!q||p.nombre.toLowerCase().includes(q)||num(d.qty[p.id])>0);
     return vis.map(p=>{const st=stockOf(loc,p.id),mn=minOf(p,loc),low=mn>0&&st<mn;const h=p.cat&&p.cat!==last?`<h4 class="rubro">${esc(p.cat)}</h4>`:'';last=p.cat||last;
-    return `${h}<div class="pitem ${low?'low':''}" data-n="${esc(p.nombre.toLowerCase())}"><div>${esc(p.nombre)}<small>Hay ${fmt(st)} ${esc(p.unidad)}${mn?` · mínimo ${fmt(mn)}`:''}${p.precio?` · ${money(p.precio)}/${esc(p.unidad)}`:''}</small>${yaPidieron(loc,p.id,d)}</div>
+    return `${h}<div class="pitem ${low?'low':''}" data-n="${esc(p.nombre.toLowerCase())}"><div>${esc(p.nombre)}<small>Hay ${fmt(st)} ${esc(p.unidad)}${mn?` · mínimo ${fmt(mn)}`:''}${p.precio?` · ${money(p.precio)}/${esc(p.unidad)}`:''}${p.info?` · ${esc(infoTxt(p,1))}`:''}</small>${yaPidieron(loc,p.id,d)}</div>
   <div class="qbox"><input inputmode="decimal" aria-label="Cantidad ${esc(p.nombre)}" data-q="${p.id}" value="${esc(d.qty[p.id]||'')}" placeholder="0"><select class="usel" data-u="${p.id}" aria-label="Unidad ${esc(p.nombre)}">${[...new Set([p.unidad,d.unit?.[p.id],...UNIDADES].filter(Boolean))].map(u=>`<option ${(d.unit?.[p.id]||p.unidad)===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div></div>`}).join('')||(q?'<p class="empty">No hay productos con ese nombre.</p>':'<p class="empty">Este proveedor no tiene productos cargados.</p>')})()}</div>
   <h3 style="margin:22px 0 8px;font-size:19px">Algo que no está en la lista</h3>
   ${d.extra.map((x,k)=>`<div class="row" style="margin-bottom:8px"><input style="flex:3 1 150px" placeholder="Producto" data-xn="${k}" value="${esc(x.n)}"><input style="flex:1 1 70px" inputmode="decimal" placeholder="Cant." data-xq="${k}" value="${esc(x.q)}"><select style="flex:1 1 84px" data-xu="${k}" aria-label="Unidad">${[...new Set([x.u||'kg',...UNIDADES])].map(u=>`<option ${(x.u||'kg')===u?'selected':''}>${u}</option>`).join('')}</select></div>`).join('')}
@@ -645,8 +651,8 @@ function vCatalogo(){
   <input data-pr="${pk}" data-f="unidad" value="${esc(x.unidad)}" list="unidades" aria-label="Unidad" class="pu">
   <div class="pp"><span>$</span><input inputmode="decimal" data-pr="${pk}" data-f="precio" value="${esc(x.precio??'')}" aria-label="Precio" placeholder="Precio"></div>
   <input inputmode="decimal" data-pr="${pk}" data-min="${loc}" value="${esc(x.min?.[loc]??'')}" aria-label="Mínimo de stock" placeholder="Mín." class="pm">
-  <button class="pq" data-act="delPr" data-id="${pk}" aria-label="Quitar ${esc(x.nombre)}">✕</button></div>`
-  :`<div class="li"><span>${esc(x.nombre)} <small class="meta">· ${esc(x.unidad)}</small></span><b class="q">${x.precio?money(x.precio):'–'}</b></div>`).join('')||'<p class="empty">Todavía no tiene productos.</p>'}</div>
+  <button class="pq" data-act="delPr" data-id="${pk}" aria-label="Quitar ${esc(x.nombre)}">✕</button></div>${x.info?`<small class="meta pinfo2">${esc([x.cat,infoTxt(x)].filter(Boolean).join(' · '))}</small>`:''}`
+  :`<div class="li"><span>${esc(x.nombre)} <small class="meta">· ${esc(x.unidad)}</small>${x.info?`<small class="meta">${esc([x.cat,infoTxt(x)].filter(Boolean).join(' · '))}</small>`:''}</span><b class="q">${x.precio?money(x.precio):'–'}</b></div>`).join('')||'<p class="empty">Todavía no tiene productos.</p>'}</div>
   ${ed?`<div class="row" style="margin-top:10px"><button data-act="addPr" data-id="${esc(p.id)}">+ Producto</button><button class="pri" data-act="guardarCat">Guardar</button></div><p class="meta" style="margin-top:6px">Columnas: producto · unidad · precio · mínimo de stock en ${esc(locName(loc))}.</p>`:''}
   </div>`:''}</div>`}).join('')||'<p class="empty">Todavía no hay proveedores en este local.</p>'}</div>
   ${ed?'<button style="margin-top:14px;width:100%" data-act="addPv">+ Nuevo proveedor</button>':''}`;
