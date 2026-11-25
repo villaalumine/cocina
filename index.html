@@ -105,6 +105,7 @@ body[data-sec=villa] .acc{border-left:6px solid #f93604}body[data-sec=mara] .acc
 @media(max-width:480px){.accesos{grid-template-columns:1fr 1fr}}
 .pinfo2{display:block;margin:-2px 0 8px 2px}
 .mcard.urg{border-left:6px solid #d62d20}.mb-pendiente{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}.mb-curso{background:#e3eefc;color:#1d4f91;border-color:#9cbbe6}.mb-hecho{background:var(--ok);color:#fff;border-color:var(--ok)}label.chip{display:inline-flex;gap:6px;align-items:center;cursor:pointer}label.chip input{width:auto;min-height:0;margin:0}
+.btn.app{background:#1f2a44;color:#fff;border-color:#1f2a44}
 .soltag{color:#1f7a3a;font-weight:600}.solbox{border:2px solid #25a244;background:#eef8ef}.sol{border-top:1px solid var(--line);padding:10px 0}.sol:first-of-type{border-top:0}.sol ul{margin:4px 0;padding-left:18px}
 nav.tabs a.on{opacity:1}body{padding-bottom:24px}nav.tabs{display:none!important}.volver{display:inline-flex;margin-bottom:14px;text-decoration:none}
 @media(max-width:420px){nav.tabs a{font-size:16.5px;letter-spacing:-.01em}}@media(max-width:480px){nav.tabs{gap:2px}nav.tabs a{font-size:14.5px;padding:8px 1px}}
@@ -220,6 +221,13 @@ function msgText(p){
   if(p.nota)L.push('','Nota: '+p.nota);
   L.push('','Gracias! '+nameOf(p.por));return L.join('\n');
 }
+const esApp=pv=>pv?.canal==='app';
+const appNom=pv=>pv?.appNombre||'la aplicación';
+const appLink=pv=>{let u=String(pv?.appLink||'').trim();if(u&&!/^https?:\/\//.test(u))u='https://'+u;return u};
+function listaApp(p){return p.items.map(i=>`${fmt(i.cant)} ${uTxt(i.unidad)} · ${i.nombre}`).join('\n')}
+function envioBtn(p,flex){const pv=prov(p.prov),st=flex?' style="flex:1"':'';
+  if(esApp(pv))return `${appLink(pv)?`<a class="btn app"${st} href="${esc(appLink(pv))}" target="_blank" rel="noopener">📲 Abrir ${esc(appNom(pv))}</a>`:''}${p.estado==='pendiente'?`<button class="pri"${st} data-act="appHecho" data-id="${p.id}">✅ Ya lo cargué en ${esc(appNom(pv))}</button>`:''}`;
+  return `<a class="btn wa"${st} href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">${p.estado==='pendiente'?'Enviar':'Reenviar'} por WhatsApp</a>`;}
 function waLink(p){const t=String(prov(p.prov)?.tel||'').replace(/\D/g,'');return 'https://wa.me/'+t+'?text='+encodeURIComponent(msgText(p))}
 
 /* ---------- pantallas de acceso ---------- */
@@ -282,7 +290,7 @@ function tk(p){
   const items=p.items.map((i,k)=>{const ri=r?.items?.[k];const diff=ri&&num(ri.rec)!==num(i.cant);
     return `<li><span>${esc(i.nombre)}${ri&&ri.cal&&ri.cal!=='bien'?` <span class="lowtag">· calidad ${esc(ri.cal)}</span>`:''}${ri?.nota?`<br><small class="meta">${esc(ri.nota)}</small>`:''}</span><span class="q">${fmt(i.cant)} ${esc(i.unidad)}${ri?` → <span class="${diff?'lowtag':''}">${fmt(num(ri.rec))}</span>`:''}</span></li>`}).join('');
   let acts='';
-  if(p.estado==='pendiente'||p.estado==='enviado')acts=`<div class="row">${canSend()?`<a class="btn wa" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">${p.estado==='pendiente'?'Enviar':'Reenviar'} por WhatsApp</a>`:''}<button class="dark" data-act="abrir" data-id="${p.id}">Recibir</button></div>`;else acts=`<div class="row"><button data-act="abrir" data-id="${p.id}">Ver detalle</button></div>`;
+  if(p.estado==='pendiente'||p.estado==='enviado')acts=`<div class="row">${canSend()?`${envioBtn(p)}`:''}<button class="dark" data-act="abrir" data-id="${p.id}">Recibir</button></div>`;else acts=`<div class="row"><button data-act="abrir" data-id="${p.id}">Ver detalle</button></div>`;
   return `<article class="tk"><span class="clip"></span><h3><span>${esc(pv?.nombre||'Proveedor')}</span>${badgeHTML(p)}</h3>
   <div class="meta">${esc(locName(p.local))} · pidió ${esc(nameOf(p.por))} · ${fecha(p.creado)} ${hora(p.creado)}</div>
   <ul>${items}</ul>${p.nota?`<p class="meta">Nota: ${esc(p.nota)}</p>`:''}
@@ -338,7 +346,7 @@ function vPedir(){
   const list=prods().filter(p=>p.prov===d.prov),pvSel=prov(d.prov);
   const lowN=list.filter(p=>minOf(p,loc)>0&&stockOf(loc,p.id)<minOf(p,loc)).length;
   return `<button data-act="provBack" style="margin-bottom:12px">‹ Proveedores</button>
-  <div class="head"><div><h2>${esc(pvSel?.nombre||'Proveedor')}</h2><p class="sub">${pvSel?.sector?esc(pvSel.sector)+' · ':''}${canSend()?'Cargá cantidades y mandalo por WhatsApp.':'Cargá lo que necesitás y mandáselo al '+jefeTxt(loc)+'.'}</p></div></div>
+  <div class="head"><div><h2>${esc(pvSel?.nombre||'Proveedor')}</h2><p class="sub">${pvSel?.sector?esc(pvSel.sector)+' · ':''}${canSend()?(esApp(pvSel)?'Cargá cantidades. Este proveedor se pide por '+esc(appNom(pvSel))+'.':'Cargá cantidades y mandalo por WhatsApp.'):'Cargá lo que necesitás y mandáselo al '+jefeTxt(loc)+'.'}</p></div></div>
   ${solBanner(loc,d)}
   ${S.local==='todos'?`<p class="note">Estás pidiendo para ${esc(locName(loc))}. Cambiá el local arriba si es para otro.</p>`:''}
   <input type="search" data-buscar placeholder="Buscar producto…" value="${esc(d.buscar||'')}" style="margin-bottom:6px" aria-label="Buscar producto">
@@ -354,8 +362,8 @@ function vPedir(){
   <button data-act="addExtra">+ Agregar otro</button></section>
   <aside><div class="panel"><label for="pnota">${canSend()?'Nota para el proveedor':'Nota para el '+jefeTxt(loc)}</label><textarea id="pnota" data-pnota placeholder="Entregar antes de las 10, por la puerta de Falucho…">${esc(d.nota)}</textarea>
   <p class="meta" id="pcount" style="margin:12px 0">${countPedido()}</p>
-  <button class="pri" style="width:100%" data-act="guardarPedido">${canSend()?'Guardar y enviar por WhatsApp':'📥 Enviar al '+jefeTxt(loc)}</button>
-  ${prov(d.prov)?.tel||!canSend()?'':`<p class="sample">Este proveedor no tiene WhatsApp cargado: vas a poder elegir el contacto al abrir WhatsApp.</p>`}</div></aside></div>`;
+  <button class="pri" style="width:100%" data-act="guardarPedido">${canSend()?(esApp(pvSel)?'Guardar pedido (se carga en '+esc(appNom(pvSel))+')':'Guardar y enviar por WhatsApp'):'📥 Enviar al '+jefeTxt(loc)}</button>
+  ${prov(d.prov)?.tel||!canSend()||esApp(pvSel)?'':`<p class="sample">Este proveedor no tiene WhatsApp cargado: vas a poder elegir el contacto al abrir WhatsApp.</p>`}</div></aside></div>`;
 }
 function yaPidieron(loc,pid,d){
   if(d.sols?.length)return '';
@@ -526,7 +534,11 @@ async function agregarItems(id){
   await w(()=>updateDoc(doc(db,'pedidos',id),{items,agregados:[...(p.agregados||[]),{t:Date.now(),uid:S.uid,items:nuevos}],hist:hist(p,'agregó '+resumen)}));
   S.addOpen=null;delete S.agr[id];
   push(`➕ Agregado al pedido · ${locName(p.local)}`,`${nameOf(S.uid)} agregó al pedido de ${prov(p.prov)?.nombre||'proveedor'}:\n${nuevos.map(n=>`• ${fmt(n.cant)} ${n.unidad} ${n.nombre}`).join('\n')}`,['heavy_plus_sign']);
-  if(p.estado==='enviado'){
+  if(p.estado==='enviado'&&esApp(prov(p.prov))){const pv=prov(p.prov);
+    $('#sheet').innerHTML=`<div class="sheet"><div><h3>Agregado al pedido</h3><p class="sub">Sumalo también en ${esc(appNom(pv))}:</p><pre>${esc(nuevos.map(n=>`${fmt(n.cant)} ${uTxt(n.unidad)} · ${n.nombre}`).join('\n'))}</pre>
+    ${appLink(pv)?`<a class="btn app" style="width:100%" href="${esc(appLink(pv))}" target="_blank" rel="noopener" data-act="closeSheet">📲 Abrir ${esc(appNom(pv))}</a>`:''}
+    <button style="margin-top:10px;width:100%" data-act="closeSheet">Listo</button></div></div>`;
+  }else if(p.estado==='enviado'){
     const t=String(prov(p.prov)?.tel||'').replace(/\D/g,'');
     const msg=[`*Agregado al pedido de ${locName(p.local)}* · ${fecha(p.creado)}`,'Hola! Me olvidé de esto, ¿lo podés sumar al pedido?',...nuevos.map(n=>`• ${fmt(n.cant)} ${n.unidad} ${n.nombre}`),'','Gracias! '+nameOf(S.uid)].join('\n');
     $('#sheet').innerHTML=`<div class="sheet"><div><h3>Agregado al pedido</h3><p class="sub">Ahora avisale al proveedor. El mensaje ya está armado.</p><pre>${esc(msg)}</pre>
@@ -628,7 +640,7 @@ function vPedido(id){
   const reclamo=falt.length&&pv?'https://wa.me/'+String(pv.tel||'').replace(/\D/g,'')+'?text='+encodeURIComponent(`Hola! En el pedido del ${fecha(p.creado)} para ${locName(p.local)} faltó:\n${falt.map(o=>`• ${fmt(num(o.i.cant)-o.x.rec)} ${o.i.unidad} ${o.i.nombre}`).join('\n')}\n¿Lo podés mandar? Gracias!`):'';
   return `<button data-act="volver" style="margin-bottom:14px">‹ Todos los pedidos</button>
   <div class="head"><div><h2>${esc(pv?.nombre||'Proveedor')}</h2><p class="sub">${esc(locName(p.local))} · pidió ${esc(nameOf(p.por))} el ${fecha(p.creado)} a las ${hora(p.creado)}</p></div>${badgeHTML(p,1)}</div>
-  ${abierto&&canSend()?`<div class="row" style="margin-bottom:16px"><a class="btn wa" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">${p.estado==='pendiente'?'Enviar':'Reenviar'} por WhatsApp</a><button class="dark" data-act="addOpen" data-id="${p.id}">➕ Agregar productos</button><button class="del" data-act="delPed" data-id="${p.id}">🗑 Eliminar pedido</button></div>${S.addOpen===p.id?vAgregar(p):''}`:''}
+  ${abierto&&canSend()?`<div class="row" style="margin-bottom:16px">${envioBtn(p)}<button class="dark" data-act="addOpen" data-id="${p.id}">➕ Agregar productos</button><button class="del" data-act="delPed" data-id="${p.id}">🗑 Eliminar pedido</button></div>${S.addOpen===p.id?vAgregar(p):''}`:''}
   ${p.nota?`<p class="note">Nota del pedido: ${esc(p.nota)}</p>`:''}
   <div class="detalle">${difsBox(p)}${vRec(p)}
   <div class="panel"><h3>Fotos del remito</h3>
@@ -708,7 +720,9 @@ function vCatalogo(){
   <div><label>Nombre</label><input data-pv="${k}" data-f="nombre" value="${esc(p.nombre)}" aria-label="Nombre del proveedor"></div>
   <div><label>Sector</label><input data-pv="${k}" data-f="sector" value="${esc(p.sector||'')}" placeholder="Verdulería…" aria-label="Sector"></div>
   <div><label>WhatsApp</label><input inputmode="tel" data-pv="${k}" data-f="tel" value="${esc(p.tel||'')}" placeholder="549…" aria-label="WhatsApp"></div>
-  <div><label>Local</label><select data-pv="${k}" data-f="local" aria-label="Local">${locOpts(p.local)}</select></div></div>
+  <div><label>Local</label><select data-pv="${k}" data-f="local" aria-label="Local">${locOpts(p.local)}</select></div>
+  <div><label>Cómo se pide</label><select data-pv="${k}" data-f="canal" aria-label="Cómo se pide"><option value="whatsapp" ${p.canal!=='app'?'selected':''}>WhatsApp</option><option value="app" ${p.canal==='app'?'selected':''}>Aplicación / web</option></select></div>
+  ${p.canal==='app'?`<div><label>Nombre de la app</label><input data-pv="${k}" data-f="appNombre" value="${esc(p.appNombre||'')}" placeholder="Ej: BEES"></div><div style="grid-column:1/-1"><label>Link de la app</label><input data-pv="${k}" data-f="appLink" value="${esc(p.appLink||'')}" placeholder="Ej: mybees.com.ar"></div>`:''}</div>
   <button class="del" style="margin-top:10px" data-act="delPv" data-id="${k}">Quitar proveedor</button></details>`:''}
   <div class="prodlist">${items.map(({x,pk})=>ed?`<div class="prodrow"><input data-pr="${pk}" data-f="nombre" value="${esc(x.nombre)}" aria-label="Producto" placeholder="Producto">
   <input data-pr="${pk}" data-f="unidad" value="${esc(x.unidad)}" list="unidades" aria-label="Unidad" class="pu">
@@ -832,6 +846,10 @@ async function guardarPedido(){
   p.id=ref.id;S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};
   if(solIds.length)solResolver(solIds,'pedido','',p.id).catch(e=>console.warn(e));
   {const tot=items.reduce((a,i)=>a+(i.precio||0)*i.cant,0);push(`🛒 Pedido nuevo · ${locName(loc)}`,`${nameOf(S.uid)} armó un pedido a ${prov(p.prov)?.nombre||'proveedor'}:\n${items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join('\n')}${tot?`\nEstimado: ${money(tot)}`:''}`,['shopping_cart'])}
+  if(esApp(prov(p.prov))){const pv=prov(p.prov);$('#sheet').innerHTML=`<div class="sheet"><div><h3>Pedido guardado</h3><p class="sub">${esc(pv.nombre)} se pide por <b>${esc(appNom(pv))}</b>. Cargá esto en la app y después tocá "Ya lo cargué".</p><pre>${esc(listaApp(p))}</pre>
+  <div class="row"><button data-act="copyApp" data-id="${p.id}">📋 Copiar lista</button>${appLink(pv)?`<a class="btn app" style="flex:1" href="${esc(appLink(pv))}" target="_blank" rel="noopener">📲 Abrir ${esc(appNom(pv))}</a>`:''}</div>
+  <button class="pri" style="margin-top:10px;width:100%" data-act="appHecho" data-id="${p.id}" data-go="1">✅ Ya lo cargué en ${esc(appNom(pv))}</button>
+  <button style="margin-top:10px;width:100%" data-act="closeSheet" data-go="pedidos">Lo cargo después</button></div></div>`;render(true);return}
   $('#sheet').innerHTML=`<div class="sheet"><div><h3>Pedido guardado</h3><p class="sub">Ahora mandalo. Se abre WhatsApp con el mensaje listo.</p><pre>${esc(msgText(p))}</pre>
   <div class="row"><a class="btn wa" style="flex:1" href="${esc(waLink(p))}" target="_blank" rel="noopener" data-act="wa" data-id="${p.id}">Abrir WhatsApp</a><button data-act="copy" data-id="${p.id}">Copiar texto</button></div>
   <button style="margin-top:10px;width:100%" data-act="closeSheet" data-go="pedidos">Lo mando después</button></div></div>`;
@@ -877,6 +895,9 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,id=b.dataset.id;
   if(a==='closeSheet'){if(e.target!==b&&b.classList.contains('sheet'))return;if(b.tagName==='A'){setTimeout(()=>{$('#sheet').innerHTML=''},300);return}$('#sheet').innerHTML='';if(b.dataset.go)location.hash=b.dataset.go;return}
   if(a==='wa'){marcarEnviado(id).catch(()=>{});if(b.closest('#sheet'))setTimeout(()=>{$('#sheet').innerHTML='';location.hash='pedidos';S.fEstado='abiertos';render(true)},300);return}
+  if(a==='appHecho'){const p=S.pedidos.find(x=>x.id===id);if(!p||p.estado!=='pendiente')return;const go=b.dataset.go;
+    w(()=>updateDoc(doc(db,'pedidos',id),{estado:'enviado',enviado:Date.now(),hist:hist(p,'lo cargó en '+appNom(prov(p.prov)))}),'Listo, quedó como enviado.').then(()=>{if(go){location.hash='pedidos';S.fEstado='abiertos'}}).catch(()=>{});return}
+  if(a==='copyApp'){const p=S.pedidos.find(x=>x.id===id);if(p)navigator.clipboard?.writeText(listaApp(p)).then(()=>{b.textContent='Copiado ✓'},()=>{b.textContent='No se pudo copiar'});return}
   if(a==='copy'){const p=S.pedidos.find(x=>x.id===id);if(p)navigator.clipboard?.writeText(msgText(p)).then(()=>{b.textContent='Copiado'},()=>{b.textContent='No se pudo copiar'});return}
   e.preventDefault();
   if(a==='salir'){$('#sheet').innerHTML='';signOut(auth);return}
@@ -994,6 +1015,7 @@ document.addEventListener('change',e=>{
   if(t.matches('input[data-foto]')&&t.files?.[0]){subirFoto(t.dataset.foto,t.files[0]);t.value=''}
   if(t.matches('input[data-dia]')){S.panelDia=t.value&&t.value<dayKey(Date.now())?t.value:null;t.blur();render(true)}
   if(t.matches('select[data-u]')){S.pedir.unit={...(S.pedir.unit||{}),[t.dataset.u]:t.value};const c=$('#pcount');if(c)c.textContent=countPedido()}
+  if(t.matches('select[data-pv][data-f="canal"]')){S.catDraft.proveedores[+t.dataset.pv].canal=t.value;render(true);return}
   if(t.matches('select[data-cal],select[data-pr],select[data-rf],select[data-xu]'))t.dispatchEvent(new Event('input',{bubbles:true}));
   if(t.matches('select[data-eq]'))w(()=>updateDoc(doc(db,'equipo',t.dataset.eq),{[t.dataset.f]:t.value})).catch(()=>{});
 });
