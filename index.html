@@ -111,6 +111,7 @@ body[data-sec=villa] .acc2{border-left:6px solid #f93604}body[data-sec=mara] .ac
 body[data-sec=todos] .top{background:#24303f;color:#fff}body[data-sec=todos] .provbtn{border-left:6px solid #24303f}body[data-sec=todos] #brandTxt{color:#fff;font:600 20px Georgia,serif}body[data-sec=todos] .chatbtn{background:#24303f}
 .rtab{width:100%;border-collapse:collapse;font-size:15px}.rtab th{text-align:left;font-size:12px;color:var(--mute);font-weight:600;padding:4px 6px}.rtab td{padding:7px 6px;border-top:1px solid var(--line)}.rtab td:nth-child(n+2),.rtab th:nth-child(n+2){text-align:right;white-space:nowrap}.rtab .rtot td{font-weight:700;border-top:2px solid var(--ink)}
 .pc-ok{background:#e8f5e0;color:#2f6b1f;border-color:#b9dca3}.pc-mid{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}.pc-hi{background:#fde3e0;color:#b3261e;border-color:#f0a39b}.ringr{margin-bottom:8px;flex-wrap:wrap}
+#nuevaV{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));z-index:80;background:#1f7a3a;color:#fff;border:0;border-radius:14px;padding:14px 16px;font-size:16px;box-shadow:0 8px 24px #0004;text-align:center}
 .soltag{color:#1f7a3a;font-weight:600}.solbox{border:2px solid #25a244;background:#eef8ef}.sol{border-top:1px solid var(--line);padding:10px 0}.sol:first-of-type{border-top:0}.sol ul{margin:4px 0;padding-left:18px}
 nav.tabs a.on{opacity:1}body{padding-bottom:24px}nav.tabs{display:none!important}.volver{display:inline-flex;margin-bottom:14px;text-decoration:none}
 @media(max-width:420px){nav.tabs a{font-size:16.5px;letter-spacing:-.01em}}@media(max-width:480px){nav.tabs{gap:2px}nav.tabs a{font-size:14.5px;padding:8px 1px}}
@@ -759,6 +760,7 @@ function abrirPerfil(){
   <form data-form="perfilNombre" style="text-align:left;margin-top:14px"><label for="pf-n">Nombre de usuario</label><div class="row"><input id="pf-n" name="nombre" required maxlength="40" value="${esc(m.nombre||'')}" style="flex:1"><button class="pri" type="submit" style="width:auto;margin-top:0">Guardar</button></div></form>
   <form data-form="perfilClave" style="text-align:left;margin-top:14px"><label for="pf-c">Cambiar contraseña</label><div class="row"><input id="pf-c" name="clave" type="password" minlength="6" required autocomplete="new-password" placeholder="Nueva (mínimo 6)" style="flex:1"><button class="pri" type="submit" style="width:auto;margin-top:0">Cambiar</button></div></form>
   ${usuarioDe(m)?`<p class="meta" style="margin:8px 0 0">Tu usuario para entrar: <b>${esc(usuarioDe(m))}</b></p>`:''}
+  <button data-act="recargar">🔄 Actualizar app</button>
   <a class="btn wa" href="${esc(sopLink())}" target="_blank" rel="noopener">💬 Soporte</a>
   <button class="dark" data-act="salir">Salir de la cuenta</button>
   <button data-act="closeSheet">Cerrar</button></div></div>`;
@@ -1032,6 +1034,7 @@ document.addEventListener('click',e=>{
   if(a==='recGuardar'){recGuardar();return}
   if(a==='recBorrar'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Borrar esta receta?</h3><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="recBorrarOk">Sí, borrar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
   if(a==='recBorrarOk'){$('#sheet').innerHTML='';const rid0=S.recOpen;S.recOpen=null;S.recEdit=false;S.recDraft=null;deleteDoc(doc(db,'recetas',rid0)).then(()=>toast('Receta borrada.')).catch(e=>{S.note=errMsg(e)});render(true);return}
+  if(a==='recargar'){b.textContent='Actualizando…';navigator.serviceWorker?.getRegistration().then(r=>r?.update()).catch(()=>{}).finally(()=>setTimeout(()=>location.reload(),300));return}
   if(a==='fLoc'){S.fLoc=id;S.panelSel=S.panelSel;render(true);return}
   if(a==='vLoc'){S.vLoc=id;S.recOpen=null;S.recEdit=false;S.catDraft=null;S.conteo={};render(true);return}
   if(a==='fMant'){S.fMant=id;render(true);return}
@@ -1161,6 +1164,14 @@ function subscribe(){
     const m=S.equipo[S.uid];if(!S.owner&&(!m||!m.activo)){S.stage='blocked'}render()},err));
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
+// Versión de la app: si se publica una nueva, aparece el aviso para actualizar
+const APP_V='2026-11-25a';
+async function chequearVersion(){
+  try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
+    if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
+}
+setInterval(chequearVersion,4*60e3);setTimeout(chequearVersion,8000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)chequearVersion()});
 // Al abrir la app: siempre al Panel, salvo que venga de tocar una notificación
 const DESDE_AVISO=new URLSearchParams(location.search).has('aviso');
 if(DESDE_AVISO)history.replaceState(null,'',location.pathname+location.hash);
