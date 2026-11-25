@@ -546,7 +546,7 @@ function vReceta(id){
   const k=recCalc(r),fotos=S.fotos[r.id]||[];loadFotos(r.id);
   return `<button class="btn volver" data-act="recCerrar">‹ Recetario</button>
   ${r.foto?`<img class="rechero" src="${r.foto}" alt="${esc(r.nombre)}">`:''}
-  <div class="head"><div><h2>${esc(r.nombre)}</h2><p class="sub">${esc(r.cat||'Sin categoría')} · ${esc(locName(r.local))}${num(r.rinde)>1?` · Rinde ${fmt(num(r.rinde))} porciones`:''}</p></div>${canEditRec()?'<button data-act="recEditar">✏️ Editar</button>':''}</div>
+  <div class="head"><div><h2>${esc(r.nombre)}</h2><p class="sub">${esc(r.cat||'Sin categoría')} · ${esc(locName(r.local))}${num(r.rinde)>1?` · Rinde ${fmt(num(r.rinde))} porciones`:''}</p></div><div class="row"><button data-act="recPdfMenu">📄 PDF</button>${canEditRec()?'<button data-act="recEditar">✏️ Editar</button>':''}</div></div>
   ${fotos.length?`<div class="fotos" style="margin-bottom:14px">${fotos.map(fo=>`<button class="foto" data-act="verfoto" data-id="${fo.id}"><img src="${fo.data}" alt="Foto"></button>`).join('')}</div>`:''}
   <div class="kpis k3" style="margin-bottom:16px"><div class="kpi"><b>${money(k.porc)}</b><span>Costo${num(r.rinde)>1?' por porción':''}</span></div><div class="kpi y"><b>${k.venta?money(k.venta):'–'}</b><span>Precio de venta</span></div><div class="kpi ${k.pct>40?'r':''}"><b>${k.venta?Math.round(k.pct)+'%':'–'}</b><span>% de costo</span></div></div>
   <div class="panel" style="margin-bottom:14px"><h3>Ingredientes</h3><table class="rtab"><tr><th>Ingrediente</th><th>Cantidad</th><th>Costo</th></tr>${(r.ing||[]).map(i=>{const c=costoIng(i);return `<tr><td>${esc(i.nombre)}${i.pid?'':' <small class="meta">(no está en Catálogo)</small>'}</td><td>${fmt(num(i.cant))} ${esc(uTxt(i.unidad))}</td><td>${c?money(c):'<span class="lowtag">sin precio</span>'}</td></tr>`}).join('')}<tr class="rtot"><td>Total</td><td></td><td>${money(k.total)}</td></tr></table>
@@ -576,6 +576,31 @@ async function fotoReceta(file){
   try{const img=await createImageBitmap(file),k=Math.min(1,720/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
     c.getContext('2d').drawImage(img,0,0,c.width,c.height);let q=.7,u=c.toDataURL('image/jpeg',q);while(u.length>140000&&q>.35){q-=.1;u=c.toDataURL('image/jpeg',q)}
     S.recDraft.foto=u;render(true)}catch(e){console.error(e);S.note='No se pudo cargar la foto.';render(true)}
+}
+let jsPDFp=null;
+function cargarJsPDF(){return jsPDFp||(jsPDFp=new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';sc.onload=()=>ok(window.jspdf.jsPDF);sc.onerror=()=>{jsPDFp=null;no(new Error('No se pudo cargar el generador de PDF'))};document.head.appendChild(sc)}))}
+async function recPDF(conCostos){
+  const r=(S.recetas||[]).find(x=>x.id===S.recOpen);if(!r)return;
+  const JS=await cargarJsPDF(),pdf=new JS({unit:'mm',format:'a4'}),W=210,M=16;let y=M;
+  const col=r.local==='mara'?[161,122,87]:[249,54,4],k=recCalc(r),limpio=t=>String(t||'').replace(/[^\x00-\xFF]/g,'');
+  pdf.setFillColor(...col);pdf.rect(0,0,W,22,'F');pdf.setTextColor(255);pdf.setFont('helvetica','bold');pdf.setFontSize(13);pdf.text(locName(r.local),M,14);
+  pdf.setFont('helvetica','normal');pdf.setFontSize(10);pdf.text('Receta',W-M,14,{align:'right'});y=34;
+  pdf.setTextColor(25);pdf.setFont('helvetica','bold');pdf.setFontSize(24);pdf.text(limpio(r.nombre),M,y);y+=7;
+  pdf.setFont('helvetica','normal');pdf.setFontSize(11);pdf.setTextColor(110);pdf.text(limpio([r.cat,num(r.rinde)>1?`Rinde ${fmt(num(r.rinde))} porciones`:''].filter(Boolean).join(' · ')),M,y);y+=6;
+  if(r.foto){try{const im=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=r.foto});const w=W-2*M,h=Math.min(95,w*im.height/im.width);const ww=h*im.width/im.height;pdf.addImage(r.foto,'JPEG',M+(w-ww)/2,y,ww,h);y+=h+8}catch(e){y+=4}}else y+=4;
+  if(conCostos){const cajas=[['Costo'+(num(r.rinde)>1?' por porción':''),money(k.porc)],['Precio de venta',k.venta?money(k.venta):'-'],['% de costo',k.venta?Math.round(k.pct)+'%':'-']];const bw=(W-2*M-8)/3;
+    cajas.forEach(([t,v],i)=>{const x=M+i*(bw+4);pdf.setFillColor(245,242,236);pdf.roundedRect(x,y,bw,18,3,3,'F');pdf.setTextColor(25);pdf.setFont('helvetica','bold');pdf.setFontSize(14);pdf.text(limpio(v),x+4,y+8);pdf.setFont('helvetica','normal');pdf.setFontSize(9);pdf.setTextColor(110);pdf.text(limpio(t),x+4,y+14)});y+=26}
+  pdf.setTextColor(25);pdf.setFont('helvetica','bold');pdf.setFontSize(14);pdf.text('Ingredientes',M,y);y+=7;pdf.setFontSize(11);
+  for(const i of (r.ing||[])){if(y>270){pdf.addPage();y=M}const c=costoIng(i);pdf.setFont('helvetica','normal');pdf.setTextColor(25);pdf.text(limpio(i.nombre),M,y);
+    pdf.text(limpio(`${fmt(num(i.cant))} ${uTxt(i.unidad)}`),conCostos?150:W-M,y,{align:'right'});if(conCostos)pdf.text(limpio(c?money(c):'-'),W-M,y,{align:'right'});
+    pdf.setDrawColor(225);pdf.line(M,y+2.5,W-M,y+2.5);y+=8}
+  if(conCostos){pdf.setFont('helvetica','bold');pdf.text('Total',M,y);pdf.text(limpio(money(k.total)),W-M,y,{align:'right'});y+=10}else y+=4;
+  if(r.proc){if(y>250){pdf.addPage();y=M}pdf.setFont('helvetica','bold');pdf.setFontSize(14);pdf.text('Procedimiento',M,y);y+=7;pdf.setFont('helvetica','normal');pdf.setFontSize(11);
+    for(const l of pdf.splitTextToSize(limpio(r.proc),W-2*M)){if(y>282){pdf.addPage();y=M}pdf.text(l,M,y);y+=5.5}}
+  pdf.setFontSize(8);pdf.setTextColor(150);pdf.text(limpio(`${locName(r.local)} · ${new Date().toLocaleDateString('es-AR')}`),M,292);
+  const nombre=limpio(r.nombre).replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-')||'receta',blob=pdf.output('blob'),file=new File([blob],nombre+'.pdf',{type:'application/pdf'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:r.nombre});return}catch(e){if(e.name==='AbortError')return}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
 }
 async function recGuardar(){
   const d=S.recDraft,nueva=S.recOpen==='nueva';if(!String(d.nombre||'').trim()){S.note='Ponele un nombre a la receta.';render(true);return}
@@ -1040,6 +1065,8 @@ document.addEventListener('click',e=>{
   if(a==='recAddIng'){S.recDraft.ing=[...(S.recDraft.ing||[]),{nombre:'',cant:'',unidad:(S.recDraft.local||workLocal())==='mara'?'ml':'g'}];render(true);return}
   if(a==='recDelIng'){S.recDraft.ing.splice(+id,1);render(true);return}
   if(a==='recGuardar'){recGuardar();return}
+  if(a==='recPdfMenu'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>Compartir receta en PDF</h3><button class="pri" style="width:100%" data-act="recPdf" data-id="1">📄 Con costos</button><button style="width:100%;margin-top:10px" data-act="recPdf" data-id="0">📄 Sin costos (para la cocina)</button><button style="width:100%;margin-top:10px" data-act="closeSheet">Cancelar</button></div></div>`;return}
+  if(a==='recPdf'){b.textContent='Armando PDF…';recPDF(id==='1').then(()=>{$('#sheet').innerHTML=''}).catch(e=>{$('#sheet').innerHTML='';S.note=errMsg(e);render(true)});return}
   if(a==='recSinFoto'){S.recDraft.foto='';render(true);return}
   if(a==='recBorrar'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Borrar esta receta?</h3><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="recBorrarOk">Sí, borrar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
   if(a==='recBorrarOk'){$('#sheet').innerHTML='';const rid0=S.recOpen;S.recOpen=null;S.recEdit=false;S.recDraft=null;deleteDoc(doc(db,'recetas',rid0)).then(()=>toast('Receta borrada.')).catch(e=>{S.note=errMsg(e)});render(true);return}
@@ -1175,7 +1202,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-25c';
+const APP_V='2026-11-25d';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
