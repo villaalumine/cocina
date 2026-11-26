@@ -595,7 +595,7 @@ async function cartaPDF(){
   const pie=()=>{pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(140);pdf.text(mara?'@marasocialclub · Falucho 32':'Villa Aluminé · Falucho 32',W/2,H-8,{align:'center'})};
   let top=cabecera(true),col=0,y=top;const fondo=H-16,X=()=>M+col*(CW+G);
   const salto=need=>{if(y+need<=fondo)return;if(col===0){col=1;y=top}else{pie();pdf.addPage();top=cabecera(false);col=0;y=top}};
-  const medir=it=>{pdf.setFontSize(10);const n=pdf.splitTextToSize(limpio(it.nombre),CW-30);pdf.setFontSize(8.5);const d=it.desc?pdf.splitTextToSize(limpio(it.desc),CW-4):[];return {n,d,h:n.length*4.6+d.length*3.8+3}};
+  const medir=it=>{pdf.setFont('helvetica','bold');pdf.setFontSize(10);const pw=num(it.precio)||num(it.precio2)?pdf.getTextWidth(precioTxt(it)):0;const n=pdf.splitTextToSize(limpio(it.nombre),CW-pw-4);pdf.setFont('helvetica','italic');pdf.setFontSize(8.5);const d=it.desc?pdf.splitTextToSize(limpio(it.desc),CW-4):[];return {n,d,h:n.length*4.6+d.length*3.8+3}};
   for(const sec of C.secciones){if(!sec.items.length)continue;
     const m0=medir(sec.items[0]);salto(12+m0.h);
     pdf.setTextColor(...ink);pdf.setFont('helvetica','bold');pdf.setFontSize(13);pdf.text(limpio(sec.nombre.toUpperCase()),X(),y);
@@ -1449,7 +1449,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26k';
+const APP_V='2026-11-26l';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
