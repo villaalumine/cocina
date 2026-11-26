@@ -637,6 +637,18 @@ async function recPDF(conCostos){
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:r.nombre});return}catch(e){if(e.name==='AbortError')return}}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
 }
+async function backup(b){
+  const all=async c=>(await getDocs(collection(db,...c))).docs.map(d=>({_id:d.id,...d.data()}));
+  const out={app:'cocina',version:APP_V,fecha:new Date().toISOString(),por:me()?.nombre||'',datos:{}};
+  for(const [k,c] of [['cfg',['cfg']],['equipo',['equipo']],['pedidos',['pedidos']],['solicitudes',['solicitudes']],['stock',['stock']],['mant',['mant']],['recetas',['recetas']],['chat_villa',['chats','villa','msgs']],['chat_mara',['chats','mara','msgs']]]){
+    b.textContent=`Bajando ${k.replace('_',' ')}…`;try{out.datos[k]=await all(c)}catch(e){out.datos[k]={error:errMsg(e)}}}
+  const cant=Object.values(out.datos).reduce((a,v)=>a+(Array.isArray(v)?v.length:0),0);
+  const blob=new Blob([JSON.stringify(out,null,1)],{type:'application/json'}),nom=`cocina-copia-${dayKey(Date.now())}.json`,file=new File([blob],nom,{type:'application/json'});
+  try{localStorage.setItem('cocina.backup',Date.now())}catch(e){}
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:nom})}catch(e){}}
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nom;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
+  b.textContent='Descargar copia de seguridad';toast(`Copia lista: ${cant} registros.`);render(true);return out;
+}
 async function recGuardar(){
   const d=S.recDraft,nueva=S.recOpen==='nueva';if(!String(d.nombre||'').trim()){S.note='Ponele un nombre a la receta.';render(true);return}
   const ing=(d.ing||[]).filter(i=>String(i.nombre||'').trim()).map(i=>{const p=prods().find(x=>x.nombre.toLowerCase()===String(i.nombre).trim().toLowerCase());return {nombre:String(i.nombre).trim(),cant:num(i.cant),unidad:i.unidad||'g',...(p?{pid:p.id}:{}),...(String(i.costo||'').trim()!==''?{costo:num(i.costo)}:{})}});
@@ -930,6 +942,7 @@ function vEquipo(){
   <div class="row" style="flex:2 1 300px"><select style="flex:1 1 140px" aria-label="Puesto" data-eq="${id}" data-f="rol">${ROLES.map(r=>`<option ${m.rol===r?'selected':''}>${r}</option>`).join('')}</select><select style="flex:1 1 120px" aria-label="Local" data-eq="${id}" data-f="local">${locOpts(m.local)}</select>
   <button data-act="activo" data-id="${id}">${m.activo?'Desactivar':'Reactivar'}</button>${usuarioDe(m)?'':`<button data-act="reset" data-id="${id}">Mail para cambiar clave</button>`}</div></div>`).join('')||'<p class="empty">Todavía no diste de alta a nadie.</p>'}</div></section>
   <aside>
+  <div class="panel" style="margin-bottom:16px"><h3>💾 Copia de seguridad</h3><p class="meta">Baja a un archivo todo lo cargado: catálogo, equipo, pedidos, solicitudes, stock, recetas, mantenimiento y chats (sin las fotos de remitos ni las contraseñas). Guardala en tu Drive una vez por semana.${(()=>{try{const t=+localStorage.getItem('cocina.backup');return t?` Última copia desde este dispositivo: <b>${fecha(t)} ${hora(t)}</b>.`:''}catch(e){return ''}})()}</p><button class="pri" data-act="backup">Descargar copia de seguridad</button></div>
   <div class="panel"><h3>Notificaciones en tu celu</h3><p class="meta">Te llega un aviso con el ícono de Cocina cuando alguien arma un pedido, recibe mercadería o escribe en el chat, aunque la app esté cerrada.</p>
   ${pushInfo()}</div>
   <form class="panel" data-form="alta"><h3>Dar de alta</h3>
@@ -1109,6 +1122,7 @@ document.addEventListener('click',e=>{
   if(a==='recSinFoto'){S.recDraft.foto='';render(true);return}
   if(a==='recBorrar'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Borrar esta receta?</h3><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="recBorrarOk">Sí, borrar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
   if(a==='recBorrarOk'){$('#sheet').innerHTML='';const rid0=S.recOpen;S.recOpen=null;S.recEdit=false;S.recDraft=null;deleteDoc(doc(db,'recetas',rid0)).then(()=>toast('Receta borrada.')).catch(e=>{S.note=errMsg(e)});render(true);return}
+  if(a==='backup'){backup(b).catch(e=>{b.textContent='Descargar copia de seguridad';S.note=errMsg(e);render(true)});return}
   if(a==='recargar'){b.textContent='Actualizando…';navigator.serviceWorker?.getRegistration().then(r=>r?.update()).catch(()=>{}).finally(()=>setTimeout(()=>location.reload(),300));return}
   if(a==='fLoc'){S.fLoc=id;S.panelSel=S.panelSel;render(true);return}
   if(a==='vLoc'){S.vLoc=id;S.recOpen=null;S.recEdit=false;S.catDraft=null;S.conteo={};render(true);return}
@@ -1253,7 +1267,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26d';
+const APP_V='2026-11-26e';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
