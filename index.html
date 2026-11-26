@@ -114,6 +114,7 @@ body[data-sec=todos] .top{background:#24303f;color:#fff}body[data-sec=todos] .pr
 #nuevaV{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));z-index:80;background:#1f7a3a;color:#fff;border:0;border-radius:14px;padding:14px 16px;font-size:16px;box-shadow:0 8px 24px #0004;text-align:center}
 .recfoto{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0 16px}.recfoto img,.recfoto>span{width:120px;height:120px;border-radius:16px;object-fit:cover;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:44px}
 .rechero{width:100%;max-height:360px;object-fit:cover;border-radius:18px;margin:4px 0 14px;display:block}.recthumb{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:26px;margin-right:4px}
+.mt-pedido{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}.mt-aprobado{background:#e3eefc;color:#1d4f91;border-color:#9cbbe6}.mt-rechazado{background:#fde3e0;color:#b3261e;border-color:#f0a39b}.mt-llego,.mb-materiales{background:#e8f5e0;color:#2f6b1f;border-color:#b9dca3}.mb-materiales{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}.matbox{background:#fffaf0;border-color:#efd9a8}
 .soltag{color:#1f7a3a;font-weight:600}.solbox{border:2px solid #25a244;background:#eef8ef}.sol{border-top:1px solid var(--line);padding:10px 0}.sol:first-of-type{border-top:0}.sol ul{margin:4px 0;padding-left:18px}
 nav.tabs a.on{opacity:1}body{padding-bottom:24px}nav.tabs{display:none!important}.volver{display:inline-flex;margin-bottom:14px;text-decoration:none}
 @media(max-width:420px){nav.tabs a{font-size:16.5px;letter-spacing:-.01em}}@media(max-width:480px){nav.tabs{gap:2px}nav.tabs a{font-size:14.5px;padding:8px 1px}}
@@ -273,7 +274,7 @@ const badgeHTML=(p,big)=>`<span class="bwrap"${big?' style="font-size:15px"':''}
 const faltantes=p=>p.recepcion?p.items.map((i,k)=>({i,x:p.recepcion.items?.[k]})).filter(o=>o.x&&o.x.rec<num(o.i.cant)):[];
 function accesos(nPend){
   const L=lvl(),ns=solsPend(listLoc()).length,room=workLocal(),nc=(S.chat[room]||[]).filter(m=>m.uid!==S.uid&&m.t>lastRead(room)).length;
-  ensureMant();const nm=mantDe(listLoc()).filter(x=>x.estado!=='hecho').length,MB=['mant','🔧','Mantenimiento',nm?`${nm} por hacer`:''];
+  ensureMant();const nm=mantDe(listLoc()).filter(x=>x.estado!=='hecho').length,nmat=mantDe(listLoc()).filter(x=>matAct(x)?.estado==='pedido'||(matAct(x)&&canComprar())).length,MB=['mant','🔧','Mantenimiento',[nm?`${nm} por hacer`:'',nmat&&canComprar()?`🛒 ${nmat} materiales`:''].filter(Boolean).join(' · ')];
   if(esMant())return `<div class="accesos">${[MB].map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
   const B=[...(soloVer()?[]:[['pedir','🛒','Pedir','']]),['solicitudes','📥','Solicitudes',ns?`${ns} pendiente${ns>1?'s':''}`:''],['pedidos','📦','Pedidos',nPend?`${nPend} por recibir`:''],
     ...(L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(canMant()?[MB]:[]),...(canRec()?[['recetario','📖','Recetario','']]:[]),...(S.owner?[['equipo','👥','Equipo','']]:[])];
@@ -457,13 +458,44 @@ function ensureMant(){
   S.subs.push(()=>{mantSub&&mantSub();mantSub=null});
 }
 const mantDe=loc=>(S.mant||[]).filter(x=>loc==='todos'||x.local===loc);
-const MEST={pendiente:'Pendiente',curso:'En curso',hecho:'Hecho'};
+const MEST={pendiente:'Pendiente',curso:'En curso',materiales:'Esperando materiales',hecho:'Hecho'};
+const COMPRA_ROLES=['Administración','Encargado/a','Gerente'];
+const canComprar=()=>S.owner||COMPRA_ROLES.includes(me()?.rol);
+const matAct=x=>{const m=(x.mats||[]).at(-1);return m&&(m.estado==='pedido'||m.estado==='aprobado')?m:null};
+const MATEST={pedido:'Esperando aprobación',aprobado:'Aprobado · a comprar',rechazado:'No se compra',llego:'Materiales recibidos'};
+function matHTML(x){
+  return (x.mats||[]).map((m,k)=>{const ult=k===(x.mats.length-1);
+    return `<div class="panel matbox mat-${m.estado}" style="margin-top:10px;padding:10px 12px"><div class="row" style="justify-content:space-between"><b>🛒 Materiales${x.mats.length>1?` #${k+1}`:''}</b><span class="badge mt-${m.estado}">${MATEST[m.estado]}</span></div>
+    <ul style="margin:6px 0;padding-left:18px">${m.items.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>${m.nota?`<p style="margin:0 0 4px;white-space:pre-wrap">${esc(m.nota)}</p>`:''}
+    ${m.foto?`<img src="${m.foto}" alt="Foto" style="max-width:160px;border-radius:10px;margin:4px 0">`:''}
+    <p class="meta" style="margin:2px 0 0">Pidió ${esc(nameOf(m.por))} · ${fecha(m.t)} ${hora(m.t)}${m.resp?` · ${m.estado==='rechazado'?'Respondió':'Aprobó'} ${esc(nameOf(m.resp.por))} ${fecha(m.resp.t)}${m.resp.nota?`: “${esc(m.resp.nota)}”`:''}`:''}${m.llego?` · Llegó ${fecha(m.llego.t)} (${esc(nameOf(m.llego.por))})`:''}</p>
+    ${ult&&canComprar()&&m.estado==='pedido'?`<div class="row" style="margin-top:8px"><button class="pri" data-act="matResp" data-id="${x.id}" data-r="aprobado">✅ Aprobar, se compra</button><button data-act="matResp" data-id="${x.id}" data-r="rechazado">🚫 No se compra</button></div>`:''}
+    ${ult&&canComprar()&&m.estado==='aprobado'?`<button class="pri" style="margin-top:8px" data-act="matLlego" data-id="${x.id}">📦 Ya están los materiales</button>`:''}</div>`}).join('');
+}
+const compradoresDe=loc=>Object.entries(S.equipo).filter(([id,m])=>m.activo&&COMPRA_ROLES.includes(m.rol)&&(m.rol!=='Encargado/a'||m.local===loc||m.local==='todos')).map(([id])=>id);
+async function matPedir(id,items,nota,foto){
+  const x=(S.mant||[]).find(y=>y.id===id);if(!x)return;
+  const m={items,nota,por:S.uid,t:Date.now(),estado:'pedido',...(foto?{foto}:{})};
+  try{await updateDoc(doc(db,'mant',id),{mats:[...(x.mats||[]),m],estado:'materiales',...(x.inicio?{}:{inicio:{t:Date.now(),por:S.uid}})})}catch(e){S.note=errMsg(e);render(true);return}
+  toast('Listo, pediste los materiales. Te avisamos cuando respondan.');
+  pushUids([...new Set([x.por,S.ownerUid,...compradoresDe(x.local)])].filter(u=>u&&u!==S.uid),`🛒 Mantenimiento pide materiales · ${locName(x.local)}`,`${x.titulo}\n${items.map(i=>'• '+i).join('\n')}${nota?'\n'+nota:''}`,'#mant');
+}
+async function matCambiar(id,estado,nota){
+  const x=(S.mant||[]).find(y=>y.id===id);if(!x||!x.mats?.length)return;const mats=[...x.mats],k=mats.length-1,t=Date.now();
+  if(estado==='llego')mats[k]={...mats[k],estado,llego:{t,por:S.uid}};else mats[k]={...mats[k],estado,resp:{t,por:S.uid,...(nota?{nota}:{})}};
+  const est=estado==='aprobado'?'materiales':'curso';
+  try{await updateDoc(doc(db,'mant',id),{mats,estado:est})}catch(e){S.note=errMsg(e);render(true);return}
+  const quien=mats[k].por,txt=estado==='aprobado'?`✅ Aprobaron tus materiales`:estado==='rechazado'?`🚫 No se compran los materiales`:`📦 Llegaron tus materiales`;
+  toast(estado==='aprobado'?'Aprobado. Cuando lleguen, tocá "Ya están los materiales".':estado==='llego'?'Listo, el trabajo vuelve a "En curso".':'Listo, le avisamos.');
+  pushUids([quien].filter(u=>u&&u!==S.uid),`${txt} · ${locName(x.local)}`,`${x.titulo}${nota?`\n"${nota}"`:''}${estado==='llego'?'\nYa podés seguir con el trabajo.':''}`,'#mant');
+}
+
 function vMant(){
   ensureMant();
   const loc=listLoc(),f=S.fMant||'abiertos',todas=mantDe(loc),mes=Date.now()-30*864e5;
-  const L=todas.filter(x=>f==='abiertos'?x.estado!=='hecho':(x.estado==='hecho'&&(x.resp?.t||x.creado)>mes))
+  const L=todas.filter(x=>f==='mat'?!!matAct(x):f==='abiertos'?x.estado!=='hecho':(x.estado==='hecho'&&(x.resp?.t||x.creado)>mes))
     .sort((a,b)=>f==='abiertos'?((b.urg==='urgente')-(a.urg==='urgente')||a.creado-b.creado):(b.resp?.t||0)-(a.resp?.t||0));
-  const nA=todas.filter(x=>x.estado!=='hecho').length;
+  const nA=todas.filter(x=>x.estado!=='hecho').length,nM=todas.filter(x=>matAct(x)).length;
   const card=x=>{const fotos=S.fotos[x.id]||[];if(S.mantOpen===x.id)loadFotos(x.id);
     const puedeEstado=S.owner||me()?.rol===MANT_ROL||me()?.rol==='Encargado/a',puedeBorrar=canCargarMant();
     return `<div class="panel mcard ${x.urg==='urgente'&&x.estado!=='hecho'?'urg':''}" style="margin-bottom:12px">
@@ -471,10 +503,11 @@ function vMant(){
     <span class="bwrap"><span class="badge mb-${x.estado}">${MEST[x.estado]||x.estado}</span>${x.urg==='urgente'&&x.estado!=='hecho'?'<span class="badge b-dif">Urgente</span>':''}</span></div>
     ${x.detalle?`<p style="margin:8px 0 4px;white-space:pre-wrap">${esc(x.detalle)}</p>`:''}
     <p class="meta" style="margin:4px 0 0">Lo cargó ${esc(nameOf(x.por))} · ${fecha(x.creado)} ${hora(x.creado)}${x.inicio?` · Empezó ${esc(nameOf(x.inicio.por))} ${fecha(x.inicio.t)} ${hora(x.inicio.t)}`:''}</p>
+    ${matHTML(x)}
     ${x.estado==='hecho'&&x.resp?`<div class="panel ok" style="margin-top:8px;padding:10px 12px"><b>✅ Hecho por ${esc(nameOf(x.resp.por))}</b> <span class="meta">· ${fecha(x.resp.t)} ${hora(x.resp.t)}</span>${x.resp.nota?`<p style="margin:4px 0 0">${esc(x.resp.nota)}</p>`:''}</div>`:''}
     ${S.mantOpen===x.id?`<div class="fotos" style="margin-top:8px">${fotos.map(fo=>`<button class="foto" data-act="verfoto" data-id="${fo.id}"><img src="${fo.data}" alt="Foto"></button>`).join('')||'<p class="meta">Sin fotos.</p>'}</div>
       <label class="btn" style="margin-top:8px;cursor:pointer">📷 Agregar foto<input type="file" accept="image/*" data-mfoto="${x.id}" hidden></label>`:`<button class="linkbtn" style="margin-top:6px" data-act="mantOpen" data-id="${x.id}">📷 Fotos${x.fotos?` (${x.fotos})`:''}</button>`}
-    <div class="row" style="margin-top:10px">${puedeEstado&&x.estado==='pendiente'?`<button data-act="mantCurso" data-id="${x.id}">🔨 Empezar</button>`:''}${puedeEstado&&x.estado!=='hecho'?`<button class="pri" data-act="mantHecho" data-id="${x.id}">✅ Hecho</button>`:''}${S.owner&&x.estado==='hecho'?`<button data-act="mantReabrir" data-id="${x.id}">Reabrir</button>`:''}${puedeBorrar&&x.estado!=='hecho'?`<button class="del" data-act="mantDel" data-id="${x.id}">Borrar</button>`:''}</div></div>`};
+    <div class="row" style="margin-top:10px">${puedeEstado&&x.estado!=='hecho'&&!matAct(x)?`<button data-act="matPedirForm" data-id="${x.id}">🛒 Pedir materiales</button>`:''}${puedeEstado&&x.estado==='pendiente'?`<button data-act="mantCurso" data-id="${x.id}">🔨 Empezar</button>`:''}${puedeEstado&&x.estado!=='hecho'?`<button class="pri" data-act="mantHecho" data-id="${x.id}">✅ Hecho</button>`:''}${S.owner&&x.estado==='hecho'?`<button data-act="mantReabrir" data-id="${x.id}">Reabrir</button>`:''}${puedeBorrar&&x.estado!=='hecho'?`<button class="del" data-act="mantDel" data-id="${x.id}">Borrar</button>`:''}</div></div>`};
   const form=canCargarMant()?`<details class="panel" style="margin-bottom:16px" ${S.mantForm?'open':''}><summary style="cursor:pointer;font-weight:700;font-size:18px">+ Cargar trabajo de mantenimiento</summary>
     <form data-form="mant" style="margin-top:10px">${uni()?`<label for="mt-loc">Local</label><select id="mt-loc" name="local"><option value="villa" ${(S.fLoc||'')!=='mara'?'selected':''}>Villa Aluminé</option><option value="mara" ${S.fLoc==='mara'?'selected':''}>Mara</option></select>`:''}<label for="mt-t">¿Qué hay que hacer?</label><input id="mt-t" name="titulo" required maxlength="120" placeholder="Ej: Cambiar la lámpara de la cámara de frío">
     <label for="mt-l" style="margin-top:10px">¿Dónde?</label><input id="mt-l" name="lugar" maxlength="80" placeholder="Ej: Cocina, baño del salón Falucho…">
@@ -484,7 +517,7 @@ function vMant(){
     <button class="pri" style="width:100%;margin-top:14px" type="submit">Cargar trabajo</button></form></details>`:'';
   return locChips('fLoc',1)+`<div class="head"><div><h2>🔧 Mantenimiento${uni()?'':' · '+esc(locName(loc))}</h2><p class="sub">${canCargarMant()?'Cargá lo que hay que arreglar. Al de mantenimiento le llega el aviso.':'Trabajos que hay que hacer. Marcalos cuando empezás y cuando terminás.'}</p></div></div>
   ${form}
-  <div class="chips" style="margin-bottom:14px"><button class="chip ${f==='abiertos'?'on':''}" data-act="fMant" data-id="abiertos">Por hacer (${nA})</button><button class="chip ${f==='hechos'?'on':''}" data-act="fMant" data-id="hechos">Hechos (últimos 30 días)</button></div>
+  <div class="chips" style="margin-bottom:14px"><button class="chip ${f==='abiertos'?'on':''}" data-act="fMant" data-id="abiertos">Por hacer (${nA})</button>${nM?`<button class="chip ${f==='mat'?'on':''}" data-act="fMant" data-id="mat">🛒 Materiales (${nM})</button>`:''}<button class="chip ${f==='hechos'?'on':''}" data-act="fMant" data-id="hechos">Hechos (últimos 30 días)</button></div>
   ${L.map(card).join('')||`<p class="empty">${f==='abiertos'?'No hay trabajos pendientes. 🎉':'No hay trabajos terminados en los últimos 30 días.'}</p>`}`;
 }
 const mantUids=loc=>Object.entries(S.equipo).filter(([id,m])=>m.activo&&m.rol===MANT_ROL&&(m.local===loc||m.local==='todos')).map(([id])=>id);
@@ -1075,6 +1108,18 @@ document.addEventListener('click',e=>{
   if(a==='vLoc'){S.vLoc=id;S.recOpen=null;S.recEdit=false;S.catDraft=null;S.conteo={};render(true);return}
   if(a==='fMant'){S.fMant=id;render(true);return}
   if(a==='mantOpen'){S.mantOpen=S.mantOpen===id?null:id;render(true);return}
+  if(a==='matPedirForm'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>🛒 Pedir materiales</h3><p class="sub">Le llega el aviso a quien cargó el trabajo, a administración y a los encargados.</p>
+    <label for="mp-i">¿Qué necesitás? (uno por renglón)</label><textarea id="mp-i" rows="4" placeholder="Burletes · 6 metros&#10;Tornillos 8 mm · 1 caja"></textarea>
+    <label for="mp-n" style="margin-top:10px">Explicación (opcional)</label><textarea id="mp-n" rows="3" placeholder="Ej: la puerta no cierra porque el burlete está roto"></textarea>
+    <label style="margin-top:10px">Foto (opcional)</label><input type="file" id="mp-f" accept="image/*">
+    <div class="row" style="margin-top:14px"><button class="pri" style="flex:1" data-act="matPedirOk" data-id="${id}">Pedir</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
+  if(a==='matPedirOk'){const items=($('#mp-i')?.value||'').split('\n').map(l=>l.trim()).filter(Boolean).slice(0,30);if(!items.length){$('#mp-i').focus();return}
+    const nota=($('#mp-n')?.value||'').trim().slice(0,800),file=$('#mp-f')?.files?.[0];b.textContent='Enviando…';
+    (async()=>{let foto='';if(file){try{const img=await createImageBitmap(file),k=Math.min(1,720/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);foto=c.toDataURL('image/jpeg',.6)}catch(e){}}
+      $('#sheet').innerHTML='';await matPedir(id,items,nota,foto)})();return}
+  if(a==='matResp'){const r=b.dataset.r;$('#sheet').innerHTML=`<div class="sheet"><div><h3>${r==='aprobado'?'✅ Aprobar materiales':'🚫 No se compran'}</h3><label for="mr-n">${r==='aprobado'?'Comentario (opcional)':'Motivo'}</label><input id="mr-n" placeholder="${r==='aprobado'?'Ej: los compro mañana a la mañana':'Ej: usá los que sobraron en el depósito'}"><div class="row" style="margin-top:14px"><button class="pri" style="flex:1" data-act="matRespOk" data-id="${id}" data-r="${r}">Confirmar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
+  if(a==='matRespOk'){const n=($('#mr-n')?.value||'').trim().slice(0,300);$('#sheet').innerHTML='';matCambiar(id,b.dataset.r,n);return}
+  if(a==='matLlego'){matCambiar(id,'llego');return}
   if(a==='mantCurso'){mantEstado(id,'curso');return}
   if(a==='mantReabrir'){mantEstado(id,'pendiente');return}
   if(a==='mantHecho'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Trabajo terminado?</h3><label for="mh-n">Comentario (opcional)</label><input id="mh-n" placeholder="Ej: cambié la lámpara, quedó andando"><div class="row" style="margin-top:14px"><button class="pri" style="flex:1" data-act="mantHechoOk" data-id="${id}">Sí, está hecho</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
@@ -1202,7 +1247,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-25d';
+const APP_V='2026-11-26a';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
