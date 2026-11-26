@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Aluma Gestión</title><meta name="theme-color" content="#f93604"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Aluma"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon.png?v=3"><link rel="manifest" href="manifest.webmanifest">
+<title>Aluma Gestión</title><meta name="theme-color" content="#f93604"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Aluma"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=4"><link rel="icon" href="icon.png?v=4"><link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1469,7 +1469,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26t';
+const APP_V='2026-11-26u';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
