@@ -637,18 +637,66 @@ async function recPDF(conCostos){
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:r.nombre});return}catch(e){if(e.name==='AbortError')return}}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
 }
-async function backup(b){
+const BK_COLS=[['equipo',['equipo']],['pedidos',['pedidos']],['solicitudes',['solicitudes']],['stock',['stock']],['mant',['mant']],['recetas',['recetas']],['chat_villa',['chats','villa','msgs']],['chat_mara',['chats','mara','msgs']]];
+const bkCant=out=>Object.values(out.datos).reduce((a,v)=>a+(Array.isArray(v)?v.length:0),0)+(out.datos.catalogo?.productos?.length||0);
+async function armarCopia(prog){
   const all=async c=>(await getDocs(collection(db,...c))).docs.map(d=>({_id:d.id,...d.data()}));
   const out={app:'cocina',version:APP_V,fecha:new Date().toISOString(),por:me()?.nombre||'',datos:{}};
   try{out.datos.catalogo=(await getDoc(doc(db,'cfg','catalogo'))).data()}catch(e){out.datos.catalogo={error:errMsg(e)}}
-  for(const [k,c] of [['equipo',['equipo']],['pedidos',['pedidos']],['solicitudes',['solicitudes']],['stock',['stock']],['mant',['mant']],['recetas',['recetas']],['chat_villa',['chats','villa','msgs']],['chat_mara',['chats','mara','msgs']]]){
-    b.textContent=`Bajando ${k.replace('_',' ')}…`;try{out.datos[k]=await all(c)}catch(e){out.datos[k]={error:errMsg(e)}}}
-  const cant=Object.values(out.datos).reduce((a,v)=>a+(Array.isArray(v)?v.length:0),0)+(out.datos.catalogo?.productos?.length||0);
+  for(const [k,c] of BK_COLS){prog&&prog(k);try{out.datos[k]=await all(c)}catch(e){out.datos[k]={error:errMsg(e)}}}
+  return out;
+}
+function bajarCopia(out){
+  const blob=new Blob([JSON.stringify(out,null,1)],{type:'application/json'}),nom=`cocina-copia-${dayKey(new Date(out.fecha).getTime())}.json`,file=new File([blob],nom,{type:'application/json'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){return navigator.share({files:[file],title:nom}).catch(()=>{})}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nom;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
+}
+// Copia automática: cada 10 días, guardada en Firestore (solo dueño), pisa la anterior
+const BK_DIAS=10,BK_TROZO=600000;
+async function autoCopia(forzar){
+  if(!S.owner)return;
+  const metaRef=doc(db,'respaldo','meta');let meta=null;
+  try{const m=await getDoc(metaRef);meta=m.exists()?m.data():null}catch(e){console.warn('respaldo',e);return}
+  S.bkMeta=meta;if(S.view==='equipo')render(true);
+  if(!forzar&&meta&&Date.now()-meta.t<BK_DIAS*864e5)return;
+  const out=await armarCopia(),txt=JSON.stringify(out),n=Math.ceil(txt.length/BK_TROZO)||1;
+  for(let i=0;i<n;i++)await setDoc(doc(db,'respaldo','p'+i),{i,txt:txt.slice(i*BK_TROZO,(i+1)*BK_TROZO)});
+  for(let i=n;i<(meta?.partes||0);i++){try{await deleteDoc(doc(db,'respaldo','p'+i))}catch(e){}}
+  S.bkMeta={t:Date.now(),partes:n,cant:bkCant(out),kb:Math.round(txt.length/1024)};
+  await setDoc(metaRef,S.bkMeta);
+  if(S.view==='equipo')render(true);
+}
+async function leerCopiaAuto(){
+  const m=(await getDoc(doc(db,'respaldo','meta'))).data();if(!m)throw new Error('Todavía no hay copia automática.');
+  let txt='';for(let i=0;i<m.partes;i++)txt+=(await getDoc(doc(db,'respaldo','p'+i))).data().txt;
+  return JSON.parse(txt);
+}
+async function restaurarCopia(out,prog){
+  const d=out.datos;let n=0;
+  if(d.catalogo&&!d.catalogo.error){prog('catálogo');await setDoc(doc(db,'cfg','catalogo'),d.catalogo);n++}
+  for(const [k,c] of BK_COLS){const arr=d[k];if(!Array.isArray(arr))continue;prog(k.replace('_',' '));
+    for(const x of arr){const {_id,...data}=x;try{await setDoc(doc(db,...c,_id),data);n++}catch(e){console.warn(k,_id,e)}}}
+  return n;
+}
+async function backup(b){
+  const out=await armarCopia(k=>b.textContent=`Bajando ${k.replace('_',' ')}…`);
+  const cant=bkCant(out);
   const blob=new Blob([JSON.stringify(out,null,1)],{type:'application/json'}),nom=`cocina-copia-${dayKey(Date.now())}.json`,file=new File([blob],nom,{type:'application/json'});
   try{localStorage.setItem('cocina.backup',Date.now())}catch(e){}
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:nom})}catch(e){}}
   else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nom;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
   b.textContent='Descargar copia de seguridad';toast(`Copia lista: ${cant} registros.`);render(true);return out;
+}
+async function bkAuto(a,b){
+  const txt0=b.textContent;
+  try{
+    if(a==='bkAhora'){b.textContent='Guardando copia…';await autoCopia(true);toast('Copia automática actualizada.');render(true);return}
+    b.textContent='Leyendo copia…';const out=await leerCopiaAuto();
+    if(a==='bkBajar'){await bajarCopia(out);b.textContent=txt0;return}
+    if(a==='bkRestaurar'){
+      if(!confirm(`¿Restaurar la copia del ${new Date(out.fecha).toLocaleString('es-AR')}?\n\nTodo lo que estaba en esa copia vuelve a como estaba ese día. Lo que se cargó después y no estaba en la copia no se borra.`)){b.textContent=txt0;return}
+      const n=await restaurarCopia(out,k=>b.textContent=`Restaurando ${k}…`);b.textContent=txt0;toast(`Listo: se restauraron ${n} registros.`);render(true)}
+  }catch(e){b.textContent=txt0;S.note=errMsg(e);render(true)}
 }
 async function recGuardar(){
   const d=S.recDraft,nueva=S.recOpen==='nueva';if(!String(d.nombre||'').trim()){S.note='Ponele un nombre a la receta.';render(true);return}
@@ -943,7 +991,9 @@ function vEquipo(){
   <div class="row" style="flex:2 1 300px"><select style="flex:1 1 140px" aria-label="Puesto" data-eq="${id}" data-f="rol">${ROLES.map(r=>`<option ${m.rol===r?'selected':''}>${r}</option>`).join('')}</select><select style="flex:1 1 120px" aria-label="Local" data-eq="${id}" data-f="local">${locOpts(m.local)}</select>
   <button data-act="activo" data-id="${id}">${m.activo?'Desactivar':'Reactivar'}</button>${usuarioDe(m)?'':`<button data-act="reset" data-id="${id}">Mail para cambiar clave</button>`}</div></div>`).join('')||'<p class="empty">Todavía no diste de alta a nadie.</p>'}</div></section>
   <aside>
-  <div class="panel" style="margin-bottom:16px"><h3>💾 Copia de seguridad</h3><p class="meta">Baja a un archivo todo lo cargado: catálogo, equipo, pedidos, solicitudes, stock, recetas, mantenimiento y chats (sin las fotos de remitos ni las contraseñas). Guardala en tu Drive una vez por semana.${(()=>{try{const t=+localStorage.getItem('cocina.backup');return t?` Última copia desde este dispositivo: <b>${fecha(t)} ${hora(t)}</b>.`:''}catch(e){return ''}})()}</p><button class="pri" data-act="backup">Descargar copia de seguridad</button></div>
+  <div class="panel" style="margin-bottom:16px"><h3>💾 Copia de seguridad</h3><p class="meta">Baja a un archivo todo lo cargado: catálogo, equipo, pedidos, solicitudes, stock, recetas, mantenimiento y chats (sin las fotos de remitos ni las contraseñas). Guardala en tu Drive una vez por semana.${(()=>{try{const t=+localStorage.getItem('cocina.backup');return t?` Última copia desde este dispositivo: <b>${fecha(t)} ${hora(t)}</b>.`:''}catch(e){return ''}})()}</p><button class="pri" data-act="backup">Descargar copia de seguridad</button>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb"><b>🔁 Copia automática</b><p class="meta">Se hace sola cada ${BK_DIAS} días cuando abrís la app, y pisa la anterior. Solo vos la ves.${S.bkMeta?` Última: <b>${fecha(S.bkMeta.t)} ${hora(S.bkMeta.t)}</b> · ${S.bkMeta.cant} registros · próxima: <b>${fecha(S.bkMeta.t+BK_DIAS*864e5)}</b>.`:' Todavía no se hizo ninguna.'}</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${S.bkMeta?`<button data-act="bkBajar">Descargar</button><button data-act="bkRestaurar">Restaurar</button>`:''}<button data-act="bkAhora">Hacerla ahora</button></div></div></div>
   <div class="panel"><h3>Notificaciones en tu celu</h3><p class="meta">Te llega un aviso con el ícono de Cocina cuando alguien arma un pedido, recibe mercadería o escribe en el chat, aunque la app esté cerrada.</p>
   ${pushInfo()}</div>
   <form class="panel" data-form="alta"><h3>Dar de alta</h3>
@@ -1123,6 +1173,7 @@ document.addEventListener('click',e=>{
   if(a==='recSinFoto'){S.recDraft.foto='';render(true);return}
   if(a==='recBorrar'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Borrar esta receta?</h3><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="recBorrarOk">Sí, borrar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
   if(a==='recBorrarOk'){$('#sheet').innerHTML='';const rid0=S.recOpen;S.recOpen=null;S.recEdit=false;S.recDraft=null;deleteDoc(doc(db,'recetas',rid0)).then(()=>toast('Receta borrada.')).catch(e=>{S.note=errMsg(e)});render(true);return}
+  if(a==='bkAhora'||a==='bkBajar'||a==='bkRestaurar'){bkAuto(a,b);return}
   if(a==='backup'){backup(b).catch(e=>{b.textContent='Descargar copia de seguridad';S.note=errMsg(e);render(true)});return}
   if(a==='recargar'){b.textContent='Actualizando…';navigator.serviceWorker?.getRegistration().then(r=>r?.update()).catch(()=>{}).finally(()=>setTimeout(()=>location.reload(),300));return}
   if(a==='fLoc'){S.fLoc=id;S.panelSel=S.panelSel;render(true);return}
@@ -1268,7 +1319,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26e';
+const APP_V='2026-11-26f';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
@@ -1297,7 +1348,7 @@ onAuthStateChanged(auth,async u=>{
     }
     S.owner=o.data().uid===u.uid;S.ownerUid=o.data().uid;
     if(!S.owner){const m=await getDoc(doc(db,'equipo',u.uid));if(!m.exists()||!m.data().activo){S.stage='blocked';render(true);return}}
-    S.stage='app';if(!DESDE_AVISO||!location.hash||location.hash==='#')history.replaceState(null,'',S.local?'#panel':'#inicio');subscribe();render(true);setTimeout(limpiarFotosViejas,8000);
+    S.stage='app';if(!DESDE_AVISO||!location.hash||location.hash==='#')history.replaceState(null,'',S.local?'#panel':'#inicio');subscribe();render(true);setTimeout(limpiarFotosViejas,8000);if(S.owner)setTimeout(()=>autoCopia().catch(e=>console.warn('autoCopia',e)),15000);
   }catch(e){console.error(e);if(e.code==='permission-denied'){S.stage='blocked'}else{S.stage='error';S.note=errMsg(e)+(e.code?` (${e.code})`:'')}render(true)}
 });
 </script></body></html>
