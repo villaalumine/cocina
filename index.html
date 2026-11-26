@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cocina</title><meta name="theme-color" content="#f93604"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cocina"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon.png?v=2"><link rel="manifest" href="manifest.webmanifest">
+<title>Aluma Gestión</title><meta name="theme-color" content="#f93604"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Aluma"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon.png?v=2"><link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -162,7 +162,7 @@ body[data-sec=villa] .top .out,body[data-sec=mara] .top .out{color:inherit;borde
 </style><script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script></head><body>
 <header class="top"><button class="brand" id="brand" data-act="inicio" aria-label="Volver al inicio"><span class="back" hidden>‹</span><img id="brandImg" alt="" hidden><span id="brandTxt"><i></i>Cocina</span></button><div class="sp"></div><span class="who" id="who"></span><button class="av" id="perfilBtn" data-act="perfil" aria-label="Mi perfil" hidden style="width:40px;height:40px;font-size:17px"></button><select id="localSel" aria-label="Local"></select><a class="out sop" id="soporte" hidden target="_blank" rel="noopener" aria-label="Soporte por WhatsApp">Soporte</a><button class="out" id="salir" hidden>Salir</button></header>
 <nav class="tabs" id="tabs" hidden><a href="#panel" data-v="panel">Panel</a><a href="#pedir" data-v="pedir">Pedir</a><a href="#solicitudes" data-v="solicitudes">Solicitudes<span class="tabn" id="solN" hidden></span></a><a href="#pedidos" data-v="pedidos">Pedidos</a><a href="#stock" data-v="stock">Stock</a><a href="#catalogo" data-v="catalogo">Catálogo</a><a href="#equipo" data-v="equipo" id="tabEquipo" hidden>Equipo</a></nav>
-<main id="main"><p class="empty">Cargando la cocina…</p></main>
+<main id="main"><p class="empty">Cargando Aluma Gestión…</p></main>
 <button id="chatBtn" class="chatbtn" data-act="chat" hidden aria-label="Chat del equipo">💬<span id="chatBadge" hidden></span></button><div id="sheet"></div><datalist id="unidades"><option>kg</option><option>u</option><option>bolsa</option><option>cajón</option><option>bulto</option><option>paq</option><option>caja</option><option>botella</option><option>pack</option><option>barril</option><option>maple</option><option>bandeja</option><option>l</option></datalist>
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -252,11 +252,11 @@ function waLink(p){const t=String(prov(p.prov)?.tel||'').replace(/\D/g,'');retur
 
 /* ---------- pantallas de acceso ---------- */
 function vAcceso(){
-  if(S.stage==='boot'||S.stage==='loading')return '<p class="empty">Cargando la cocina…</p>';
+  if(S.stage==='boot'||S.stage==='loading')return '<p class="empty">Cargando Aluma Gestión…</p>';
   if(S.stage==='blocked')return `<div class="login"><h2>Tu cuenta no está habilitada</h2><p class="sub">Pedile al dueño que te dé de alta en la pestaña Equipo, con este mail: <b>${esc(auth.currentUser?.email)}</b>.</p><button data-act="salir" style="margin-top:16px">Salir</button></div>`;
   if(S.stage==='error')return `<div class="login"><h2>No pudimos conectar</h2><p class="sub">${esc(S.note)}</p><button data-act="reintentar" class="pri" style="margin-top:16px">Probar de nuevo</button></div>`;
   const signup=S.authMode==='dueño';
-  return `<div class="login"><h2>${signup?'Crear la cuenta del dueño':'Entrar a la cocina'}</h2>
+  return `<div class="login"><h2>${signup?'Crear la cuenta del dueño':'Entrar a Aluma Gestión'}</h2>
   <p class="sub">${signup?'Esto se hace una sola vez. El que crea esta cuenta queda como dueño y es el que da de alta al equipo.':'Usá el usuario y la contraseña que te dieron.'}</p>
   ${S.note?`<p class="note" style="margin-top:14px">${esc(S.note)}</p>`:''}
   <form data-form="${signup?'signup':'login'}" class="panel" style="margin-top:16px">
@@ -927,7 +927,7 @@ function chatListHTML(room){
 function chatAvisoHTML(){
   if(!('serviceWorker' in navigator)||!('PushManager' in window))return isIOS&&!standalone?'<p class="meta" style="max-width:300px">🔔 Para recibir avisos del chat, anclá la app: en Safari tocá Compartir → <b>Agregar a inicio</b> y abrila desde ese ícono.</p>':'';
   let on=false;try{on=Notification.permission==='granted'&&localStorage.getItem('cocina.push.'+S.uid)==='1'}catch(e){}
-  if(Notification.permission==='denied')return '<p class="meta" style="max-width:300px">🔕 Bloqueaste las notificaciones. Activalas en la configuración del celu (Notificaciones → Cocina).</p>';
+  if(Notification.permission==='denied')return '<p class="meta" style="max-width:300px">🔕 Bloqueaste las notificaciones. Activalas en la configuración del celu (Notificaciones → Aluma).</p>';
   return on?'<span class="meta">🔔 Avisos activados</span>':'<button class="pri" data-act="activarPush">🔔 Activar avisos del chat</button>';
 }
 function vChat(){
@@ -1097,7 +1097,7 @@ function pushInfo(){
   if(!('serviceWorker' in navigator)||!('PushManager' in window))return isIOS&&!standalone?'<p class="note">En iPhone primero anclá la app: en Safari tocá Compartir → <b>Agregar a inicio</b>, y abrila desde ese ícono. Ahí vas a poder activar los avisos.</p>':'<p class="note">Este navegador no permite notificaciones. Probá desde el celu con Chrome o desde la app anclada.</p>';
   const perm=Notification.permission;
   return `<p class="meta">${n?`Activadas en ${n} dispositivo${n>1?'s':''}.`:'Todavía no las activaste en ningún celu.'}</p>
-  ${perm==='denied'?'<p class="note">Bloqueaste las notificaciones para esta app. Activalas desde la configuración del celu (Notificaciones → Cocina) y volvé a intentar.</p>':''}
+  ${perm==='denied'?'<p class="note">Bloqueaste las notificaciones para esta app. Activalas desde la configuración del celu (Notificaciones → Aluma) y volvé a intentar.</p>':''}
   <div class="row"><button class="pri" data-act="activarPush">Activar en este celu</button>${n?'<button class="dark" data-act="probarPush">Probar</button>':''}</div>`;
 }
 async function activarPush(){
@@ -1469,7 +1469,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26r';
+const APP_V='2026-11-26s';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
