@@ -557,7 +557,7 @@ const precioTxt=it=>num(it.precio)||num(it.precio2)?`${num(it.precio)?money(it.p
 function vCartas(){
   ensureCartas();ensureRec();
   const loc=workLocal(),D=S.cartas?.[loc],ed=canEditRec()&&S.cartaEd;
-  const head=`${locChips('vLoc')}<div class="head"><div><h2>📋 Cartas · ${esc(locName(loc))}</h2><p class="sub">Cada plato y trago con su precio. El 📖 indica que tiene receta en el Recetario (la necesitamos para descontar stock con las ventas).</p></div>${canEditRec()?`<button class="${S.cartaEd?'pri':''}" data-act="cartaEd">${S.cartaEd?'✓ Terminar':'✏️ Editar'}</button>`:''}</div>`;
+  const head=`${locChips('vLoc')}<div class="head"><div><h2>📋 Cartas · ${esc(locName(loc))}</h2><p class="sub">Cada plato y trago con su precio. El 📖 indica que tiene receta en el Recetario (la necesitamos para descontar stock con las ventas).</p></div><div class="row" style="gap:8px;flex-wrap:wrap"><button data-act="cartaPDF">📄 Exportar PDF</button>${canEditRec()?`<button class="${S.cartaEd?'pri':''}" data-act="cartaEd">${S.cartaEd?'✓ Terminar':'✏️ Editar'}</button>`:''}</div></div>`;
   if(!S.cartas)return head+'<p class="empty">Cargando…</p>';
   const cs=D?.cartas||[];if(!cs.length)return head+'<p class="empty">Todavía no hay cartas cargadas para este local.</p>';
   const ci=Math.min(S.cartaSel?.[loc]||0,cs.length-1),C=cs[ci],q=(S.cartaBus||'').trim().toLowerCase();
@@ -572,21 +572,58 @@ function vCartas(){
   ${C.secciones.map((x,si)=>{const its=x.items.map((it,ii)=>[it,ii]).filter(([it])=>!q||it.nombre.toLowerCase().includes(q)||(it.desc||'').toLowerCase().includes(q));
     if(q&&!its.length)return '';
     return `<div class="panel" style="margin-bottom:12px;padding-bottom:6px"><h3 class="ptit" style="margin-top:0">${esc(x.nombre)}${x.nota?` <small style="font-weight:400;color:#6b7280">${esc(x.nota)}</small>`:''}</h3>${its.map(([it,ii])=>row(it,si,ii)).join('')}
-    ${ed?(S.cItem&&S.cItem.c===ci&&S.cItem.s===si&&S.cItem.i===-1?cartaForm({nombre:'',desc:'',precio:''},loc):`<button class="linkbtn" data-act="cItem" data-s="${si}" data-i="-1" style="margin:8px 0">+ Agregar a ${esc(x.nombre)}</button>`):''}</div>`}).join('')}`;
+    ${ed?(S.cItem&&S.cItem.c===ci&&S.cItem.s===si&&S.cItem.i===-1?cartaForm({nombre:'',desc:'',precio:''},loc):`<button class="linkbtn" data-act="cItem" data-s="${si}" data-i="-1" style="margin:8px 0">+ Agregar a ${esc(x.nombre)}</button>`):''}</div>`}).join('')}
+  ${ed&&!q?'<button data-act="cSeccion" style="margin-bottom:16px">+ Nueva sección</button>':''}`;
 }
 function cartaForm(it,loc){
   const R=(S.recetas||[]).filter(r=>r.local===loc).sort((a,b)=>a.nombre.localeCompare(b.nombre)),cur=cartaRec(it,loc);
   return `<div class="cform"><label>Nombre<input id="cf-n" value="${esc(it.nombre)}"></label><label>Descripción<input id="cf-d" value="${esc(it.desc||'')}"></label>
   <div class="row"><label style="flex:1">Precio<input id="cf-p" inputmode="numeric" value="${num(it.precio)||''}"></label><label style="flex:1">Precio botella (opcional)<input id="cf-p2" inputmode="numeric" value="${num(it.precio2)||''}"></label></div>
+  <label>Sección<select id="cf-s">${(S.cartas[loc].cartas[S.cItem.c]?.secciones||[]).map((x,k)=>`<option value="${k}" ${k===S.cItem.s?'selected':''}>${esc(x.nombre)}</option>`).join('')}</select></label>
   <label>Receta<select id="cf-r"><option value="">— Sin receta —</option>${R.map(r=>`<option value="${r.id}" ${cur?.id===r.id?'selected':''}>${esc(r.nombre)}</option>`).join('')}</select></label>
   <div class="row" style="margin-top:8px"><button class="pri" data-act="cGuardar">Guardar</button><button data-act="cCancelar">Cancelar</button>${S.cItem.i>=0?'<button data-act="cBorrar" style="margin-left:auto;color:#b42318">Borrar</button>':''}</div></div>`;
+}
+async function cartaPDF(){
+  const loc=workLocal(),cs=S.cartas?.[loc]?.cartas||[],C=cs[Math.min(S.cartaSel?.[loc]||0,cs.length-1)];if(!C)return;
+  const JS=await cargarJsPDF(),pdf=new JS({unit:'mm',format:'a4'}),W=210,H=297,M=16,G=10,CW=(W-2*M-G)/2,limpio=t=>String(t||'').replace(/[^\x00-\xFF]/g,'').trim();
+  const mara=loc==='mara',AC=mara?[122,31,35]:[229,83,45],ink=[30,30,30];
+  const cabecera=primera=>{
+    if(primera){pdf.setTextColor(...AC);pdf.setFont(mara?'helvetica':'times','bold');pdf.setFontSize(mara?30:34);pdf.text(mara?'MARA':'Villa Aluminé',W/2,30,{align:'center'});
+      pdf.setFont(mara?'helvetica':'times',mara?'normal':'bolditalic');pdf.setFontSize(mara?13:20);pdf.text(limpio(mara?C.nombre.toUpperCase():C.nombre),W/2,mara?38:41,{align:'center'});
+      pdf.setDrawColor(...ink);pdf.setLineWidth(.8);pdf.line(M,48,W-M,48);pdf.setLineWidth(.3);pdf.line(M,49.6,W-M,49.6);return 58}
+    pdf.setTextColor(...AC);pdf.setFont(mara?'helvetica':'times','bold');pdf.setFontSize(12);pdf.text(limpio((mara?'MARA · ':'Villa Aluminé · ')+C.nombre),M,14);pdf.setDrawColor(...ink);pdf.setLineWidth(.3);pdf.line(M,17,W-M,17);return 25};
+  const pie=()=>{pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(140);pdf.text(mara?'@marasocialclub · Falucho 32':'Villa Aluminé · Falucho 32',W/2,H-8,{align:'center'})};
+  let top=cabecera(true),col=0,y=top;const fondo=H-16,X=()=>M+col*(CW+G);
+  const salto=need=>{if(y+need<=fondo)return;if(col===0){col=1;y=top}else{pie();pdf.addPage();top=cabecera(false);col=0;y=top}};
+  const medir=it=>{pdf.setFontSize(10);const n=pdf.splitTextToSize(limpio(it.nombre),CW-30);pdf.setFontSize(8.5);const d=it.desc?pdf.splitTextToSize(limpio(it.desc),CW-4):[];return {n,d,h:n.length*4.6+d.length*3.8+3}};
+  for(const sec of C.secciones){if(!sec.items.length)continue;
+    const m0=medir(sec.items[0]);salto(12+m0.h);
+    pdf.setTextColor(...ink);pdf.setFont('helvetica','bold');pdf.setFontSize(13);pdf.text(limpio(sec.nombre.toUpperCase()),X(),y);
+    if(sec.nota){const tw=pdf.getTextWidth(limpio(sec.nombre.toUpperCase()));pdf.setFont('helvetica','italic');pdf.setFontSize(8.5);pdf.setTextColor(110);pdf.text(limpio(sec.nota),X()+tw+3,y)}
+    pdf.setDrawColor(...AC);pdf.setLineWidth(.4);pdf.line(X(),y+2,X()+CW,y+2);y+=8;
+    for(const it of sec.items){const mm=medir(it);salto(mm.h);
+      pdf.setTextColor(...ink);pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text(mm.n,X(),y);
+      const pr=num(it.precio)||num(it.precio2)?precioTxt(it):'';if(pr)pdf.text(pr,X()+CW,y,{align:'right'});y+=mm.n.length*4.6-0.8;
+      if(mm.d.length){pdf.setFont('helvetica','italic');pdf.setFontSize(8.5);pdf.setTextColor(95);pdf.text(mm.d,X(),y);y+=mm.d.length*3.8}
+      y+=3}
+    y+=4}
+  pie();
+  const nombre=`carta-${mara?'mara':'villa'}-${limpio(C.nombre).toLowerCase().replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')}.pdf`,blob=pdf.output('blob'),file=new File([blob],nombre,{type:'application/pdf'});
+  if(esCelu()&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:nombre});return}catch(e){if(e.name==='AbortError')return}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
+}
+async function cartaSeccion(){
+  const n=(prompt('Nombre de la nueva sección (ej: Parrilla, Entradas, Postres):')||'').trim();if(!n)return;
+  const loc=workLocal(),D=JSON.parse(JSON.stringify(S.cartas[loc])),ci=Math.min(S.cartaSel?.[loc]||0,D.cartas.length-1);
+  D.cartas[ci].secciones.push({nombre:n,items:[]});await setDoc(doc(db,'cartas',loc),{...D,editado:Date.now(),por:S.uid});toast('Sección agregada.');
 }
 async function cartaGuardar(a){
   const loc=workLocal(),D=JSON.parse(JSON.stringify(S.cartas[loc])),ci=Math.min(S.cartaSel?.[loc]||0,D.cartas.length-1),sec=D.cartas[ci].secciones[S.cItem.s];
   if(a==='cBorrar'){if(!confirm('¿Borrar este ítem de la carta?'))return;sec.items.splice(S.cItem.i,1)}
   else{const v=k=>($('#'+k)?.value||'').trim(),nombre=v('cf-n');if(!nombre){S.note='Ponele un nombre.';render(true);return}
     const it={id:(S.cItem.i>=0&&sec.items[S.cItem.i].id)||('x'+Date.now()),nombre,desc:v('cf-d'),precio:num(v('cf-p').replace(/\D/g,'')),...(num(v('cf-p2').replace(/\D/g,''))?{precio2:num(v('cf-p2').replace(/\D/g,''))}:{}),...(v('cf-r')?{receta:v('cf-r')}:{})};
-    if(S.cItem.i<0)sec.items.push(it);else sec.items[S.cItem.i]=it}
+    const ds=+(v('cf-s')||S.cItem.s),dest=D.cartas[ci].secciones[ds]||sec;
+    if(S.cItem.i>=0)sec.items.splice(S.cItem.i,1,...(dest===sec?[it]:[]));if(dest!==sec||S.cItem.i<0)dest.items.push(it)}
   await setDoc(doc(db,'cartas',loc),{...D,editado:Date.now(),por:S.uid});S.cItem=null;toast(a==='cBorrar'?'Ítem borrado.':'Carta guardada.');render(true);
 }
 const vVentas=()=>`<div class="head"><div><h2>📈 Ventas</h2><p class="sub">Lo que se vende en Morphi, día por día.</p></div></div><div class="panel"><p class="empty" style="margin:0">Próximamente: todas las mañanas se van a cargar solas las ventas del día anterior que manda Morphi, y la app va a descontar el stock según las recetas.</p></div>`;
@@ -1260,6 +1297,8 @@ document.addEventListener('click',e=>{
   if(a==='cartaEd'){S.cartaEd=!S.cartaEd;S.cItem=null;render(true);return}
   if(a==='cartaSel'){S.cartaSel={...(S.cartaSel||{}),[workLocal()]:+id};S.cItem=null;render(true);return}
   if(a==='cItem'){S.cItem={c:Math.min(S.cartaSel?.[workLocal()]||0,99),s:+b.dataset.s,i:+b.dataset.i};const cs=S.cartas?.[workLocal()]?.cartas||[];S.cItem.c=Math.min(S.cItem.c,cs.length-1);render(true);setTimeout(()=>$('#cf-n')?.focus(),50);return}
+  if(a==='cartaPDF'){const t=b.textContent;b.textContent='Armando PDF…';cartaPDF().catch(e=>{S.note='No se pudo armar el PDF.';console.error(e)}).finally(()=>{b.textContent=t});return}
+  if(a==='cSeccion'){cartaSeccion().catch(e=>{S.note=errMsg(e);render(true)});return}
   if(a==='cCancelar'){S.cItem=null;render(true);return}
   if(a==='cGuardar'||a==='cBorrar'){cartaGuardar(a).catch(e=>{S.note=errMsg(e);render(true)});return}
   if(a==='bkCarpeta'){elegirCarpeta(b).catch(e=>{S.note=errMsg(e);render(true)});return}
@@ -1410,7 +1449,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26j';
+const APP_V='2026-11-26k';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
