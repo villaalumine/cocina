@@ -115,6 +115,7 @@ body[data-sec=todos] .top{background:#24303f;color:#fff}body[data-sec=todos] .pr
 .recfoto{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0 16px}.recfoto img,.recfoto>span{width:120px;height:120px;border-radius:16px;object-fit:cover;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:44px}
 .rechero{width:100%;max-height:360px;object-fit:cover;border-radius:18px;margin:4px 0 14px;display:block}.recthumb{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:26px;margin-right:4px}
 .mt-pedido{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}.mt-aprobado{background:#e3eefc;color:#1d4f91;border-color:#9cbbe6}.mt-rechazado{background:#fde3e0;color:#b3261e;border-color:#f0a39b}.mt-llego,.mb-materiales{background:#e8f5e0;color:#2f6b1f;border-color:#b9dca3}.mb-materiales{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}.matbox{background:#fffaf0;border-color:#efd9a8}
+#toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top));transform:translate(-50%,-140%);z-index:90;background:#1f7a3a;color:#fff;border-radius:14px;padding:12px 18px;font-weight:600;box-shadow:0 8px 24px #0004;transition:transform .25s;max-width:92vw;text-align:center;pointer-events:none}#toast.show{transform:translate(-50%,0)}
 .soltag{color:#1f7a3a;font-weight:600}.solbox{border:2px solid #25a244;background:#eef8ef}.sol{border-top:1px solid var(--line);padding:10px 0}.sol:first-of-type{border-top:0}.sol ul{margin:4px 0;padding-left:18px}
 nav.tabs a.on{opacity:1}body{padding-bottom:24px}nav.tabs{display:none!important}.volver{display:inline-flex;margin-bottom:14px;text-decoration:none}
 @media(max-width:420px){nav.tabs a{font-size:16.5px;letter-spacing:-.01em}}@media(max-width:480px){nav.tabs{gap:2px}nav.tabs a{font-size:14.5px;padding:8px 1px}}
@@ -422,7 +423,7 @@ async function guardarSolicitud(){
   const items=pedidoItems();if(!items.length){S.note='Cargá al menos una cantidad.';render(true);return}
   const loc=pedLoc(),d=S.pedir,pv=prov(d.prov);
   await w(()=>addDoc(collection(db,'solicitudes'),{local:loc,prov:d.prov,items,nota:d.nota.trim(),por:S.uid,creado:Date.now(),estado:'pendiente'}),`Listo, se lo mandaste al ${jefeTxt(loc)}.`);
-  S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};render(true);scrollTo(0,0);
+  S.pedir={prov:null,qty:{},unit:{},extra:[],nota:''};location.hash='solicitudes';render(true);scrollTo(0,0);
   pushUids(jefesDe(loc).filter(u=>u!==S.uid),`📥 Solicitud de ${nameOf(S.uid)} · ${locName(loc)}`,`Para ${pv?.nombre||'proveedor'}:\n${items.map(i=>`• ${fmt(i.cant)} ${i.unidad} ${i.nombre}`).join('\n')}`,'#solicitudes');
 }
 function vSolicitudes(){
@@ -527,7 +528,7 @@ async function cargarMant(f){
   if(!x.titulo)return;const file=fd.get('foto');
   let ref;try{ref=await addDoc(collection(db,'mant'),x)}catch(e){S.note=errMsg(e);render(true);return}
   if(file&&file.size){try{const data=await comprimir(file);await addDoc(collection(db,'fotos'),{pid:ref.id,data,t:Date.now(),por:S.uid});await updateDoc(doc(db,'mant',ref.id),{fotos:1})}catch(e){console.warn(e)}}
-  S.mantForm=false;toast('Trabajo cargado. Le avisamos a mantenimiento.');render(true);
+  S.mantForm=false;S.fMant='abiertos';render(true);scrollTo(0,0);toast('Trabajo cargado. Le avisamos a mantenimiento.');
   pushUids([...mantUids(loc),S.ownerUid].filter(u=>u&&u!==S.uid),`🔧 ${x.urg==='urgente'?'URGENTE · ':''}Mantenimiento · ${locName(loc)}`,`${x.titulo}${x.lugar?' · '+x.lugar:''}\nLo cargó ${nameOf(S.uid)}`,'#mant');
 }
 async function mantEstado(id,estado,nota){
@@ -985,7 +986,11 @@ $('#salir').addEventListener('click',()=>signOut(auth));
 const ERR={'permission-denied':'No tenés permiso para hacer esto.','unavailable':'Sin conexión. Revisá internet y probá de nuevo.','auth/invalid-credential':'Mail o clave incorrectos.','auth/wrong-password':'Mail o clave incorrectos.','auth/user-not-found':'Mail o clave incorrectos.','auth/email-already-in-use':'Ese mail ya tiene una cuenta.','auth/weak-password':'La clave tiene que tener al menos 6 caracteres.','auth/invalid-email':'Ese mail no es válido.','auth/too-many-requests':'Demasiados intentos. Esperá unos minutos.','auth/network-request-failed':'Sin conexión. Revisá internet.'};
 const errMsg=e=>ERR[e?.code]||'No se pudo guardar, probá de nuevo.';
 async function w(fn,ok){try{await fn();S.note='';if(ok)toast(ok)}catch(e){console.error(e);S.note=errMsg(e);render(true);throw e}}
-function toast(t){$('#sheet').innerHTML=`<div class="sheet" data-act="closeSheet"><div><h3>${esc(t)}</h3><button class="dark" style="margin-top:14px;width:100%" data-act="closeSheet">Listo</button></div></div>`}
+function toast(t,go){
+  let el=$('#toast');if(!el){el=document.createElement('div');el.id='toast';el.setAttribute('role','status');document.body.appendChild(el)}
+  el.textContent='✓ '+t;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2800);
+  if(go){location.hash=go;scrollTo(0,0)}
+}
 async function push(title,message,tags){const av=S.cat?.avisos||{};
   const tel=String(av.tel||'').replace(/\D/g,''),key=String(av.cmb||'').trim();
   if(tel&&key){try{await fetch(`https://api.callmebot.com/whatsapp.php?phone=%2B${tel}&apikey=${encodeURIComponent(key)}&text=${encodeURIComponent('*'+title+'*\n'+message)}`,{mode:'no-cors'})}catch(e){console.warn('aviso wa',e)}}
@@ -1026,7 +1031,7 @@ async function guardarRec(id){
   if(Object.keys(add).length)await w(()=>setDoc(doc(db,'stock',p.local),{items:add,t},{merge:true}));
   delete S.rec[id];render(true);
   if(!prev)push(`${dif?'⚠️ Llegó con diferencias':'✅ Pedido recibido'} · ${locName(p.local)}`,`${prov(p.prov)?.nombre||'Proveedor'}: recibió ${nameOf(S.uid)}${num(d.monto)?` · remito ${money(num(d.monto))}`:''}${dif?'\n'+p.items.map((i,k)=>{const x=items[k],df=x.rec-num(i.cant);return df!==0||x.cal!=='bien'?`• ${i.nombre}: ${df<0?'faltó '+fmt(-df)+' '+i.unidad:df>0?'sobró '+fmt(df)+' '+i.unidad:''}${x.cal!=='bien'?' calidad '+x.cal:''}`:''}).filter(Boolean).join('\n'):''}`,[dif?'warning':'white_check_mark']);
-  toast(prev?'Cambios guardados.':dif?'Recepción guardada con diferencias.':'Recepción guardada. Stock actualizado.');
+  toast(prev?'Cambios guardados.':dif?'Recepción guardada con diferencias.':'Recepción guardada. Stock actualizado.',prev?null:'pedidos');
 }async function guardarConteo(){
   const loc=workLocal(),ch={};for(const[k,v]of Object.entries(S.conteo))if(String(v).trim()!=='')ch[k]=num(v);
   if(!Object.keys(ch).length){S.note='No cargaste ningún conteo.';render(true);return}
@@ -1247,7 +1252,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26a';
+const APP_V='2026-11-26b';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
