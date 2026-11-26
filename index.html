@@ -541,7 +541,7 @@ const canRec=()=>S.owner||UNI_ROLES.includes(me()?.rol);
 const esAdm=()=>canRec(),ADMIN_V=['cartas','ventas','stock','catalogo','recetario','copia'];
 function vPed(){
   const n=S.pedidos.filter(inLocal).filter(p=>p.estado==='enviado'||p.estado==='pendiente').length;
-  const B=[['pedir','🛒','Pedir','Armar un pedido a un proveedor'],['pedidos','📥','Recibir',n?`${n} por recibir · y ver todos los pedidos`:'Ver todos los pedidos']];
+  const B=[['pedir','🛒','Pedir',canSend()?'Armar un pedido a un proveedor':'Pedirle al jefe lo que falta'],['pedidos','📥','Recibir',n?`${n} por recibir · y ver todos los pedidos`:'Ver todos los pedidos']];
   return `<div class="head"><div><h2>📦 Pedidos</h2><p class="sub">${uni()?'Villa Aluminé y Mara':esc(locName(workLocal()))}</p></div></div><div class="accesos">${B.map(([v,i,t,x])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b><small${v==='pedir'?' style="color:var(--mut,#6b7280)"':''}>${x}</small></a>`).join('')}</div>`;
 }
 function vAdmin(){
@@ -1451,7 +1451,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26n';
+const APP_V='2026-11-26o';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
