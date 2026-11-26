@@ -1025,6 +1025,7 @@ function abrirPerfil(){
   <form data-form="perfilNombre" style="text-align:left;margin-top:14px"><label for="pf-n">Nombre de usuario</label><div class="row"><input id="pf-n" name="nombre" required maxlength="40" value="${esc(m.nombre||'')}" style="flex:1"><button class="pri" type="submit" style="width:auto;margin-top:0">Guardar</button></div></form>
   <form data-form="perfilClave" style="text-align:left;margin-top:14px"><label for="pf-c">Cambiar contraseña</label><div class="row"><input id="pf-c" name="clave" type="password" minlength="6" required autocomplete="new-password" placeholder="Nueva (mínimo 6)" style="flex:1"><button class="pri" type="submit" style="width:auto;margin-top:0">Cambiar</button></div></form>
   ${usuarioDe(m)?`<p class="meta" style="margin:8px 0 0">Tu usuario para entrar: <b>${esc(usuarioDe(m))}</b></p>`:''}
+  <div style="text-align:left;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><b>🔔 Notificaciones en este celu</b><p class="meta" style="margin:4px 0 8px">${S.owner?'Te llega un aviso cuando alguien arma un pedido, recibe mercadería o escribe en el chat, aunque la app esté cerrada.':'Te llega un aviso cuando te escriben en el chat o te nombran, aunque la app esté cerrada.'}</p>${S.owner?pushInfo():chatAvisoHTML()}</div>
   <button data-act="recargar">🔄 Actualizar app</button>
   <a class="btn wa" href="${esc(sopLink())}" target="_blank" rel="noopener">💬 Soporte</a>
   <button class="dark" data-act="salir">Salir de la cuenta</button>
@@ -1135,8 +1136,6 @@ function vEquipo(){
   <div class="row" style="flex:2 1 300px"><select style="flex:1 1 140px" aria-label="Puesto" data-eq="${id}" data-f="rol">${ROLES.map(r=>`<option ${m.rol===r?'selected':''}>${r}</option>`).join('')}</select><select style="flex:1 1 120px" aria-label="Local" data-eq="${id}" data-f="local">${locOpts(m.local)}</select>
   <button data-act="activo" data-id="${id}">${m.activo?'Desactivar':'Reactivar'}</button>${usuarioDe(m)?'':`<button data-act="reset" data-id="${id}">Mail para cambiar clave</button>`}</div></div>`).join('')||'<p class="empty">Todavía no diste de alta a nadie.</p>'}</div></section>
   <aside>
-  <div class="panel"><h3>Notificaciones en tu celu</h3><p class="meta">Te llega un aviso con el ícono de Cocina cuando alguien arma un pedido, recibe mercadería o escribe en el chat, aunque la app esté cerrada.</p>
-  ${pushInfo()}</div>
   <form class="panel" data-form="alta"><h3>Dar de alta</h3>
   <label for="e-n" style="margin-top:10px">Nombre</label><input id="e-n" name="nombre" required placeholder="Como le dicen en la cocina">
   <label for="e-e" style="margin-top:10px">Usuario (para entrar)</label><input id="e-e" name="usuario" required autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="Ej: pedro" data-usrchk><small class="meta" id="usrmsg"></small>
@@ -1369,7 +1368,7 @@ document.addEventListener('click',e=>{
   if(a==='delPr')S.catDraft.productos.splice(+id,1);
   if(a==='guardarCat'){guardarCat().catch(()=>{});return}
   if(a==='copyTopic'){navigator.clipboard?.writeText(S.cat.avisos.ntfy).then(()=>{b.textContent='Copiado'},()=>{});return}
-  if(a==='activarPush'){activarPush();return}
+  if(a==='activarPush'){activarPush().finally(()=>{if($('#perfilAv'))setTimeout(()=>{abrirPerfil();if(S.note){const p=$('.perfil');if(p)p.insertAdjacentHTML('afterbegin',`<p class="note">${esc(S.note)}</p>`)}},400)});return}
   if(a==='probarPush'){push('🔔 Prueba de la cocina','Si ves esto, las notificaciones funcionan.',['bell']).then(()=>toast('Prueba enviada. En unos segundos te tiene que llegar la notificación.'));return}
   if(a==='activo'){const m=S.equipo[id];w(()=>updateDoc(doc(db,'equipo',id),{activo:!m.activo})).catch(()=>{});return}
   if(a==='verClave'){S.verClave=S.verClave===id?null:id;render(true);return}
@@ -1470,7 +1469,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26q';
+const APP_V='2026-11-26r';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
