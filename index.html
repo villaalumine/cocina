@@ -279,7 +279,7 @@ function accesos(nPend){
   ensureMant();const nm=mantDe(listLoc()).filter(x=>x.estado!=='hecho').length,nmat=mantDe(listLoc()).filter(x=>matAct(x)?.estado==='pedido'||(matAct(x)&&canComprar())).length,MB=['mant','🔧','Mantenimiento',[nm?`${nm} por hacer`:'',nmat&&canComprar()?`🛒 ${nmat} materiales`:''].filter(Boolean).join(' · ')];
   if(esMant())return `<div class="accesos">${[MB].map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
   const B=[...(soloVer()?[]:[['pedir','🛒','Pedir','']]),['solicitudes','📥','Solicitudes',ns?`${ns} pendiente${ns>1?'s':''}`:''],['pedidos','📦','Pedidos',nPend?`${nPend} por recibir`:''],
-    ...(L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(canMant()?[MB]:[]),...(canRec()?[['recetario','📖','Recetario','']]:[]),...(S.owner?[['equipo','👥','Equipo',''],['copia','💾','Copia de seguridad','']]:[])];
+    ...(esAdm()?[['admin','🏢','Administración','']]:L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(canMant()?[MB]:[]),...(S.owner?[['equipo','👥','Equipo','']]:[])];
   return `<div class="accesos">${B.map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
 }
 function vPanel(){
@@ -540,6 +540,13 @@ async function mantEstado(id,estado,nota){
   if(estado==='curso')pushUids([x.por].filter(u=>u&&u!==S.uid),`🔨 Empezaron un trabajo · ${locName(x.local)}`,`${x.titulo}\n${nameOf(S.uid)} ya está en eso.`,'#mant');
 }
 const canRec=()=>S.owner||UNI_ROLES.includes(me()?.rol);
+const esAdm=()=>canRec(),ADMIN_V=['cartas','ventas','stock','catalogo','recetario','copia'];
+function vAdmin(){
+  const B=[['cartas','📋','Cartas','Villa y Mara'],['ventas','📈','Ventas','Morphi'],['stock','📊','Stock',''],['catalogo','📒','Catálogo','Proveedores y precios'],['recetario','📖','Recetario',''],...(S.owner?[['copia','💾','Copia de seguridad','']]:[])];
+  return `<div class="head"><div><h2>🏢 Administración</h2><p class="sub">${uni()?'Villa Aluminé y Mara':esc(locName(workLocal()))}</p></div></div><div class="accesos">${B.map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small style="color:var(--mut,#6b7280)">${n}</small>`:''}</a>`).join('')}</div>`;
+}
+const vCartas=()=>`<div class="head"><div><h2>📋 Cartas</h2><p class="sub">Comida y bebidas de Villa Aluminé y Mara.</p></div></div><div class="panel"><p class="empty" style="margin:0">Estamos cargando las cartas. Cuando estén, acá vas a ver cada plato y trago con su precio y su receta, y los vas a poder modificar.</p></div>`;
+const vVentas=()=>`<div class="head"><div><h2>📈 Ventas</h2><p class="sub">Lo que se vende en Morphi, día por día.</p></div></div><div class="panel"><p class="empty" style="margin:0">Próximamente: todas las mañanas se van a cargar solas las ventas del día anterior que manda Morphi, y la app va a descontar el stock según las recetas.</p></div>`;
 const canEditRec=()=>S.owner||me()?.rol==='Administración';
 const RUNI=['g','kg','ml','l','u'];
 let recSub=null;
@@ -1067,15 +1074,15 @@ function render(force){
   $('#chatBtn').hidden=!sec;if(sec){(sec==='todos'?['villa','mara']:[sec]).forEach(ensureChat);updChatBadge()}
   if(!inApp){$('#tabs').hidden=true;$('#main').innerHTML=vAcceso();return}
   if(!sec){$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vInicio();return}
-  const L=lvl();const views=esMant()?['panel','mant']:['panel',...(canRec()?['recetario']:[]),...(canMant()?['mant']:[]),...(soloVer()?[]:['pedir']),'solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo','copia']:[])];
+  const L=lvl();const views=esMant()?['panel','mant']:['panel',...(canRec()?['recetario']:[]),...(canMant()?['mant']:[]),...(soloVer()?[]:['pedir']),'solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo','copia']:[]),...(esAdm()?['admin','cartas','ventas']:[])];
   document.querySelectorAll('#tabs a').forEach(x=>x.hidden=!views.includes(x.dataset.v));
   let v=location.hash.slice(1),pid=null;if(v==='chat'){S.view='chat';document.querySelectorAll('#tabs a').forEach(x=>x.classList.remove('on'));$('#chatBtn').hidden=true;$('#main').innerHTML=volverBtn()+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vChat();return}if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v='panel';
   {const n=solsPend(S.local).length,b=$('#solN');b.hidden=!n||!canSend();b.textContent=n>9?'9+':n}
   S.view=v;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
-  const html=pid?vPedido(pid):{panel:vPanel,recetario:vRecetario,mant:vMant,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo,copia:vCopia}[v]();
+  const html=pid?vPedido(pid):{panel:vPanel,recetario:vRecetario,mant:vMant,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo,copia:vCopia,admin:vAdmin,cartas:vCartas,ventas:vVentas}[v]();
   $('#main').innerHTML=(v!=='panel'&&!pid?volverBtn():'')+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
 }
-const volverBtn=()=>'<a class="btn volver" href="#panel">‹ Inicio</a>';
+const volverBtn=()=>esAdm()&&ADMIN_V.includes(location.hash.slice(1))?'<a class="btn volver" href="#admin">‹ Administración</a>':'<a class="btn volver" href="#panel">‹ Inicio</a>';
 document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(S.pending&&!(a&&a.closest&&a.closest('#main')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))render()},50));
 addEventListener('hashchange',()=>{S.recOpen=null;S.note='';render(true);scrollTo(0,0)});
 $('#localSel').addEventListener('change',e=>{S.local=e.target.value;try{localStorage.setItem('cocina.local',S.local)}catch(x){}render(true)});
@@ -1354,7 +1361,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26h';
+const APP_V='2026-11-26i';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
