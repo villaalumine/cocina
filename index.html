@@ -222,7 +222,8 @@ const nameOf=uid=>S.equipo[uid]?.nombre||'Alguien';
 const canAdmin=()=>lvl()<=2&&me()?.rol!=='Gerente';
 const soloVer=()=>!S.owner&&me()?.rol==='Gerente';
 const UNI_ROLES=['Administración','Gerente'];
-const uniUser=()=>S.owner||UNI_ROLES.includes(me()?.rol);
+const TODOS_ROLES=['Administración','Gerente','Mantenimiento'];
+const uniUser=()=>S.owner||TODOS_ROLES.includes(me()?.rol);
 const uni=()=>S.local==='todos';
 const listLoc=()=>uni()?(S.fLoc||'todos'):workLocal();
 const pedLoc=()=>{if(!uni())return workLocal();const l=prov(S.pedir?.prov)?.local;return l==='villa'||l==='mara'?l:(S.vLoc||'villa')};
@@ -282,7 +283,7 @@ function accesos(nPend){
   return `<div class="accesos">${B.map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
 }
 function vPanel(){
-  if(lvl()>2)return `<div class="head" style="margin-bottom:6px"><div><h2>Hola, ${esc(me()?.nombre||'')}</h2><p class="sub">${esc(me()?.rol||'')} · ${esc(locName(workLocal()))}</p></div></div>${accesos(S.pedidos.filter(inLocal).filter(p=>p.estado==='enviado'||p.estado==='pendiente').length)}`;
+  if(lvl()>2)return `<div class="head" style="margin-bottom:6px"><div><h2>Hola, ${esc(me()?.nombre||'')}</h2><p class="sub">${esc(me()?.rol||'')} · ${uni()?'Villa Aluminé y Mara':esc(locName(workLocal()))}</p></div></div>${accesos(S.pedidos.filter(inLocal).filter(p=>p.estado==='enviado'||p.estado==='pendiente').length)}`;
   const hoy=dayKey(Date.now()),dia=S.panelDia||hoy,esHoy=dia===hoy;
   const ps=S.pedidos.filter(inLocal);
   const enviados=ps.filter(p=>p.enviado&&dayKey(p.enviado)===dia);
@@ -1045,7 +1046,7 @@ async function darAlta(f){
   const fd=new FormData(f),usuario=userSlug(fd.get('usuario')),clave=String(fd.get('clave'));
   if(!usuario){S.note='El usuario tiene que tener letras o números.';render(true);return}
   if(Object.values(S.equipo).some(x=>usuarioDe(x)===usuario)){S.note=`Ya existe el usuario "${usuario}". Elegí otro.`;render(true);return}
-  const m={nombre:String(fd.get('nombre')).trim(),usuario,email:usuario+DOM_U,rol:fd.get('rol'),local:fd.get('local'),activo:true,alta:Date.now()};
+  const m={nombre:String(fd.get('nombre')).trim(),usuario,email:usuario+DOM_U,rol:fd.get('rol'),local:TODOS_ROLES.includes(fd.get('rol'))?'todos':fd.get('local'),activo:true,alta:Date.now()};
   let cred;
   try{cred=await createUserWithEmailAndPassword(auth2,m.email,clave)}catch(e){S.note=e?.code==='auth/email-already-in-use'?`Ya existe el usuario "${usuario}". Elegí otro.`:errMsg(e);render(true);return}
   await signOut(auth2).catch(()=>{});
@@ -1212,7 +1213,7 @@ document.addEventListener('change',e=>{
   if(t.matches('select[data-u]')){S.pedir.unit={...(S.pedir.unit||{}),[t.dataset.u]:t.value};const c=$('#pcount');if(c)c.textContent=countPedido()}
   if(t.matches('select[data-pv][data-f="canal"]')){S.catDraft.proveedores[+t.dataset.pv].canal=t.value;render(true);return}
   if(t.matches('select[data-cal],select[data-pr],select[data-rf],select[data-xu]'))t.dispatchEvent(new Event('input',{bubbles:true}));
-  if(t.matches('select[data-eq]'))w(()=>updateDoc(doc(db,'equipo',t.dataset.eq),{[t.dataset.f]:t.value})).catch(()=>{});
+  if(t.matches('select[data-eq]'))w(()=>updateDoc(doc(db,'equipo',t.dataset.eq),{[t.dataset.f]:t.value,...(t.dataset.f==='rol'&&TODOS_ROLES.includes(t.value)?{local:'todos'}:{})})).catch(()=>{});
 });
 document.addEventListener('keydown',e=>{if(!e.target.matches('textarea[data-chatin]'))return;const box=$('#mentions');
   if(box&&!box.hidden&&(e.key==='Enter'||e.key==='Tab')){const b=box.querySelector('button.on');if(b){e.preventDefault();mencionar(b.dataset.n);return}}
@@ -1252,7 +1253,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26b';
+const APP_V='2026-11-26c';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
