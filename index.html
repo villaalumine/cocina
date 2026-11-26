@@ -300,10 +300,7 @@ function vPanel(){
   if(sel==='pend')lista=`<h3 class="ptit">Pendientes de entrega</h3><p class="meta">Pedidos que todavía no se recibieron, de cualquier fecha.</p>${pend.length?`<div class="plist">${pend.map(p=>prowHTML(p,p.estado==='pendiente'?'Todavía no se mandó por WhatsApp':`Enviado ${fecha(p.enviado||p.creado)} ${hora(p.enviado||p.creado)} · ${p.items.length} producto${p.items.length>1?'s':''}`)).join('')}</div>`:'<p class="empty">No hay pedidos pendientes.</p>'}`;
   if(sel==='falt')lista=`<h3 class="ptit">Faltantes por recibir</h3><p class="meta">Pedidos de los últimos 30 días que llegaron incompletos. Entrá para reclamarle al proveedor.</p>${falt.length?`<div class="plist">${falt.map(p=>prowHTML(p,'Faltó: '+faltantes(p).map(o=>`${fmt(num(o.i.cant)-o.x.rec)} ${esc(o.i.unidad)} ${esc(o.i.nombre)}`).join(', '))).join('')}</div>`:'<p class="empty">No hay faltantes. 🎉</p>'}`;
   return `<div class="head" style="margin-bottom:6px"><div><h2>Hola, ${esc(me()?.nombre||'Matías')}</h2><p class="sub">${esc(rol)} · ${uni()?'Villa Aluminé y Mara':esc(locName(workLocal()))}</p></div></div>
-  ${locChips('fLoc',1)}${accesos(pend.length)}
-  <div class="row diasel" style="margin:10px 0 18px"><button data-act="dia" data-id="-1" aria-label="Día anterior">‹</button><input type="date" data-dia value="${dia}" max="${hoy}" aria-label="Día"><button data-act="dia" data-id="1" aria-label="Día siguiente" ${esHoy?'disabled':''}>›</button>${esHoy?'':'<button data-act="dia" data-id="0">Hoy</button>'}</div>
-  <div class="kpis k3">${cards.map(([k,n,t,c])=>`<button class="kpi ${c} ${n&&c==='r'?'':''} ${sel===k?'sel':''}" data-act="psel" data-id="${k}" aria-pressed="${sel===k}"><b>${n}</b><span>${t}</span>${uni()&&(S.fLoc||'todos')==='todos'&&n?`<small class="kdes">${desglose(k)}</small>`:''}</button>`).join('')}</div>
-  ${lista||'<p class="empty">Tocá un cuadro para ver el detalle.</p>'}`;
+  ${locChips('fLoc',1)}${accesos(pend.length)}`;
 }
 
 function tk(p){
@@ -1449,7 +1446,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26l';
+const APP_V='2026-11-26m';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
