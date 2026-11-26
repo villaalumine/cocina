@@ -279,7 +279,7 @@ function accesos(nPend){
   ensureMant();const nm=mantDe(listLoc()).filter(x=>x.estado!=='hecho').length,nmat=mantDe(listLoc()).filter(x=>matAct(x)?.estado==='pedido'||(matAct(x)&&canComprar())).length,MB=['mant','🔧','Mantenimiento',[nm?`${nm} por hacer`:'',nmat&&canComprar()?`🛒 ${nmat} materiales`:''].filter(Boolean).join(' · ')];
   if(esMant())return `<div class="accesos">${[MB].map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
   const B=[...(soloVer()?[]:[['pedir','🛒','Pedir','']]),['solicitudes','📥','Solicitudes',ns?`${ns} pendiente${ns>1?'s':''}`:''],['pedidos','📦','Pedidos',nPend?`${nPend} por recibir`:''],
-    ...(L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(canMant()?[MB]:[]),...(canRec()?[['recetario','📖','Recetario','']]:[]),...(S.owner?[['equipo','👥','Equipo','']]:[])];
+    ...(L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(canMant()?[MB]:[]),...(canRec()?[['recetario','📖','Recetario','']]:[]),...(S.owner?[['equipo','👥','Equipo',''],['copia','💾','Copia de seguridad','']]:[])];
   return `<div class="accesos">${B.map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
 }
 function vPanel(){
@@ -685,14 +685,14 @@ async function autoCopia(forzar){
   if(!S.owner)return;
   const metaRef=doc(db,'respaldo','meta');let meta=null;
   try{const m=await getDoc(metaRef);meta=m.exists()?m.data():null}catch(e){console.warn('respaldo',e);return}
-  S.bkMeta=meta;if(S.view==='equipo')render(true);
+  S.bkMeta=meta;if(S.view==='copia')render(true);
   if(!forzar&&meta&&Date.now()-meta.t<BK_DIAS*864e5)return;
   const out=await armarCopia(),txt=JSON.stringify(out),n=Math.ceil(txt.length/BK_TROZO)||1;
   for(let i=0;i<n;i++)await setDoc(doc(db,'respaldo','p'+i),{i,txt:txt.slice(i*BK_TROZO,(i+1)*BK_TROZO)});
   for(let i=n;i<(meta?.partes||0);i++){try{await deleteDoc(doc(db,'respaldo','p'+i))}catch(e){}}
   S.bkMeta={t:Date.now(),partes:n,cant:bkCant(out),kb:Math.round(txt.length/1024)};
   await setDoc(metaRef,S.bkMeta);
-  if(S.view==='equipo')render(true);
+  if(S.view==='copia')render(true);
 }
 async function leerCopiaAuto(){
   const m=(await getDoc(doc(db,'respaldo','meta'))).data();if(!m)throw new Error('Todavía no hay copia automática.');
@@ -1008,6 +1008,14 @@ async function activarPush(){
     else{toast('¡Listo! Te van a llegar avisos cuando te escriban en el chat.');render(true)}
   }catch(e){console.error(e);S.note='No se pudieron activar: '+(e.message||e);render(true)}
 }
+function vCopia(){
+  if(!S.owner)return '<p class="empty">Solo el dueño ve las copias de seguridad.</p>';
+  return `<div class="head"><div><h2>💾 Copia de seguridad</h2><p class="sub">Todo lo cargado en la app, guardado por si algo se borra o se rompe.</p></div></div>
+  <div class="panel" style="max-width:640px"><h3>Copia manual</h3><p class="meta">Baja a un archivo todo lo cargado: catálogo, equipo, pedidos, solicitudes, stock, recetas, mantenimiento y chats (sin las fotos de remitos ni las contraseñas). Guardala en tu Drive una vez por semana.${(()=>{try{const t=+localStorage.getItem('cocina.backup');return t?` Última copia desde este dispositivo: <b>${fecha(t)} ${hora(t)}</b>.`:''}catch(e){return ''}})()}</p><button class="pri" data-act="backup">Descargar copia de seguridad</button>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb"><b>🔁 Copia automática</b><p class="meta">Se hace sola cada ${BK_DIAS} días cuando abrís la app, y pisa la anterior. Solo vos la ves.${S.bkMeta?` Última: <b>${fecha(S.bkMeta.t)} ${hora(S.bkMeta.t)}</b> · ${S.bkMeta.cant} registros · próxima: <b>${fecha(S.bkMeta.t+BK_DIAS*864e5)}</b>.`:' Todavía no se hizo ninguna.'}</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${S.bkMeta?`<button data-act="bkBajar">Descargar</button><button data-act="bkRestaurar">Restaurar</button>`:''}<button data-act="bkAhora">Hacerla ahora</button></div></div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb"><b>📁 Carpeta en esta compu</b>${puedeCarpeta()?`<p class="meta">${S.carpetaNom?`Se guarda en la carpeta <b>${esc(S.carpetaNom)}</b>, en el archivo <b>${BK_ARCH}</b>, y se pisa cada ${BK_DIAS} días. El botón de arriba también guarda ahí.${(()=>{try{const t=+localStorage.getItem('cocina.carpetaT');return t?` Última: <b>${fecha(t)} ${hora(t)}</b>.`:''}catch(e){return ''}})()}`:`Elegí una carpeta una sola vez y la copia se guarda siempre ahí con el mismo nombre, pisando la anterior. Si elegís la carpeta de Google Drive o iCloud Drive, además queda en la nube.`}</p><button data-act="bkCarpeta">${S.carpetaNom?'Cambiar carpeta':'Elegir carpeta'}</button>`:`<p class="meta">Para que se guarde sola en una carpeta, abrí la app en <b>Google Chrome</b> en la compu (Safari no lo permite).</p>`}</div></div>`;
+}
 function vEquipo(){
   if(!S.owner)return '<p class="empty">Solo el dueño administra el equipo.</p>';
   const ms=Object.entries(S.equipo).filter(([id])=>id!==S.uid).sort((a,b)=>(b[1].activo?1:0)-(a[1].activo?1:0)||a[1].nombre.localeCompare(b[1].nombre));
@@ -1020,10 +1028,6 @@ function vEquipo(){
   <div class="row" style="flex:2 1 300px"><select style="flex:1 1 140px" aria-label="Puesto" data-eq="${id}" data-f="rol">${ROLES.map(r=>`<option ${m.rol===r?'selected':''}>${r}</option>`).join('')}</select><select style="flex:1 1 120px" aria-label="Local" data-eq="${id}" data-f="local">${locOpts(m.local)}</select>
   <button data-act="activo" data-id="${id}">${m.activo?'Desactivar':'Reactivar'}</button>${usuarioDe(m)?'':`<button data-act="reset" data-id="${id}">Mail para cambiar clave</button>`}</div></div>`).join('')||'<p class="empty">Todavía no diste de alta a nadie.</p>'}</div></section>
   <aside>
-  <div class="panel" style="margin-bottom:16px"><h3>💾 Copia de seguridad</h3><p class="meta">Baja a un archivo todo lo cargado: catálogo, equipo, pedidos, solicitudes, stock, recetas, mantenimiento y chats (sin las fotos de remitos ni las contraseñas). Guardala en tu Drive una vez por semana.${(()=>{try{const t=+localStorage.getItem('cocina.backup');return t?` Última copia desde este dispositivo: <b>${fecha(t)} ${hora(t)}</b>.`:''}catch(e){return ''}})()}</p><button class="pri" data-act="backup">Descargar copia de seguridad</button>
-    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb"><b>🔁 Copia automática</b><p class="meta">Se hace sola cada ${BK_DIAS} días cuando abrís la app, y pisa la anterior. Solo vos la ves.${S.bkMeta?` Última: <b>${fecha(S.bkMeta.t)} ${hora(S.bkMeta.t)}</b> · ${S.bkMeta.cant} registros · próxima: <b>${fecha(S.bkMeta.t+BK_DIAS*864e5)}</b>.`:' Todavía no se hizo ninguna.'}</p>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">${S.bkMeta?`<button data-act="bkBajar">Descargar</button><button data-act="bkRestaurar">Restaurar</button>`:''}<button data-act="bkAhora">Hacerla ahora</button></div></div>
-    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb"><b>📁 Carpeta en esta compu</b>${puedeCarpeta()?`<p class="meta">${S.carpetaNom?`Se guarda en la carpeta <b>${esc(S.carpetaNom)}</b>, en el archivo <b>${BK_ARCH}</b>, y se pisa cada ${BK_DIAS} días. El botón de arriba también guarda ahí.${(()=>{try{const t=+localStorage.getItem('cocina.carpetaT');return t?` Última: <b>${fecha(t)} ${hora(t)}</b>.`:''}catch(e){return ''}})()}`:`Elegí una carpeta una sola vez y la copia se guarda siempre ahí con el mismo nombre, pisando la anterior. Si elegís la carpeta de Google Drive o iCloud Drive, además queda en la nube.`}</p><button data-act="bkCarpeta">${S.carpetaNom?'Cambiar carpeta':'Elegir carpeta'}</button>`:`<p class="meta">Para que se guarde sola en una carpeta, abrí la app en <b>Google Chrome</b> en la compu (Safari no lo permite).</p>`}</div></div>
   <div class="panel"><h3>Notificaciones en tu celu</h3><p class="meta">Te llega un aviso con el ícono de Cocina cuando alguien arma un pedido, recibe mercadería o escribe en el chat, aunque la app esté cerrada.</p>
   ${pushInfo()}</div>
   <form class="panel" data-form="alta"><h3>Dar de alta</h3>
@@ -1063,12 +1067,12 @@ function render(force){
   $('#chatBtn').hidden=!sec;if(sec){(sec==='todos'?['villa','mara']:[sec]).forEach(ensureChat);updChatBadge()}
   if(!inApp){$('#tabs').hidden=true;$('#main').innerHTML=vAcceso();return}
   if(!sec){$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vInicio();return}
-  const L=lvl();const views=esMant()?['panel','mant']:['panel',...(canRec()?['recetario']:[]),...(canMant()?['mant']:[]),...(soloVer()?[]:['pedir']),'solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo']:[])];
+  const L=lvl();const views=esMant()?['panel','mant']:['panel',...(canRec()?['recetario']:[]),...(canMant()?['mant']:[]),...(soloVer()?[]:['pedir']),'solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo','copia']:[])];
   document.querySelectorAll('#tabs a').forEach(x=>x.hidden=!views.includes(x.dataset.v));
   let v=location.hash.slice(1),pid=null;if(v==='chat'){S.view='chat';document.querySelectorAll('#tabs a').forEach(x=>x.classList.remove('on'));$('#chatBtn').hidden=true;$('#main').innerHTML=volverBtn()+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vChat();return}if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v='panel';
   {const n=solsPend(S.local).length,b=$('#solN');b.hidden=!n||!canSend();b.textContent=n>9?'9+':n}
   S.view=v;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
-  const html=pid?vPedido(pid):{panel:vPanel,recetario:vRecetario,mant:vMant,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo}[v]();
+  const html=pid?vPedido(pid):{panel:vPanel,recetario:vRecetario,mant:vMant,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo,copia:vCopia}[v]();
   $('#main').innerHTML=(v!=='panel'&&!pid?volverBtn():'')+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
 }
 const volverBtn=()=>'<a class="btn volver" href="#panel">‹ Inicio</a>';
@@ -1350,7 +1354,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26g';
+const APP_V='2026-11-26h';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
