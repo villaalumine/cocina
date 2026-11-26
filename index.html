@@ -463,7 +463,7 @@ const mantDe=loc=>(S.mant||[]).filter(x=>loc==='todos'||x.local===loc);
 const MEST={pendiente:'Pendiente',curso:'En curso',materiales:'Esperando materiales',hecho:'Hecho'};
 const COMPRA_ROLES=['Administración','Encargado/a','Gerente'];
 const canComprar=()=>S.owner||COMPRA_ROLES.includes(me()?.rol);
-const matAct=x=>{const m=(x.mats||[]).at(-1);return m&&(m.estado==='pedido'||m.estado==='aprobado')?m:null};
+const matAct=x=>{const m=(x.mats||[]).at(-1);return x.estado!=='hecho'&&m&&(m.estado==='pedido'||m.estado==='aprobado')?m:null};
 const MATEST={pedido:'Esperando aprobación',aprobado:'Aprobado · a comprar',rechazado:'No se compra',llego:'Materiales recibidos'};
 function matHTML(x){
   return (x.mats||[]).map((m,k)=>{const ult=k===(x.mats.length-1);
@@ -1253,7 +1253,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26c';
+const APP_V='2026-11-26d';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
