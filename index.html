@@ -279,7 +279,8 @@ function accesos(nPend){
   const L=lvl(),ns=solsPend(listLoc()).length,room=workLocal(),nc=(S.chat[room]||[]).filter(m=>m.uid!==S.uid&&m.t>lastRead(room)).length;
   ensureMant();const nm=mantDe(listLoc()).filter(x=>x.estado!=='hecho').length,nmat=mantDe(listLoc()).filter(x=>matAct(x)?.estado==='pedido'||(matAct(x)&&canComprar())).length,MB=['mant','🔧','Mantenimiento',[nm?`${nm} por hacer`:'',nmat&&canComprar()?`🛒 ${nmat} materiales`:''].filter(Boolean).join(' · ')];
   if(esMant())return `<div class="accesos">${[MB].map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
-  const B=[[soloVer()?'pedidos':'ped','📦','Pedidos',nPend?`${nPend} por recibir`:''],['solicitudes','📥','Solicitudes',ns?`${ns} pendiente${ns>1?'s':''}`:''],
+  const nav=L<=2?avisosData().reduce((a,g)=>a+g.rows.reduce((b,r)=>b+r[1],0),0):0;
+  const B=[[soloVer()?'pedidos':'ped','📦','Pedidos',nPend?`${nPend} por recibir`:''],L<=2?['avisos','🔔','Solicitudes',nav?`${nav} pendiente${nav>1?'s':''}`:'Todo al día']:['solicitudes','📥','Solicitudes',ns?`${ns} pendiente${ns>1?'s':''}`:''],
     ...(esAdm()?[['admin','🏢','Administración','']]:L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(canMant()?[MB]:[]),...(S.owner?[['equipo','👥','Equipo','']]:[])];
   return `<div class="accesos">${B.map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
 }
@@ -539,6 +540,23 @@ async function mantEstado(id,estado,nota){
 }
 const canRec=()=>S.owner||UNI_ROLES.includes(me()?.rol);
 const esAdm=()=>canRec(),ADMIN_V=['cartas','ventas','stock','catalogo','recetario','copia'];
+function avisosData(){
+  const loc=listLoc(),ps=S.pedidos.filter(inLocal),corte=Date.now()-30*864e5,G=[];
+  const sp=solsPend(loc).length,sinEnv=ps.filter(p=>p.estado==='pendiente').length,esp=ps.filter(p=>p.estado==='enviado').length,
+    falt=ps.filter(p=>p.recepcion&&p.recepcion.t>corte&&!p.faltaOk&&faltantes(p).length).length;
+  G.push({t:'📦 Pedidos',rows:[['Solicitudes del equipo para pedir',sp,'solicitudes',''],['Pedidos armados sin enviar al proveedor',sinEnv,'pedidos','est:pendiente'],['Pedidos esperando que lleguen',esp,'pedidos','est:enviado'],['Pedidos con faltantes por reclamar',falt,'pedidos','est:diferencias']]});
+  if(canMant()){ensureMant();const M=mantDe(loc),abiertos=M.filter(x=>x.estado!=='hecho');
+    G.push({t:'🔧 Mantenimiento',rows:[['Trabajos urgentes',abiertos.filter(x=>x.urg==='urgente').length,'mant','mant:abiertos'],['Trabajos por hacer',abiertos.filter(x=>x.urg!=='urgente').length,'mant','mant:abiertos'],['Materiales pedidos para aprobar',canComprar()?M.filter(x=>matAct(x)?.estado==='pedido').length:0,'mant','mant:mat'],['Materiales aprobados por comprar',canComprar()?M.filter(x=>matAct(x)?.estado==='aprobado').length:0,'mant','mant:mat']]})}
+  if(esAdm()){ensureCartas();ensureRec();const cs=['villa','mara'].filter(l=>loc==='todos'||l===loc).flatMap(l=>(S.cartas?.[l]?.cartas||[]).flatMap(c=>c.secciones.flatMap(x=>x.items.map(it=>[it,l]))));
+    G.push({t:'🏢 Administración',rows:[['Ítems de la carta sin receta',S.cartas&&S.recetas?cs.filter(([it,l])=>!cartaRec(it,l)).length:0,'cartas','']]})}
+  return G;
+}
+function vAvisos(){
+  const G=avisosData();
+  return `${locChips('fLoc',1)}<div class="head"><div><h2>🔔 Solicitudes</h2><p class="sub">Todo lo que está esperando que alguien haga algo, separado por área. Tocá una línea para ir.</p></div></div>
+  ${G.map(g=>{const tot=g.rows.reduce((a,r)=>a+r[1],0);return `<div class="panel" style="margin-bottom:12px"><h3 style="margin:0 0 6px;display:flex;justify-content:space-between">${g.t}<span class="badge ${tot?'b-pendiente':'b-recibido'}">${tot?tot+' pendiente'+(tot>1?'s':''):'Al día ✓'}</span></h3>
+    ${g.rows.filter(r=>r[1]).map(([t,n,v,f])=>`<button class="crow" data-act="irA" data-id="${v}" data-f="${f}"><span><b>${t}</b></span><span class="cpre">${n} ›</span></button>`).join('')||'<p class="meta" style="margin:4px 0 0">Nada pendiente.</p>'}</div>`}).join('')}`;
+}
 function vPed(){
   const n=S.pedidos.filter(inLocal).filter(p=>p.estado==='enviado'||p.estado==='pendiente').length;
   const B=[['pedir','🛒','Pedir',canSend()?'Armar un pedido a un proveedor':'Pedirle al jefe lo que falta'],['pedidos','📥','Recibir',n?`${n} por recibir · y ver todos los pedidos`:'Ver todos los pedidos']];
@@ -1156,15 +1174,15 @@ function render(force){
   $('#chatBtn').hidden=!sec;if(sec){(sec==='todos'?['villa','mara']:[sec]).forEach(ensureChat);updChatBadge()}
   if(!inApp){$('#tabs').hidden=true;$('#main').innerHTML=vAcceso();return}
   if(!sec){$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vInicio();return}
-  const L=lvl();const views=esMant()?['panel','mant']:['panel',...(canRec()?['recetario']:[]),...(canMant()?['mant']:[]),...(soloVer()?[]:['pedir','ped']),'solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo','copia']:[]),...(esAdm()?['admin','cartas','ventas']:[])];
+  const L=lvl();const views=esMant()?['panel','mant']:['panel',...(canRec()?['recetario']:[]),...(canMant()?['mant']:[]),...(soloVer()?[]:['pedir','ped']),...(lvl()<=2?['avisos']:[]),'solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo','copia']:[]),...(esAdm()?['admin','cartas','ventas']:[])];
   document.querySelectorAll('#tabs a').forEach(x=>x.hidden=!views.includes(x.dataset.v));
   let v=location.hash.slice(1),pid=null;if(v==='chat'){S.view='chat';document.querySelectorAll('#tabs a').forEach(x=>x.classList.remove('on'));$('#chatBtn').hidden=true;$('#main').innerHTML=volverBtn()+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vChat();return}if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v='panel';
   {const n=solsPend(S.local).length,b=$('#solN');b.hidden=!n||!canSend();b.textContent=n>9?'9+':n}
   S.view=v;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
-  const html=pid?vPedido(pid):{panel:vPanel,recetario:vRecetario,mant:vMant,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo,copia:vCopia,admin:vAdmin,ped:vPed,cartas:vCartas,ventas:vVentas}[v]();
+  const html=pid?vPedido(pid):{panel:vPanel,recetario:vRecetario,mant:vMant,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo,copia:vCopia,admin:vAdmin,ped:vPed,avisos:vAvisos,cartas:vCartas,ventas:vVentas}[v]();
   $('#main').innerHTML=(v!=='panel'&&!pid?volverBtn():'')+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
 }
-const volverBtn=()=>!soloVer()&&['pedir','pedidos'].includes(location.hash.slice(1))?'<a class="btn volver" href="#ped">‹ Pedidos</a>':esAdm()&&ADMIN_V.includes(location.hash.slice(1))?'<a class="btn volver" href="#admin">‹ Administración</a>':'<a class="btn volver" href="#panel">‹ Inicio</a>';
+const volverBtn=()=>lvl()<=2&&location.hash.slice(1)==='solicitudes'?'<a class="btn volver" href="#avisos">‹ Solicitudes</a>':!soloVer()&&['pedir','pedidos'].includes(location.hash.slice(1))?'<a class="btn volver" href="#ped">‹ Pedidos</a>':esAdm()&&ADMIN_V.includes(location.hash.slice(1))?'<a class="btn volver" href="#admin">‹ Administración</a>':'<a class="btn volver" href="#panel">‹ Inicio</a>';
 document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(S.pending&&!(a&&a.closest&&a.closest('#main')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))render()},50));
 addEventListener('hashchange',()=>{S.recOpen=null;S.note='';render(true);scrollTo(0,0)});
 $('#localSel').addEventListener('change',e=>{S.local=e.target.value;try{localStorage.setItem('cocina.local',S.local)}catch(x){}render(true)});
@@ -1296,6 +1314,7 @@ document.addEventListener('click',e=>{
   if(a==='recSinFoto'){S.recDraft.foto='';render(true);return}
   if(a==='recBorrar'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Borrar esta receta?</h3><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="recBorrarOk">Sí, borrar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
   if(a==='recBorrarOk'){$('#sheet').innerHTML='';const rid0=S.recOpen;S.recOpen=null;S.recEdit=false;S.recDraft=null;deleteDoc(doc(db,'recetas',rid0)).then(()=>toast('Receta borrada.')).catch(e=>{S.note=errMsg(e)});render(true);return}
+  if(a==='irA'){const f=b.dataset.f||'';if(f.startsWith('est:')){S.fEstado=f.slice(4);S.fProv='';S.fDia='';S.pVer=true;S.pOpen=null}if(f.startsWith('mant:'))S.fMant=f.slice(5);location.hash=id;return}
   if(a==='cartaEd'){S.cartaEd=!S.cartaEd;S.cItem=null;render(true);return}
   if(a==='cartaSel'){S.cartaSel={...(S.cartaSel||{}),[workLocal()]:+id};S.cItem=null;render(true);return}
   if(a==='cItem'){S.cItem={c:Math.min(S.cartaSel?.[workLocal()]||0,99),s:+b.dataset.s,i:+b.dataset.i};const cs=S.cartas?.[workLocal()]?.cartas||[];S.cItem.c=Math.min(S.cItem.c,cs.length-1);render(true);setTimeout(()=>$('#cf-n')?.focus(),50);return}
@@ -1451,7 +1470,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26o';
+const APP_V='2026-11-26p';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
