@@ -648,8 +648,36 @@ async function armarCopia(prog){
 }
 function bajarCopia(out){
   const blob=new Blob([JSON.stringify(out,null,1)],{type:'application/json'}),nom=`cocina-copia-${dayKey(new Date(out.fecha).getTime())}.json`,file=new File([blob],nom,{type:'application/json'});
-  if(navigator.canShare&&navigator.canShare({files:[file]})){return navigator.share({files:[file],title:nom}).catch(()=>{})}
+  if(esCelu()&&navigator.canShare&&navigator.canShare({files:[file]})){return navigator.share({files:[file],title:nom}).catch(()=>{})}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nom;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
+}
+// Carpeta en la compu (Chrome/Edge): se elige una vez y la copia se pisa siempre en el mismo archivo
+const BK_ARCH='cocina-copia-seguridad.json',puedeCarpeta=()=>'showDirectoryPicker' in window,esCelu=()=>matchMedia('(pointer:coarse)').matches;
+const idb=(modo,val)=>new Promise((ok,mal)=>{const r=indexedDB.open('cocina-fs',1);r.onupgradeneeded=()=>r.result.createObjectStore('h');r.onerror=()=>mal(r.error);
+  r.onsuccess=()=>{const t=r.result.transaction('h',modo==='get'?'readonly':'readwrite').objectStore('h'),q=modo==='get'?t.get('dir'):modo==='del'?t.delete('dir'):t.put(val,'dir');q.onsuccess=()=>ok(q.result);q.onerror=()=>mal(q.error)}});
+async function carpeta(){if(!puedeCarpeta())return null;try{return await idb('get')||null}catch(e){return null}}
+async function escribirCarpeta(out,interactivo){
+  const h=await carpeta();if(!h)return false;
+  let p=await h.queryPermission({mode:'readwrite'});if(p!=='granted'&&interactivo)p=await h.requestPermission({mode:'readwrite'});if(p!=='granted')return false;
+  const f=await h.getFileHandle(BK_ARCH,{create:true}),w=await f.createWritable();await w.write(JSON.stringify(out,null,1));await w.close();
+  try{localStorage.setItem('cocina.carpetaT',Date.now());localStorage.setItem('cocina.backup',Date.now())}catch(e){}return true;
+}
+async function elegirCarpeta(b){
+  let h;try{h=await showDirectoryPicker({mode:'readwrite',id:'cocina-copias'})}catch(e){return}
+  await idb('put',h);S.carpetaNom=h.name;b.textContent='Guardando copia…';
+  const out=await armarCopia(k=>b.textContent=`Bajando ${k.replace('_',' ')}…`);await escribirCarpeta(out,true);
+  toast(`Copia guardada en la carpeta "${h.name}".`);render(true);
+}
+// Al abrir: si hay carpeta elegida y pasaron 10 días, guarda ahí (si el navegador no da permiso sin tocar, aparece un botón)
+async function copiaCarpetaAuto(){
+  const h=await carpeta();if(!h)return;S.carpetaNom=h.name;
+  let t=0;try{t=+localStorage.getItem('cocina.carpetaT')||0}catch(e){}
+  if(Date.now()-t<BK_DIAS*864e5)return;
+  const out=await armarCopia();if(await escribirCarpeta(out,false))return;
+  S.bkCarpetaOut=out;let el=$('#bkPend');if(!el){el=document.createElement('button');el.id='bkPend';el.className='pri';
+    el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.25)';document.body.appendChild(el)}
+  el.textContent='💾 Guardar copia en tu carpeta';
+  el.onclick=async()=>{el.textContent='Guardando…';try{if(await escribirCarpeta(S.bkCarpetaOut,true)){el.remove();toast('Copia guardada en tu carpeta.')}else el.textContent='💾 Guardar copia en tu carpeta'}catch(e){el.remove();S.note=errMsg(e);render(true)}};
 }
 // Copia automática: cada 10 días, guardada en Firestore (solo dueño), pisa la anterior
 const BK_DIAS=10,BK_TROZO=600000;
@@ -681,9 +709,10 @@ async function restaurarCopia(out,prog){
 async function backup(b){
   const out=await armarCopia(k=>b.textContent=`Bajando ${k.replace('_',' ')}…`);
   const cant=bkCant(out);
+  try{if(await escribirCarpeta(out,true)){b.textContent='Descargar copia de seguridad';toast(`Copia guardada en "${S.carpetaNom||'tu carpeta'}": ${cant} registros.`);render(true);return out}}catch(e){console.warn(e)}
   const blob=new Blob([JSON.stringify(out,null,1)],{type:'application/json'}),nom=`cocina-copia-${dayKey(Date.now())}.json`,file=new File([blob],nom,{type:'application/json'});
   try{localStorage.setItem('cocina.backup',Date.now())}catch(e){}
-  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:nom})}catch(e){}}
+  if(esCelu()&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:nom})}catch(e){}}
   else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nom;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
   b.textContent='Descargar copia de seguridad';toast(`Copia lista: ${cant} registros.`);render(true);return out;
 }
@@ -993,7 +1022,8 @@ function vEquipo(){
   <aside>
   <div class="panel" style="margin-bottom:16px"><h3>💾 Copia de seguridad</h3><p class="meta">Baja a un archivo todo lo cargado: catálogo, equipo, pedidos, solicitudes, stock, recetas, mantenimiento y chats (sin las fotos de remitos ni las contraseñas). Guardala en tu Drive una vez por semana.${(()=>{try{const t=+localStorage.getItem('cocina.backup');return t?` Última copia desde este dispositivo: <b>${fecha(t)} ${hora(t)}</b>.`:''}catch(e){return ''}})()}</p><button class="pri" data-act="backup">Descargar copia de seguridad</button>
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb"><b>🔁 Copia automática</b><p class="meta">Se hace sola cada ${BK_DIAS} días cuando abrís la app, y pisa la anterior. Solo vos la ves.${S.bkMeta?` Última: <b>${fecha(S.bkMeta.t)} ${hora(S.bkMeta.t)}</b> · ${S.bkMeta.cant} registros · próxima: <b>${fecha(S.bkMeta.t+BK_DIAS*864e5)}</b>.`:' Todavía no se hizo ninguna.'}</p>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">${S.bkMeta?`<button data-act="bkBajar">Descargar</button><button data-act="bkRestaurar">Restaurar</button>`:''}<button data-act="bkAhora">Hacerla ahora</button></div></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${S.bkMeta?`<button data-act="bkBajar">Descargar</button><button data-act="bkRestaurar">Restaurar</button>`:''}<button data-act="bkAhora">Hacerla ahora</button></div></div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e5e7eb"><b>📁 Carpeta en esta compu</b>${puedeCarpeta()?`<p class="meta">${S.carpetaNom?`Se guarda en la carpeta <b>${esc(S.carpetaNom)}</b>, en el archivo <b>${BK_ARCH}</b>, y se pisa cada ${BK_DIAS} días. El botón de arriba también guarda ahí.${(()=>{try{const t=+localStorage.getItem('cocina.carpetaT');return t?` Última: <b>${fecha(t)} ${hora(t)}</b>.`:''}catch(e){return ''}})()}`:`Elegí una carpeta una sola vez y la copia se guarda siempre ahí con el mismo nombre, pisando la anterior. Si elegís la carpeta de Google Drive o iCloud Drive, además queda en la nube.`}</p><button data-act="bkCarpeta">${S.carpetaNom?'Cambiar carpeta':'Elegir carpeta'}</button>`:`<p class="meta">Para que se guarde sola en una carpeta, abrí la app en <b>Google Chrome</b> en la compu (Safari no lo permite).</p>`}</div></div>
   <div class="panel"><h3>Notificaciones en tu celu</h3><p class="meta">Te llega un aviso con el ícono de Cocina cuando alguien arma un pedido, recibe mercadería o escribe en el chat, aunque la app esté cerrada.</p>
   ${pushInfo()}</div>
   <form class="panel" data-form="alta"><h3>Dar de alta</h3>
@@ -1173,6 +1203,7 @@ document.addEventListener('click',e=>{
   if(a==='recSinFoto'){S.recDraft.foto='';render(true);return}
   if(a==='recBorrar'){$('#sheet').innerHTML=`<div class="sheet"><div><h3>¿Borrar esta receta?</h3><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="recBorrarOk">Sí, borrar</button><button style="flex:1" data-act="closeSheet">Cancelar</button></div></div></div>`;return}
   if(a==='recBorrarOk'){$('#sheet').innerHTML='';const rid0=S.recOpen;S.recOpen=null;S.recEdit=false;S.recDraft=null;deleteDoc(doc(db,'recetas',rid0)).then(()=>toast('Receta borrada.')).catch(e=>{S.note=errMsg(e)});render(true);return}
+  if(a==='bkCarpeta'){elegirCarpeta(b).catch(e=>{S.note=errMsg(e);render(true)});return}
   if(a==='bkAhora'||a==='bkBajar'||a==='bkRestaurar'){bkAuto(a,b);return}
   if(a==='backup'){backup(b).catch(e=>{b.textContent='Descargar copia de seguridad';S.note=errMsg(e);render(true)});return}
   if(a==='recargar'){b.textContent='Actualizando…';navigator.serviceWorker?.getRegistration().then(r=>r?.update()).catch(()=>{}).finally(()=>setTimeout(()=>location.reload(),300));return}
@@ -1319,7 +1350,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-26f';
+const APP_V='2026-11-26g';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
@@ -1348,7 +1379,7 @@ onAuthStateChanged(auth,async u=>{
     }
     S.owner=o.data().uid===u.uid;S.ownerUid=o.data().uid;
     if(!S.owner){const m=await getDoc(doc(db,'equipo',u.uid));if(!m.exists()||!m.data().activo){S.stage='blocked';render(true);return}}
-    S.stage='app';if(!DESDE_AVISO||!location.hash||location.hash==='#')history.replaceState(null,'',S.local?'#panel':'#inicio');subscribe();render(true);setTimeout(limpiarFotosViejas,8000);if(S.owner)setTimeout(()=>autoCopia().catch(e=>console.warn('autoCopia',e)),15000);
+    S.stage='app';if(!DESDE_AVISO||!location.hash||location.hash==='#')history.replaceState(null,'',S.local?'#panel':'#inicio');subscribe();render(true);setTimeout(limpiarFotosViejas,8000);if(S.owner)carpeta().then(h=>{if(h)S.carpetaNom=h.name});if(S.owner)setTimeout(()=>{autoCopia().catch(e=>console.warn('autoCopia',e));copiaCarpetaAuto().catch(e=>console.warn('carpeta',e))},15000);
   }catch(e){console.error(e);if(e.code==='permission-denied'){S.stage='blocked'}else{S.stage='error';S.note=errMsg(e)+(e.code?` (${e.code})`:'')}render(true)}
 });
 </script></body></html>
