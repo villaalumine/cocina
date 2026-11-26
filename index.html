@@ -640,9 +640,10 @@ async function recPDF(conCostos){
 async function backup(b){
   const all=async c=>(await getDocs(collection(db,...c))).docs.map(d=>({_id:d.id,...d.data()}));
   const out={app:'cocina',version:APP_V,fecha:new Date().toISOString(),por:me()?.nombre||'',datos:{}};
-  for(const [k,c] of [['cfg',['cfg']],['equipo',['equipo']],['pedidos',['pedidos']],['solicitudes',['solicitudes']],['stock',['stock']],['mant',['mant']],['recetas',['recetas']],['chat_villa',['chats','villa','msgs']],['chat_mara',['chats','mara','msgs']]]){
+  try{out.datos.catalogo=(await getDoc(doc(db,'cfg','catalogo'))).data()}catch(e){out.datos.catalogo={error:errMsg(e)}}
+  for(const [k,c] of [['equipo',['equipo']],['pedidos',['pedidos']],['solicitudes',['solicitudes']],['stock',['stock']],['mant',['mant']],['recetas',['recetas']],['chat_villa',['chats','villa','msgs']],['chat_mara',['chats','mara','msgs']]]){
     b.textContent=`Bajando ${k.replace('_',' ')}…`;try{out.datos[k]=await all(c)}catch(e){out.datos[k]={error:errMsg(e)}}}
-  const cant=Object.values(out.datos).reduce((a,v)=>a+(Array.isArray(v)?v.length:0),0);
+  const cant=Object.values(out.datos).reduce((a,v)=>a+(Array.isArray(v)?v.length:0),0)+(out.datos.catalogo?.productos?.length||0);
   const blob=new Blob([JSON.stringify(out,null,1)],{type:'application/json'}),nom=`cocina-copia-${dayKey(Date.now())}.json`,file=new File([blob],nom,{type:'application/json'});
   try{localStorage.setItem('cocina.backup',Date.now())}catch(e){}
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:nom})}catch(e){}}
