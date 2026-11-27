@@ -65,11 +65,14 @@ async function armar(p, logos, K) {
   if (p.marca === 'ambos') { await logo(logos.villa, 52, 62, 10, 7); await logo(logos.mara, W - 58, 78, 9, 7.5); }
   else if (p.marca === 'villa') await logo(logos.villa, W / 2, 66, 11, 6);
   else await logo(logos.mara, W / 2, 84, 9.5, 7.5);
+  // Nombre del presupuesto (ej: una empresa)
+  let dy = 0;
+  if (String(p.titulo || '').trim()) { pdf.setFont('tit', 'normal'); pdf.setFontSize(17); pdf.setTextColor(...INK); pdf.text(String(p.titulo).trim().toUpperCase(), W / 2, 27, { align: 'center', charSpace: 0.4 }); dy = 11; }
   // Caja del cliente
-  pdf.setFillColor(...CAJA); pdf.setDrawColor(...INK); pdf.setLineWidth(0.28); pdf.rect(M - 3.7, 19, CW + 7.4 - 0.6, 24, 'FD');
+  pdf.setFillColor(...CAJA); pdf.setDrawColor(...INK); pdf.setLineWidth(0.28); pdf.rect(M - 3.7, 19 + dy, CW + 7.4 - 0.6, 24, 'FD');
   pdf.setFont('tit', 'normal'); pdf.setFontSize(14); pdf.setTextColor(...INK);
-  lineasCliente(p).forEach((t, i) => pdf.text(t, W / 2, 26 + i * 6.3, { align: 'center' }));
-  let y = 53;
+  lineasCliente(p).forEach((t, i) => pdf.text(t, W / 2, 26 + dy + i * 6.3, { align: 'center' }));
+  let y = 53 + dy;
   const nuevaPag = () => { pdf.addPage([W, H]); fondo(); y = 14; };
   const espacio = need => { if (y + need > H - 16) { pie(); nuevaPag(); } };
   const subrayado = (t, x, yy, size, font = 'tit') => { pdf.setFont(font, 'normal'); pdf.setFontSize(size); pdf.text(t, x, yy); const w = pdf.getTextWidth(t); pdf.setLineWidth(0.25); pdf.line(x, yy + 0.9, x + w, yy + 0.9); };
@@ -119,7 +122,7 @@ const br = s => esc(s).replace(/\n/g, '<br>');
 export const PRESUP_CSS = `@font-face{font-family:PpT;font-weight:600;src:url(${FB}Poppins-SemiBold.ttf)}@font-face{font-family:PpT;font-weight:400;src:url(${FB}Poppins-Regular.ttf)}@font-face{font-family:PpI;font-style:italic;font-weight:300;src:url(${FB}Poppins-LightItalic.ttf)}@font-face{font-family:PpI;font-style:italic;font-weight:400;src:url(${FB}Poppins-Italic.ttf)}
 .pz{background:#fffbf3;color:#000;max-width:794px;margin:0 auto;padding:22px 16px 18px;font:300 italic 14px/1.24 PpI,sans-serif;box-shadow:0 2px 14px #0002}
 .pz-h{display:flex;justify-content:center;align-items:center;gap:30px;margin-bottom:14px;min-height:40px}.pz-h img{max-height:38px;max-width:60%}.pz-h.amb{justify-content:space-between;padding:0 10px}.pz-h.amb img{max-width:44%}
-.pz-c{background:#c0b298;border:1px solid #000;text-align:center;font:600 normal 18px/1.35 PpT,sans-serif;padding:12px 8px;margin:0 -6px 20px}
+.pz-t{text-align:center;font:600 normal 23px PpT,sans-serif;text-transform:uppercase;letter-spacing:.04em;margin:-4px 0 12px}.pz-c{background:#c0b298;border:1px solid #000;text-align:center;font:600 normal 18px/1.35 PpT,sans-serif;padding:12px 8px;margin:0 -6px 20px}
 .pz h4{font:600 normal 18px PpT,sans-serif;text-align:center;margin:0 0 10px}.pz h5{font:600 normal 17px PpT,sans-serif;text-decoration:underline;margin:14px 0 2px}.pz h6{font:600 normal 15px PpT,sans-serif;margin:6px 0 1px}
 .pz p{margin:0}.pz ul{margin:2px 0 0;padding-left:20px}.pz li{margin:1px 0}
 .pz-b{border:1px solid #000;text-align:center;font:400 normal 14px/1.4 PpT,sans-serif;padding:6px 10px;margin:14px -6px 0}
@@ -129,7 +132,7 @@ export const PRESUP_CSS = `@font-face{font-family:PpT;font-weight:600;src:url(${
 export function presupHTML(p, logos = {}) {
   const h = p.marca === 'ambos' ? `<div class="pz-h amb">${logos.villa ? `<img src="${logos.villa}" alt="Villa Aluminé">` : ''}${logos.mara ? `<img src="${logos.mara}" alt="Mara Social Club">` : ''}</div>`
     : `<div class="pz-h">${(p.marca === 'villa' ? logos.villa : logos.mara) ? `<img src="${p.marca === 'villa' ? logos.villa : logos.mara}" alt="">` : `<b style="font:600 24px PpT">${p.marca === 'villa' ? 'Villa Aluminé' : 'MARA SOCIAL CLUB'}</b>`}</div>`;
-  let s = `<div class="pz">${h}<div class="pz-c">${lineasCliente(p).map(esc).join('<br>')}</div>`;
+  let s = `<div class="pz">${h}${String(p.titulo || '').trim() ? `<div class="pz-t">${esc(String(p.titulo).trim())}</div>` : ''}<div class="pz-c">${lineasCliente(p).map(esc).join('<br>')}</div>`;
   for (const b of p.bloques || []) {
     if (b.tipo === 'menu') { s += `<h4>${esc(b.titulo || 'EL MENÚ:')}</h4>` + (b.items || []).map(it => `${it.t ? `<h5>${esc(it.t)}</h5>` : ''}<p>${br(it.x)}</p>`).join(''); }
     else if (b.tipo === 'seccion') { s += `${b.titulo ? `<h5>${esc(b.titulo)}</h5>` : ''}` + (b.items || []).map(it => `${it.t ? `<h6>${esc(it.t)}</h6>` : ''}<p>${br(it.x)}</p>`).join(''); }
@@ -142,4 +145,4 @@ export function presupHTML(p, logos = {}) {
   <div class="pz-f"><span>Falucho N.º 32</span><span>Cabo Corrientes</span><span>Mar del Plata</span></div></div>`;
   return s;
 }
-export const nombrePDF = p => ('presupuesto-' + (p.cliente || 'cliente') + '-' + (p.fecha || '')).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.pdf';
+export const nombrePDF = p => ('presupuesto-' + (p.titulo || p.cliente || 'cliente') + '-' + (p.fecha || '')).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.pdf';

@@ -7,7 +7,7 @@
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getFirestore,doc,getDoc} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import {presupHTML,presupPDF,PRESUP_CSS,nombrePDF} from './presup.js?v=2';
+import {presupHTML,presupPDF,PRESUP_CSS,nombrePDF} from './presup.js?v=3';
 const app=initializeApp({apiKey:"AIzaSyAZnrlg52IRYs8FJ3SGIu9hBekbiwdkQ2Y",authDomain:"cocina-villa-alumine.firebaseapp.com",projectId:"cocina-villa-alumine",appId:"1:198736704033:web:091d9e26862d441779e960"});
 const db=getFirestore(app),v=document.getElementById('v'),id=new URLSearchParams(location.search).get('id')||'';
 document.getElementById('pzcss').textContent=PRESUP_CSS;
@@ -16,7 +16,7 @@ try{
   const [d,l]=await Promise.all([getDoc(doc(db,'presupPub',id)),getDoc(doc(db,'presupPub','_logos'))]);
   if(!d.exists())throw 0;
   const p=d.data(),logos=l.exists()?l.data():{};
-  document.title=`Presupuesto ${p.cliente||''} · ${p.marca==='villa'?'Villa Aluminé':'Mara Social Club'}`;
+  document.title=`Presupuesto ${p.titulo||p.cliente||''} · ${p.marca==='villa'?'Villa Aluminé':'Mara Social Club'}`;
   v.innerHTML=presupHTML(p,logos);
   const b=document.getElementById('dl');b.hidden=false;
   b.onclick=async()=>{b.disabled=true;b.textContent='Armando…';try{const pdf=await presupPDF(p,logos);pdf.save(nombrePDF(p))}catch(e){alert('No se pudo armar el PDF. Probá de nuevo.')}b.disabled=false;b.textContent='Descargar PDF'};
