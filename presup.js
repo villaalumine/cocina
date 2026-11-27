@@ -44,6 +44,8 @@ export const CONDICIONES = 'El valor del presupuesto tiene una validez de 5 día
 export const MENORES = 'Precio menores: 0 a 3 años: sin cargo / 4 a 13 años: 50% del valor de la tarjeta de adulto / desde 14 años: tarjeta completa (valor adulto).';
 export const propinaTxt = p => `Propina no incluida: la propina destinada a nuestro equipo de trabajo (${pesos(p.propina)}) es de carácter obligatorio y se cobrará de manera anticipada. ¡Desde ya, muchas gracias por su comprensión!`;
 
+// Bloques sin contenido no se muestran (para que no quede un título solo)
+const lleno = b => b.tipo === 'texto' ? !!String(b.x || '').trim() : b.tipo === 'lista' ? (b.items || []).some(i => String(i || '').trim()) : (b.items || []).some(i => String(i.t || '').trim() || String(i.x || '').trim());
 // ---------- PDF ----------
 export async function presupPDF(p, logos = {}) {
   // Si no entra en una hoja, achica un poco la letra (como harías en Canva)
@@ -79,7 +81,7 @@ async function armar(p, logos, K) {
     pdf.setFont(font, 'normal'); pdf.setFontSize(size); pdf.setTextColor(...INK);
     for (const para of String(t || '').split('\n')) { const ls = pdf.splitTextToSize(para, CW - indent); for (const l of ls) { espacio(size * LH + 0.5); pdf.text(l, M + indent, y); y += size * LH; } }
   };
-  for (const b of p.bloques || []) {
+  for (const b of (p.bloques || []).filter(lleno)) {
     if (b.tipo === 'menu') {
       espacio(14); pdf.setFont('tit', 'normal'); pdf.setFontSize(14 * K); pdf.text(b.titulo || 'EL MENÚ:', W / 2, y, { align: 'center' }); y += 7 * K;
       for (const it of b.items || []) { espacio(12); if (it.t) { subrayado(it.t, M, y, 13 * K); y += 5.2 * K; } parrafo(it.x); y += 4.5 * K; }
@@ -132,7 +134,7 @@ export function presupHTML(p, logos = {}) {
   const h = p.marca === 'ambos' ? `<div class="pz-h amb">${logos.villa ? `<img src="${logos.villa}" alt="Villa Aluminé">` : ''}${logos.mara ? `<img src="${logos.mara}" alt="Mara Social Club">` : ''}</div>`
     : `<div class="pz-h">${(p.marca === 'villa' ? logos.villa : logos.mara) ? `<img src="${p.marca === 'villa' ? logos.villa : logos.mara}" alt="">` : `<b style="font:600 24px PpT">${p.marca === 'villa' ? 'Villa Aluminé' : 'MARA SOCIAL CLUB'}</b>`}</div>`;
   let s = `<div class="pz">${h}<div class="pz-c">${lineasCliente(p).map(esc).join('<br>')}</div>`;
-  for (const b of p.bloques || []) {
+  for (const b of (p.bloques || []).filter(lleno)) {
     if (b.tipo === 'menu') { s += `<h4>${esc(b.titulo || 'EL MENÚ:')}</h4>` + (b.items || []).map(it => `${it.t ? `<h5>${esc(it.t)}</h5>` : ''}<p>${br(it.x)}</p>`).join(''); }
     else if (b.tipo === 'seccion') { s += `${b.titulo ? `<h5>${esc(b.titulo)}</h5>` : ''}` + (b.items || []).map(it => `${it.t ? `<h6>${esc(it.t)}</h6>` : ''}<p>${br(it.x)}</p>`).join(''); }
     else if (b.tipo === 'texto') s += `<h5>${esc(b.titulo)}</h5><p>${br(b.x)}</p>`;

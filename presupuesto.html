@@ -7,7 +7,7 @@
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getFirestore,doc,getDoc} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import {presupHTML,presupPDF,PRESUP_CSS,nombrePDF} from './presup.js?v=4';
+import {presupHTML,presupPDF,PRESUP_CSS,nombrePDF} from './presup.js?v=5';
 const app=initializeApp({apiKey:"AIzaSyAZnrlg52IRYs8FJ3SGIu9hBekbiwdkQ2Y",authDomain:"cocina-villa-alumine.firebaseapp.com",projectId:"cocina-villa-alumine",appId:"1:198736704033:web:091d9e26862d441779e960"});
 const db=getFirestore(app),v=document.getElementById('v'),id=new URLSearchParams(location.search).get('id')||'';
 document.getElementById('pzcss').textContent=PRESUP_CSS;
