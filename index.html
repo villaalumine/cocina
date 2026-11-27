@@ -706,7 +706,7 @@ function vEventos(){
   const mes=new Date(Y,Mo-1,1).toLocaleDateString('es-AR',{month:'long',year:'numeric'});
   const prev=Mo===1?`${Y-1}-12`:`${Y}-${String(Mo-1).padStart(2,'0')}`,next=Mo===12?`${Y+1}-01`:`${Y}-${String(Mo+1).padStart(2,'0')}`;
   return head+`<div class="row" style="align-items:center;gap:8px;margin-bottom:10px"><button data-act="calM" data-id="${prev}">‹</button><h3 style="margin:0;flex:1;text-align:center;text-transform:capitalize">${mes}</h3><button data-act="calM" data-id="${next}">›</button></div>
-  <div class="cal-ley"><span class="cal-e cal-confirmado">Confirmado</span><span class="cal-e cal-enviado">Enviado</span><span class="cal-e cal-borrador">Borrador</span><label class="meta" style="margin-left:auto"><input type="checkbox" data-act="calPerd" ${S.calPerd?'checked':''}> Ver los que no se hicieron</label></div>
+  <div class="cal-ley"><span class="cal-e cal-confirmado">Confirmado</span><span class="cal-e cal-enviado">Enviado</span><span class="cal-e cal-borrador">Borrador</span><label class="meta" style="margin-left:auto"><input type="checkbox" data-act="calPerd" ${S.calPerd?'checked':''} style="width:auto;min-height:0;height:auto;margin:0 4px 0 0;vertical-align:middle"> Ver los que no se hicieron</label></div>
   <div class="cal">${['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>`<div class="cal-h">${d}</div>`).join('')}${celdas.join('')}</div>
   ${Object.keys(porDia).some(f=>choque(porDia[f]))?'<p class="note" style="margin-top:10px">⚠️ Hay días con dos eventos confirmados en el mismo sector (marcados en rojo).</p>':''}
   <h3 style="margin:18px 0 8px">Este mes</h3>${delMes.length?`<div class="panel" style="padding-top:4px">${delMes.map(p=>{const [et,ec]=PE_EST[p.estado]||['',''];return `<button class="crow" data-act="peAbrir" data-id="${p.id}"><span><b>${fEv(p.fecha)} · ${esc(p.cliente||'')}</b><small>${esc(p.sector||'')} · ${esc(p.plNombre||'')}${p.hora?` · ${esc(p.hora)}`:''}${p.invitados?` · ${esc(p.invitados)} invitados`:''}</small></span><span class="badge ${ec}">${et}</span></button>`}).join('')}</div>`:'<p class="empty">No hay eventos este mes.</p>'}`;
@@ -1661,7 +1661,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-27g';
+const APP_V='2026-11-27h';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
