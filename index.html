@@ -1661,7 +1661,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-27h';
+const APP_V='2026-11-27i';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}

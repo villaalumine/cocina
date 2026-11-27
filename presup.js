@@ -46,6 +46,12 @@ export const propinaTxt = p => `Propina no incluida: la propina destinada a nues
 
 // ---------- PDF ----------
 export async function presupPDF(p, logos = {}) {
+  // Si no entra en una hoja, achica un poco la letra (como harías en Canva)
+  let pdf;
+  for (const K of [1, 0.94, 0.88, 0.83, 0.78]) { pdf = await armar(p, logos, K); if (pdf.getNumberOfPages() === 1) break; }
+  return pdf;
+}
+async function armar(p, logos, K) {
   const JS = await cargarJsPDF();
   const W = 210, H = p.formato === 'largo' ? 350 : 297, M = 6, CW = W - 2 * M;
   const pdf = new JS({ unit: 'mm', format: [W, H] });
@@ -67,25 +73,25 @@ export async function presupPDF(p, logos = {}) {
   const nuevaPag = () => { pdf.addPage([W, H]); fondo(); y = 14; };
   const espacio = need => { if (y + need > H - 16) { pie(); nuevaPag(); } };
   const subrayado = (t, x, yy, size, font = 'tit') => { pdf.setFont(font, 'normal'); pdf.setFontSize(size); pdf.text(t, x, yy); const w = pdf.getTextWidth(t); pdf.setLineWidth(0.25); pdf.line(x, yy + 0.9, x + w, yy + 0.9); };
-  const parrafo = (t, size = 10.3, font = 'ita', indent = 0) => {
+  const parrafo = (t, size = 10.3 * K, font = 'ita', indent = 0) => {
     pdf.setFont(font, 'normal'); pdf.setFontSize(size); pdf.setTextColor(...INK);
     for (const para of String(t || '').split('\n')) { const ls = pdf.splitTextToSize(para, CW - indent); for (const l of ls) { espacio(size * LH + 0.5); pdf.text(l, M + indent, y); y += size * LH; } }
   };
   for (const b of p.bloques || []) {
     if (b.tipo === 'menu') {
-      espacio(14); pdf.setFont('tit', 'normal'); pdf.setFontSize(14); pdf.text(b.titulo || 'EL MENÚ:', W / 2, y, { align: 'center' }); y += 7;
-      for (const it of b.items || []) { espacio(12); if (it.t) { subrayado(it.t, M, y, 13); y += 5.2; } parrafo(it.x); y += 4.5; }
+      espacio(14); pdf.setFont('tit', 'normal'); pdf.setFontSize(14 * K); pdf.text(b.titulo || 'EL MENÚ:', W / 2, y, { align: 'center' }); y += 7 * K;
+      for (const it of b.items || []) { espacio(12); if (it.t) { subrayado(it.t, M, y, 13 * K); y += 5.2 * K; } parrafo(it.x); y += 4.5 * K; }
     } else if (b.tipo === 'seccion') {
-      espacio(12); if (b.titulo) { subrayado(b.titulo, M, y, 12); y += 5; }
-      for (const it of b.items || []) { if (it.t) { espacio(8); pdf.setFont('tit', 'normal'); pdf.setFontSize(11); pdf.text(it.t, M, y); y += 4.6; } parrafo(it.x); y += 1.5; }
-      y += 3;
+      espacio(12); if (b.titulo) { subrayado(b.titulo, M, y, 12 * K); y += 5 * K; }
+      for (const it of b.items || []) { if (it.t) { espacio(8); pdf.setFont('tit', 'normal'); pdf.setFontSize(11 * K); pdf.text(it.t, M, y); y += 4.6 * K; } parrafo(it.x); y += 1.5 * K; }
+      y += 3 * K;
     } else if (b.tipo === 'texto') {
-      espacio(12); subrayado(b.titulo, M, y, 12); y += 5; parrafo(b.x); y += 4.5;
+      espacio(12); subrayado(b.titulo, M, y, 12 * K); y += 5 * K; parrafo(b.x); y += 4.5 * K;
     } else if (b.tipo === 'lista') {
       const its = (b.items || []).filter(Boolean); if (!its.length) continue;
-      espacio(12); subrayado(b.titulo, M, y, 12); y += 5;
-      for (const it of its) { const yy = y; parrafo(it, 10.3, 'ita', 5); pdf.setFillColor(...INK); pdf.circle(M + 1.8, yy - 1.2, 0.6, 'F'); }
-      y += 4;
+      espacio(12); subrayado(b.titulo, M, y, 12 * K); y += 5 * K;
+      for (const it of its) { const yy = y; parrafo(it, 10.3 * K, 'ita', 5); pdf.setFillColor(...INK); pdf.circle(M + 1.8, yy - 1.2, 0.6, 'F'); }
+      y += 4 * K;
     }
   }
   // Recuadros finales: propina, nota y precios
@@ -99,10 +105,10 @@ export async function presupPDF(p, logos = {}) {
     y += h + 3.5;
   };
   y += 1;
-  caja([[propinaTxt(p), 'reg', 10.6, 'c']]);
-  if (p.nota) caja([[p.nota, 'reg', 10.6, 'c']]);
+  caja([[propinaTxt(p), 'reg', 10.6 * K, 'c']]);
+  if (p.nota) caja([[p.nota, 'reg', 10.6 * K, 'c']]);
   const pr = lineasPrecio(p);
-  caja([...pr.bold.map(t => [t, 'bold', 11.4, 'c']), ...pr.ita.map(t => [t, 'itb', 9.6, 'c']), ['CONDICIONES DE PAGO', 'bold', 9.6, 'left'], [CONDICIONES, 'itb', 9.6, 'left'], ...(p.menores ? [[MENORES, 'itb', 9.6, 'left']] : []), ...(p.extraPago ? [[p.extraPago, 'itb', 9.6, 'left']] : [])], CAJA2);
+  const F = 9.6 * K; caja([...pr.bold.map(t => [t, 'bold', 11.4 * K, 'c']), ...pr.ita.map(t => [t, 'itb', F, 'c']), ['CONDICIONES DE PAGO', 'bold', F, 'left'], [CONDICIONES, 'itb', F, 'left'], ...(p.menores ? [[MENORES, 'itb', F, 'left']] : []), ...(p.extraPago ? [[p.extraPago, 'itb', F, 'left']] : [])], CAJA2);
   pie();
   return pdf;
 }
