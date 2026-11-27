@@ -657,7 +657,7 @@ function peWA(){
   const msg=`Hola ${nom}! Te paso el presupuesto${p.fecha?` para tu evento del ${fEv(p.fecha)}`:''}${p.sector?` en ${p.sector}`:''}:\n${linkPresup(pub)}\n\nAhí lo podés ver y descargar en PDF. Cualquier duda o cambio, escribime. ¡Gracias!`;
   window.open((tel?`https://wa.me/${tel}`:'https://wa.me/')+'?text='+encodeURIComponent(msg),'_blank');
   const now=Date.now();
-  peGuardar({pub,estado:p.estado==='confirmado'?'confirmado':'enviado',enviadoT:now,seguirT:now+3*864e5,hist:[...(p.hist||[]),{t:now,txt:'Enviado por WhatsApp',por:S.uid}]},true).then(()=>toast('Listo. Quedó como enviado: en 3 días te aviso para hacer el seguimiento.')).catch(e=>{if(e.message!=='sin cliente'){S.note=errMsg(e);render(true)}});
+  peGuardar({pub,estado:p.estado==='confirmado'?'confirmado':'enviado',enviadoT:now,seguirT:now+3*864e5,hist:[...(p.hist||[]),{t:now,txt:'Enviado por WhatsApp',por:S.uid}]},true).then(()=>{render(true);toast('Listo. Quedó como enviado: en 3 días te aviso para hacer el seguimiento.')}).catch(e=>{if(e.message!=='sin cliente'){S.note=errMsg(e);render(true)}});
 }
 async function peSeguir(id){
   const p=id?S.presup.find(x=>x.id===id):S.pe;if(!p)return;
@@ -1661,7 +1661,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-27f';
+const APP_V='2026-11-27g';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
