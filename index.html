@@ -137,6 +137,7 @@ button.kpi{text-align:left;cursor:pointer;font:inherit;color:inherit;border:2px 
 button.kpi.y{border-top-color:var(--mus)}button.kpi.r{border-top-color:var(--red)}button.kpi.sel{border-color:var(--ink);border-top-width:6px;background:var(--bg)}
 .ptit{margin:6px 0 4px}
 .filtros{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:10px}@media(max-width:700px){.filtros{grid-template-columns:minmax(0,1fr)}}
+@font-face{font-family:MVSerif;src:url(https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/dmserifdisplay/DMSerifDisplay-Regular.ttf)}@font-face{font-family:MVScript;src:url(https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/allura/Allura-Regular.ttf)}@font-face{font-family:MVCond;font-weight:400;src:url(https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/barlowcondensed/BarlowCondensed-Regular.ttf)}@font-face{font-family:MVCond;font-weight:500;src:url(https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/barlowcondensed/BarlowCondensed-Medium.ttf)}@font-face{font-family:MVCond;font-weight:600;src:url(https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/barlowcondensed/BarlowCondensed-SemiBold.ttf)}.menuv{background:#EDEAE5;color:#1b1b1b;border-radius:14px;padding:26px 22px 14px;margin-bottom:16px}.mvh{text-align:center;margin-bottom:18px}.mvt{font:56px/1 MVSerif,Georgia,serif;color:#F04A1E}.mvs{font:44px/.8 MVScript,cursive;color:#F04A1E;margin-top:-4px}.mvc{font:600 13px MVCond,sans-serif;letter-spacing:.32em;text-transform:uppercase;margin-top:10px}.mvh::after{content:'';display:block;height:6px;border-top:2.5px solid #1b1b1b;border-bottom:1px solid #1b1b1b;margin-top:16px}.mvcols{columns:2 300px;column-gap:34px}.menuv .panel{background:transparent;border:0;box-shadow:none;padding:0 0 10px;margin:0 0 14px!important;break-inside:avoid;border-bottom:1.5px solid #1b1b1b;border-radius:0}.menuv .ptit{font:400 26px MVCond,sans-serif;text-transform:uppercase;letter-spacing:.02em;margin:0 0 4px}.menuv .ptit small{font:italic 400 15px MVCond,sans-serif;text-transform:none;color:#444!important}.menuv .crow{border-top:0;padding:4px 0;font-family:MVCond,sans-serif}.menuv .crow b{font-weight:500;text-transform:uppercase;font-size:15px;letter-spacing:.01em}.menuv .crow small{font-size:14px;color:#333;font-weight:400}.menuv .cpre{font-weight:600;font-size:15px}.menuv button.crow:hover{background:#e2ded7}.menuv .linkbtn{font-family:MVCond,sans-serif}.menuv .cform{background:#fff;border-radius:10px;padding:12px}@media(max-width:520px){.menuv{padding:20px 14px 8px}.mvt{font-size:42px}.mvs{font-size:36px}.mvc{font-size:11px}}
 .crow{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:9px 0;font:inherit;color:inherit}.crow small{display:block;color:#6b7280;font-size:13px;margin-top:2px}.crow .cpre{white-space:nowrap;font-weight:600}button.crow{cursor:pointer}button.crow:hover{background:#faf7f2}.cform{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:8px}.cform label{display:grid;gap:3px;font-size:13px;color:#6b7280}
 .plist{border-top:1px solid var(--line)}.prow{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:12px 4px;font-weight:400}
 .prow:hover{background:var(--card)}.prow small{display:block;color:var(--mute);font-size:13px}.pfecha b{font:700 18px "Barlow Condensed",sans-serif}.pinfo b{font-size:16px}
@@ -589,10 +590,10 @@ function vCartas(){
   return head+`<div class="chips" style="margin-bottom:10px">${cs.map((c,k)=>`<button class="chip ${k===ci?'on':''}" data-act="cartaSel" data-id="${k}">${esc(c.nombre)}</button>`).join('')}</div>
   <input type="search" placeholder="Buscar en ${esc(C.nombre)}…" value="${esc(S.cartaBus||'')}" data-cartabus style="margin-bottom:6px">
   <p class="meta" style="margin:0 0 12px">${tot.length} ítems en ${cs.length} carta${cs.length>1?'s':''} · ${sinR?`<b>${sinR} sin receta</b>`:'todos con receta ✓'}${D.editado?` · Modificada ${fecha(D.editado)}`:''}</p>
-  ${C.secciones.map((x,si)=>{const its=x.items.map((it,ii)=>[it,ii]).filter(([it])=>!q||it.nombre.toLowerCase().includes(q)||(it.desc||'').toLowerCase().includes(q));
+  ${loc==='villa'?`<div class="menuv"><div class="mvh"><div class="mvt">Villa Aluminé</div><div class="mvs">${esc(C.nombre)}</div>${C.sub?`<div class="mvc">${esc(C.sub)}</div>`:''}</div><div class="mvcols">`:''}${C.secciones.map((x,si)=>{const its=x.items.map((it,ii)=>[it,ii]).filter(([it])=>!q||it.nombre.toLowerCase().includes(q)||(it.desc||'').toLowerCase().includes(q));
     if(q&&!its.length)return '';
     return `<div class="panel" style="margin-bottom:12px;padding-bottom:6px"><h3 class="ptit" style="margin-top:0">${esc(x.nombre)}${x.nota?` <small style="font-weight:400;color:#6b7280">${esc(x.nota)}</small>`:''}</h3>${its.map(([it,ii])=>row(it,si,ii)).join('')}
-    ${ed?(S.cItem&&S.cItem.c===ci&&S.cItem.s===si&&S.cItem.i===-1?cartaForm({nombre:'',desc:'',precio:''},loc):`<button class="linkbtn" data-act="cItem" data-s="${si}" data-i="-1" style="margin:8px 0">+ Agregar a ${esc(x.nombre)}</button>`):''}</div>`}).join('')}
+    ${ed?(S.cItem&&S.cItem.c===ci&&S.cItem.s===si&&S.cItem.i===-1?cartaForm({nombre:'',desc:'',precio:''},loc):`<button class="linkbtn" data-act="cItem" data-s="${si}" data-i="-1" style="margin:8px 0">+ Agregar a ${esc(x.nombre)}</button>`):''}</div>`}).join('')}${loc==='villa'?'</div></div>':''}
   ${ed&&!q?'<button data-act="cSeccion" style="margin-bottom:16px">+ Nueva sección</button>':''}`;
 }
 function cartaForm(it,loc){
@@ -603,9 +604,39 @@ function cartaForm(it,loc){
   <label>Receta<select id="cf-r"><option value="">— Sin receta —</option>${R.map(r=>`<option value="${r.id}" ${cur?.id===r.id?'selected':''}>${esc(r.nombre)}</option>`).join('')}</select></label>
   <div class="row" style="margin-top:8px"><button class="pri" data-act="cGuardar">Guardar</button><button data-act="cCancelar">Cancelar</button>${S.cItem.i>=0?'<button data-act="cBorrar" style="margin-left:auto;color:#b42318">Borrar</button>':''}</div></div>`;
 }
+const FUENTES={serif:'dmserifdisplay/DMSerifDisplay-Regular.ttf',script:'allura/Allura-Regular.ttf',cond:'barlowcondensed/BarlowCondensed-Regular.ttf',condm:'barlowcondensed/BarlowCondensed-Medium.ttf',conds:'barlowcondensed/BarlowCondensed-SemiBold.ttf',condi:'barlowcondensed/BarlowCondensed-Italic.ttf'};
+async function fuentesPDF(pdf){
+  window.__fpdf=window.__fpdf||{};
+  for(const [k,f] of Object.entries(FUENTES)){
+    if(!window.__fpdf[k]){const b=new Uint8Array(await (await fetch('https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/'+f)).arrayBuffer());let t='';for(let i=0;i<b.length;i+=8192)t+=String.fromCharCode.apply(null,b.subarray(i,i+8192));window.__fpdf[k]=btoa(t)}
+    pdf.addFileToVFS(k+'.ttf',window.__fpdf[k]);pdf.addFont(k+'.ttf',k,'normal')}
+}
+async function cartaPDFVilla(C,JS){
+  const pdf=new JS({unit:'mm',format:'a4'});await fuentesPDF(pdf);
+  const W=210,H=297,M=15,G=12,CW=(W-2*M-G)/2,NAR=[240,74,30],INK=[27,27,27],pr=it=>{const f=v=>'$ '+num(v);return num(it.precio)||num(it.precio2)?(num(it.precio)?f(it.precio):'-')+(num(it.precio2)?' / '+f(it.precio2):''):''};
+  const fondo=()=>{pdf.setFillColor(237,234,229);pdf.rect(0,0,W,H,'F')};
+  const cab=()=>{fondo();pdf.setTextColor(...NAR);pdf.setFont('serif','normal');pdf.setFontSize(46);pdf.text('Villa Aluminé',W/2,30,{align:'center'});
+    pdf.setFont('script','normal');pdf.setFontSize(38);pdf.text(C.nombre,W/2+6,41,{align:'center'});
+    let y=47;if(C.sub){pdf.setTextColor(...INK);pdf.setFont('conds','normal');pdf.setFontSize(10.5);const t=C.sub.toUpperCase(),cs=1.1,w=pdf.getTextWidth(t)+cs*(t.length-1);pdf.text(t,(W-w)/2,y+5,{charSpace:cs});y+=9}
+    pdf.setDrawColor(...INK);pdf.setLineWidth(1.1);pdf.line(M,y+3,W-M,y+3);pdf.setLineWidth(.35);pdf.line(M,y+4.6,W-M,y+4.6);return y+14};
+  let top=cab(),col=0,y=top;const fin=H-14,X=()=>M+col*(CW+G);
+  const salto=need=>{if(y+need<=fin)return;if(col===0){col=1;y=top}else{pdf.addPage();top=cab();col=0;y=top}};
+  const medir=it=>{pdf.setFont('conds','normal');pdf.setFontSize(10.5);const p=pr(it),pw=p?pdf.getTextWidth(p):0;pdf.setFont('condm','normal');const n=pdf.splitTextToSize(it.nombre.toUpperCase(),CW-pw-5);pdf.setFont('cond','normal');pdf.setFontSize(10);const d=it.desc?pdf.splitTextToSize(it.desc,CW-3):[];return {n,d,p,h:n.length*4.6+d.length*4.1+2.6}};
+  for(const sec of C.secciones){if(!sec.items.length)continue;const m0=medir(sec.items[0]);salto(13+m0.h);
+    pdf.setTextColor(...INK);pdf.setFont('cond','normal');pdf.setFontSize(19);const st=sec.nombre.toUpperCase();pdf.text(st,X(),y);
+    if(sec.nota){const tw=pdf.getTextWidth(st);pdf.setFont('condi','normal');pdf.setFontSize(10);pdf.text(sec.nota,X()+tw+2.5,y)}
+    y+=7;
+    for(const it of sec.items){const mm=medir(it);salto(mm.h+4);pdf.setTextColor(...INK);pdf.setFont('condm','normal');pdf.setFontSize(10.5);pdf.text(mm.n,X(),y);
+      if(mm.p){pdf.setFont('conds','normal');pdf.text(mm.p,X()+CW,y,{align:'right'})}y+=mm.n.length*4.6-.6;
+      if(mm.d.length){pdf.setFont('cond','normal');pdf.setFontSize(10);pdf.setTextColor(55);pdf.text(mm.d,X(),y);y+=mm.d.length*4.1}y+=2.6}
+    pdf.setDrawColor(...INK);pdf.setLineWidth(.5);pdf.line(X(),y-.5,X()+CW*.9,y-.5);y+=8}
+  return pdf;
+}
 async function cartaPDF(){
   const loc=workLocal(),cs=S.cartas?.[loc]?.cartas||[],C=cs[Math.min(S.cartaSel?.[loc]||0,cs.length-1)];if(!C)return;
-  const JS=await cargarJsPDF(),pdf=new JS({unit:'mm',format:'a4'}),W=210,H=297,M=16,G=10,CW=(W-2*M-G)/2,limpio=t=>String(t||'').replace(/[^\x00-\xFF]/g,'').trim();
+  const JS=await cargarJsPDF();
+  if(loc==='villa'){const pdf=await cartaPDFVilla(C,JS);return guardarPDF(pdf,`carta-villa-${C.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}.pdf`)}
+  const pdf=new JS({unit:'mm',format:'a4'}),W=210,H=297,M=16,G=10,CW=(W-2*M-G)/2,limpio=t=>String(t||'').replace(/[^\x00-\xFF]/g,'').trim();
   const mara=loc==='mara',AC=mara?[122,31,35]:[229,83,45],ink=[30,30,30];
   const cabecera=primera=>{
     if(primera){pdf.setTextColor(...AC);pdf.setFont(mara?'helvetica':'times','bold');pdf.setFontSize(mara?30:34);pdf.text(mara?'MARA':'Villa Aluminé',W/2,30,{align:'center'});
@@ -628,7 +659,10 @@ async function cartaPDF(){
       y+=3}
     y+=4}
   pie();
-  const nombre=`carta-${mara?'mara':'villa'}-${limpio(C.nombre).toLowerCase().replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')}.pdf`,blob=pdf.output('blob'),file=new File([blob],nombre,{type:'application/pdf'});
+  return guardarPDF(pdf,`carta-${mara?'mara':'villa'}-${limpio(C.nombre).toLowerCase().replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')}.pdf`);
+}
+async function guardarPDF(pdf,nombre){
+  const blob=pdf.output('blob'),file=new File([blob],nombre,{type:'application/pdf'});
   if(esCelu()&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:nombre});return}catch(e){if(e.name==='AbortError')return}}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
 }
@@ -1469,7 +1503,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-27c';
+const APP_V='2026-11-27d';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
