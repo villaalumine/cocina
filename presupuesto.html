@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Presupuesto · Villa Aluminé · Mara</title>
+<style>body{margin:0;background:#ece7dc;font-family:system-ui,sans-serif;color:#1b1b1b}.bar{position:sticky;top:0;z-index:5;background:#24303f;color:#fff;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px}.bar b{font-size:15px}.bar button{background:#e5532d;color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:600;font-size:15px}.wrap{padding:16px 10px 40px}.msg{max-width:560px;margin:60px auto;text-align:center;font-size:17px;line-height:1.5}</style>
+<style id="pzcss"></style></head>
+<body><div class="bar"><b>Presupuesto</b><button id="dl" hidden>Descargar PDF</button></div><div class="wrap" id="v"><p class="msg">Cargando el presupuesto…</p></div>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getFirestore,doc,getDoc} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import {presupHTML,presupPDF,PRESUP_CSS,nombrePDF} from './presup.js?v=1';
+const app=initializeApp({apiKey:"AIzaSyAZnrlg52IRYs8FJ3SGIu9hBekbiwdkQ2Y",authDomain:"cocina-villa-alumine.firebaseapp.com",projectId:"cocina-villa-alumine",appId:"1:198736704033:web:091d9e26862d441779e960"});
+const db=getFirestore(app),v=document.getElementById('v'),id=new URLSearchParams(location.search).get('id')||'';
+document.getElementById('pzcss').textContent=PRESUP_CSS;
+try{
+  if(!/^[A-Za-z0-9_-]{12,}$/.test(id))throw 0;
+  const [d,l]=await Promise.all([getDoc(doc(db,'presupPub',id)),getDoc(doc(db,'presupPub','_logos'))]);
+  if(!d.exists())throw 0;
+  const p=d.data(),logos=l.exists()?l.data():{};
+  document.title=`Presupuesto ${p.cliente||''} · ${p.marca==='villa'?'Villa Aluminé':'Mara Social Club'}`;
+  v.innerHTML=presupHTML(p,logos);
+  const b=document.getElementById('dl');b.hidden=false;
+  b.onclick=async()=>{b.disabled=true;b.textContent='Armando…';try{const pdf=await presupPDF(p,logos);pdf.save(nombrePDF(p))}catch(e){alert('No se pudo armar el PDF. Probá de nuevo.')}b.disabled=false;b.textContent='Descargar PDF'};
+}catch(e){v.innerHTML='<p class="msg">No encontramos este presupuesto. Puede que el link esté incompleto o que el presupuesto ya no esté disponible.<br><br>Escribinos y te lo reenviamos.</p>'}
+</script></body></html>
