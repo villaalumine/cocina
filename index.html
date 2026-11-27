@@ -579,7 +579,7 @@ const telWA=t=>{let n=String(t||'').replace(/\D/g,'');if(!n)return '';if(n.start
 const randId=()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789',b=crypto.getRandomValues(new Uint8Array(20));return [...b].map(x=>a[x%a.length]).join('')};
 const PUB_K=['marca','formato','cliente','tel','fecha','hora','invitados','sector','menuTipo','bloques','propina','precio','precioEf','precioOtros','nota','menores','extraPago'];
 const pubData=p=>{const o={t:Date.now()};PUB_K.forEach(k=>{if(p[k]!==undefined)o[k]=p[k]});return o};
-const linkPresup=pub=>`https://villaalumine.github.io/cocina/presupuesto.html?id=${pub}`;
+const linkPresup=pub=>`${location.origin}${location.pathname.replace(/[^/]*$/,'')}presupuesto.html?id=${pub}`;
 function peDesdePl(pl){
   return {pl:pl.id,plNombre:pl.nombre,marca:pl.marca,formato:pl.formato,menuTipo:pl.menuTipo||'',propina:pl.propina||0,precio:pl.precio||{modo:'dos'},nota:pl.nota||'',menores:!!pl.menores,
     bloques:JSON.parse(JSON.stringify(pl.bloques||[])),cliente:'',tel:'',fecha:'',hora:'',invitados:'',sector:pl.marca==='villa'?'Villa Aluminé':pl.marca==='mara'?'Mara':'Salón Falucho',precioEf:'',precioOtros:'',estado:'borrador',hist:[]};
@@ -1661,7 +1661,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-27l';
+const APP_V='2026-11-27m';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
