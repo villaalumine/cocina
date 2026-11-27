@@ -615,14 +615,14 @@ async function cartaPDFVilla(C,JS){
   const pdf=new JS({unit:'mm',format:'a4'});await fuentesPDF(pdf);
   const W=210,H=297,M=15,G=12,CW=(W-2*M-G)/2,NAR=[240,74,30],INK=[27,27,27],pr=it=>{const f=v=>'$ '+num(v);return num(it.precio)||num(it.precio2)?(num(it.precio)?f(it.precio):'-')+(num(it.precio2)?' / '+f(it.precio2):''):''};
   const fondo=()=>{pdf.setFillColor(237,234,229);pdf.rect(0,0,W,H,'F')};
-  const cab=()=>{fondo();pdf.setTextColor(...NAR);pdf.setFont('serif','normal');pdf.setFontSize(46);pdf.text('Villa Aluminé',W/2,30,{align:'center'});
-    pdf.setFont('script','normal');pdf.setFontSize(38);pdf.text(C.nombre,W/2+6,41,{align:'center'});
-    let y=47;if(C.sub){pdf.setTextColor(...INK);pdf.setFont('conds','normal');pdf.setFontSize(10.5);const t=C.sub.toUpperCase(),cs=1.1,w=pdf.getTextWidth(t)+cs*(t.length-1);pdf.text(t,(W-w)/2,y+5,{charSpace:cs});y+=9}
+  const cab=()=>{fondo();pdf.setTextColor(...NAR);pdf.setFont('serif','normal');pdf.setFontSize(54);pdf.text('Villa Aluminé',W/2,31,{align:'center'});
+    pdf.setFont('script','normal');pdf.setFontSize(50);pdf.text(C.nombre,W/2+8,44,{align:'center'});
+    let y=50;if(C.sub){pdf.setTextColor(...INK);pdf.setFont('conds','normal');pdf.setFontSize(10.5);const t=C.sub.toUpperCase(),cs=1.1,w=pdf.getTextWidth(t)+cs*(t.length-1);pdf.text(t,(W-w)/2,y+5,{charSpace:cs});y+=9}
     pdf.setDrawColor(...INK);pdf.setLineWidth(1.1);pdf.line(M,y+3,W-M,y+3);pdf.setLineWidth(.35);pdf.line(M,y+4.6,W-M,y+4.6);return y+14};
   let top=cab(),col=0,y=top;const fin=H-14,X=()=>M+col*(CW+G);
   const salto=need=>{if(y+need<=fin)return;if(col===0){col=1;y=top}else{pdf.addPage();top=cab();col=0;y=top}};
   const medir=it=>{pdf.setFont('conds','normal');pdf.setFontSize(10.5);const p=pr(it),pw=p?pdf.getTextWidth(p):0;pdf.setFont('condm','normal');const n=pdf.splitTextToSize(it.nombre.toUpperCase(),CW-pw-5);pdf.setFont('cond','normal');pdf.setFontSize(10);const d=it.desc?pdf.splitTextToSize(it.desc,CW-3):[];return {n,d,p,h:n.length*4.6+d.length*4.1+2.6}};
-  for(const sec of C.secciones){if(!sec.items.length)continue;const m0=medir(sec.items[0]);salto(13+m0.h);
+  for(const sec of C.secciones){if(!sec.items.length)continue;const tot=13+sec.items.reduce((a,it)=>a+medir(it).h,0);salto(tot<=fin-top?tot:13+medir(sec.items[0]).h);
     pdf.setTextColor(...INK);pdf.setFont('cond','normal');pdf.setFontSize(19);const st=sec.nombre.toUpperCase();pdf.text(st,X(),y);
     if(sec.nota){const tw=pdf.getTextWidth(st);pdf.setFont('condi','normal');pdf.setFontSize(10);pdf.text(sec.nota,X()+tw+2.5,y)}
     y+=7;
@@ -1503,7 +1503,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-27d';
+const APP_V='2026-11-27e';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
