@@ -67,7 +67,6 @@ async function armar(p, logos, K) {
   else await logo(logos.mara, W / 2, 84, 9.5, 7.5);
   // Nombre del presupuesto (ej: una empresa)
   let dy = 0;
-  if (String(p.titulo || '').trim()) { pdf.setFont('tit', 'normal'); pdf.setFontSize(17); pdf.setTextColor(...INK); pdf.text(String(p.titulo).trim().toUpperCase(), W / 2, 27, { align: 'center', charSpace: 0.4 }); dy = 11; }
   // Caja del cliente
   pdf.setFillColor(...CAJA); pdf.setDrawColor(...INK); pdf.setLineWidth(0.28); pdf.rect(M - 3.7, 19 + dy, CW + 7.4 - 0.6, 24, 'FD');
   pdf.setFont('tit', 'normal'); pdf.setFontSize(14); pdf.setTextColor(...INK);
@@ -132,7 +131,7 @@ export const PRESUP_CSS = `@font-face{font-family:PpT;font-weight:600;src:url(${
 export function presupHTML(p, logos = {}) {
   const h = p.marca === 'ambos' ? `<div class="pz-h amb">${logos.villa ? `<img src="${logos.villa}" alt="Villa Aluminé">` : ''}${logos.mara ? `<img src="${logos.mara}" alt="Mara Social Club">` : ''}</div>`
     : `<div class="pz-h">${(p.marca === 'villa' ? logos.villa : logos.mara) ? `<img src="${p.marca === 'villa' ? logos.villa : logos.mara}" alt="">` : `<b style="font:600 24px PpT">${p.marca === 'villa' ? 'Villa Aluminé' : 'MARA SOCIAL CLUB'}</b>`}</div>`;
-  let s = `<div class="pz">${h}${String(p.titulo || '').trim() ? `<div class="pz-t">${esc(String(p.titulo).trim())}</div>` : ''}<div class="pz-c">${lineasCliente(p).map(esc).join('<br>')}</div>`;
+  let s = `<div class="pz">${h}<div class="pz-c">${lineasCliente(p).map(esc).join('<br>')}</div>`;
   for (const b of p.bloques || []) {
     if (b.tipo === 'menu') { s += `<h4>${esc(b.titulo || 'EL MENÚ:')}</h4>` + (b.items || []).map(it => `${it.t ? `<h5>${esc(it.t)}</h5>` : ''}<p>${br(it.x)}</p>`).join(''); }
     else if (b.tipo === 'seccion') { s += `${b.titulo ? `<h5>${esc(b.titulo)}</h5>` : ''}` + (b.items || []).map(it => `${it.t ? `<h6>${esc(it.t)}</h6>` : ''}<p>${br(it.x)}</p>`).join(''); }
@@ -145,4 +144,4 @@ export function presupHTML(p, logos = {}) {
   <div class="pz-f"><span>Falucho N.º 32</span><span>Cabo Corrientes</span><span>Mar del Plata</span></div></div>`;
   return s;
 }
-export const nombrePDF = p => ('presupuesto-' + (p.titulo || p.cliente || 'cliente') + '-' + (p.fecha || '')).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.pdf';
+export const nombrePDF = p => ('presupuesto-' + (p.cliente || 'cliente') + '-' + (p.fecha || '')).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.pdf';
