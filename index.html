@@ -107,7 +107,9 @@ nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;backgroun
 .rv-card{background:var(--card);border:1px solid var(--line);border-left:6px solid #e6b85c;border-radius:14px;margin-bottom:10px;overflow:hidden}.rv-card.rv-full{border-left-color:#1f7a3a}.rv-card.rv-can{opacity:.55;border-left-color:#999}
 .rv-top{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:0;border-radius:0;background:none;padding:12px 14px;font-size:17px}.rv-top small{color:#6b7280;font-size:13.5px}.rv-h{font-variant-numeric:tabular-nums}.rv-nota{color:#8a5a00!important}
 .rv-pasos{display:flex;gap:6px;padding:0 14px 10px}.rv-paso{flex:1;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:left;padding:6px 10px;border-radius:12px;background:#fdf0d5;border:1px solid #e6b85c;color:#5b3c00;font-size:14px;font-weight:600;min-height:0}.rv-paso i{grid-row:span 2;font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#e6b85c;color:#fff;font-size:13px}.rv-paso small{font-weight:500;font-size:12px;opacity:.8}.rv-paso.ok{background:#e7f5ec;border-color:#9fd3b0;color:#1f5e33}.rv-paso.ok i{background:#1f7a3a}
-.rv-acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 14px 12px}.rv-acts>*{padding:7px 12px;font-size:14px;min-height:0}.rv-acts .rv-main{flex:1 1 100%;text-align:center;font-size:16px;font-weight:700;padding:11px 14px}.rv-del{background:none;border-color:transparent;color:#b42318;margin-left:auto}.rv-listo{color:#1f7a3a;font-weight:700;padding-left:2px!important}.rv-ok{background:#e7f5ec;color:#1f7a3a;border-color:#9fd3b0}.rv-no{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}
+.rv-acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 14px 12px}.rv-acts>*{padding:7px 12px;font-size:14px;min-height:0}.rv-acts .rv-main{flex:1 1 100%;text-align:center;font-size:16px;font-weight:700;padding:11px 14px}.rv-chs{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px}.rv-ch{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;min-height:0;border-radius:99px;font:600 13.5px Barlow,sans-serif;text-decoration:none;border:1px solid var(--line);background:var(--card);color:var(--ink)}.rv-ch.pe{background:#fdf0d5;border-color:#e6b85c;color:#7a4f00}.rv-ch.ok{background:#e7f5ec;border-color:#9fd3b0;color:#1f5e33}.rv-ch.wa{background:#1fa855;border-color:#1fa855;color:#fff}
+.rv-sh{display:grid;gap:8px;margin-top:12px}.rv-sh>*{width:100%;text-align:center}
+.rv-del{background:none;border-color:transparent;color:#b42318;margin-left:auto}.rv-listo{color:#1f7a3a;font-weight:700;padding-left:2px!important}.rv-ok{background:#e7f5ec;color:#1f7a3a;border-color:#9fd3b0}.rv-no{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}
 .rv-menu{font:600 12px Barlow,sans-serif;background:#efe7dd;color:#5b4636;border-radius:99px;padding:2px 8px;vertical-align:2px;white-space:nowrap}.rv-diet{color:#1f7a3a!important;font-weight:600}
 .rv-lbl{font-weight:600;margin:14px 0 6px}.rv-diets{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.rv-dt2{display:flex!important;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 8px 6px 12px;background:var(--card)}.rv-dt2.on{border-color:#1f7a3a;background:#e7f5ec}.rv-stp{display:flex;align-items:center;gap:8px}.rv-stp button{width:34px;height:34px;padding:0;min-height:0;font-size:20px;border-radius:50%}.rv-stp b{min-width:16px;text-align:center}
 .rv-cocina{background:#f6f1ea;border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:0 0 12px;font-size:14.5px;display:grid;gap:4px}
@@ -599,37 +601,27 @@ const rvCfg=()=>({...RV_CFG0,...Object.fromEntries(Object.entries(S.rvCfg||{}).f
 const rvDia=()=>S.rvDia||dayKey(Date.now());
 const rvMas=(f,n)=>{const [y,m,d]=f.split('-').map(Number);return dayKey(new Date(y,m-1,d+n).getTime())};
 const rvDiaTxt=f=>{const h=dayKey(Date.now());if(f===h)return 'Hoy';if(f===rvMas(h,1))return 'Mañana';const [y,m,d]=f.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'})};
+const rvHora=x=>{let h=String(x||'').trim().replace(/\s*h(s|rs)?\.?$/i,'');if(/^\d{3,4}$/.test(h))h=h.padStart(4,'0').replace(/(\d\d)$/,':$1');else if(/^\d{1,2}$/.test(h))h+=':00';return h};
 const rvFechaMsg=f=>{const [y,m,d]=f.split('-').map(Number),x=new Date(y,m-1,d),w=x.toLocaleDateString('es-AR',{weekday:'long'});return `${w[0].toUpperCase()+w.slice(1)} ${d} de ${x.toLocaleDateString('es-AR',{month:'long'})}`};
 const rvLista=(tipo,f)=>(S.res||[]).filter(r=>r.id!=='_cfg'&&r.tipo===tipo&&r.fecha===f);
 const rvActivas=L=>L.filter(r=>r.estado!=='cancelada');
 const rvPend=r=>r.estado!=='cancelada'&&((r.tipo==='resto'&&num(r.sena)>0&&!r.senaOk)||(r.tipo==='vip'&&!r.pagoOk)||!r.conf);
 function rvMsg(r,k){const c=rvCfg();let t=k==='sena'?c.msgSena:r.tipo==='vip'?c.msgVip:c.msgConf;
-  const v={nombre:(r.nombre||'').split(' ')[0],fecha:rvFechaMsg(r.fecha),hora:r.hora?(()=>{let h=String(r.hora).trim().replace(/\s*h(s|rs)?\.?$/i,'');if(/^\d{3,4}$/.test(h))h=h.padStart(4,'0').replace(/(\d\d)$/,':$1');else if(/^\d{1,2}$/.test(h))h+=':00';return h+' hs'})():'',personas:r.personas||'',seña:num(r.sena)?money(r.sena):'',sena:num(r.sena)?money(r.sena):'',consumo:num(r.consumo)?money(r.consumo):'',precio:num(r.precio)?money(r.precio):'',datos:c.sena||''};
+  const v={nombre:(r.nombre||'').split(' ')[0],fecha:rvFechaMsg(r.fecha),hora:r.hora?rvHora(r.hora)+' hs':'',personas:r.personas||'',seña:num(r.sena)?money(r.sena):'',sena:num(r.sena)?money(r.sena):'',consumo:num(r.consumo)?money(r.consumo):'',precio:num(r.precio)?money(r.precio):'',datos:c.sena||''};
   return t.replace(/\{(\w+|seña)\}/g,(m,x)=>v[x]??m).replace(/ a las  para/,' para').replace(/\n\n\n+/g,'\n\n').trim()}
 const rvWA=(r,k)=>'https://wa.me/'+telWA(r.tel)+'?text='+encodeURIComponent(rvMsg(r,k));
 function rvCard(r){
   const can=r.estado==='cancelada',vip=r.tipo==='vip',tel=telWA(r.tel);
   let acts='';
   if(!can){
-    const conSena=vip||num(r.sena)>0,kP=vip?'pagoOk':'senaOk',okP=!!r[kP],nP=vip?'Pago de la mesa':`Seña ${num(r.sena)?money(r.sena):''}`;
-    const paso=(n,t,ok,k)=>`<button class="rv-paso ${ok?'ok':''}" data-act="rvTog" data-id="${r.id}" data-k="${k}" title="Tocá para cambiar"><i>${ok?'✓':n}</i>${t}<small>${ok?(k==='conf'?'Confirmada':vip?'Pagada':'Recibida'):'Pendiente'}</small></button>`;
-    const pasos=`<div class="rv-pasos">${conSena?paso(1,nP,okP,kP):''}${paso(conSena?2:1,'Reconfirmación',!!r.conf,'conf')}</div>`;
-    const wa=(k,t,cls)=>tel?`<a class="btn wa ${cls||''}" href="${esc(rvWA(r,k))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="${k==='sena'?'senaPedida':'confPedida'}">${t}</a>`:'';
-    const sub=`<label class="btn rv-up">📎 Subir comprobante<input type="file" accept="image/*,application/pdf" data-rvcomp="${r.id}" hidden></label>`;
-    let main='',sec=[];
-    if(conSena&&!okP){
-      if(!vip&&!r.senaPedida&&tel){main=wa('sena','💬 Pedir seña por WhatsApp','rv-main');sec=[sub]}
-      else{main=sub.replace('class="btn rv-up"','class="btn rv-up rv-main"');sec=[!vip?wa('sena','Reenviar pedido de seña'):'',`<button data-act="rvTog" data-id="${r.id}" data-k="${kP}">✓ ${vip?'Pagó':'Recibí la seña'} sin comprobante</button>`]}
-    }else if(!r.conf){
-      if(!r.confPedida&&tel){main=wa('conf','💬 Reconfirmar vía WhatsApp','rv-main');sec=[`<button data-act="rvTog" data-id="${r.id}" data-k="conf">✓ Ya confirmó</button>`]}
-      else{main=`<button class="pri rv-main" data-act="rvTog" data-id="${r.id}" data-k="conf">✓ El cliente confirmó</button>`;sec=[wa('conf','💬 Reconfirmar vía WhatsApp')]}
-    }else main='<span class="rv-listo">✓ Todo listo</span>';
-    if(r.comp)sec.push(`<button data-act="rvVer" data-id="${r.id}">🧾 Ver comprobante</button>`);
-    if(!tel&&!(conSena&&okP&&r.conf))sec.push('<span class="meta">Cargá el teléfono para mandar WhatsApp</span>');
-    sec.push(`<button class="rv-del" data-act="rvElim" data-id="${r.id}">🗑️ Se bajó · eliminar</button>`);
-    acts=`${pasos}<div class="rv-acts">${main}${sec.filter(Boolean).join('')}</div>`;
+    const conSena=vip||num(r.sena)>0,kP=vip?'pagoOk':'senaOk',okP=!!r[kP];
+    const ch=[];
+    if(conSena)ch.push(`<button class="rv-ch ${okP?'ok':'pe'}" data-act="rvSena" data-id="${r.id}">${okP?'✓':'💰'} ${vip?(okP?'Pagada':'Pago')+(num(r.precio)?' '+money(r.precio):''):'Seña '+money(r.sena)}</button>`);
+    if(!r.conf&&tel)ch.push(`<a class="rv-ch wa" href="${esc(rvWA(r,'conf'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="confPedida">💬 Reconfirmar</a>`);
+    ch.push(`<button class="rv-ch ${r.conf?'ok':'pe'}" data-act="rvTog" data-id="${r.id}" data-k="conf">${r.conf?'✓ Confirmó':'Sin confirmar'}</button>`);
+    acts=`<div class="rv-chs">${ch.join('')}</div>`;
   }
-  const info=[vip?'':r.hora?`<b class="rv-h">${esc(r.hora)}</b>`:'',`<b>${esc(r.nombre||'(sin nombre)')}</b>`,`${esc(r.personas||'?')} pers.`].filter(Boolean).join(' · ')+(!vip&&r.menu?` <span class="rv-menu">${esc(rvMenuTxt(r.menu))}</span>`:'');
+  const info=[vip?'':r.hora?`<b class="rv-h">${esc(rvHora(r.hora))}</b>`:'',`<b>${esc(r.nombre||'(sin nombre)')}</b>`,`${esc(r.personas||'?')} pers.`].filter(Boolean).join(' · ')+(!vip&&r.menu?` <span class="rv-menu">${esc(rvMenuTxt(r.menu))}</span>`:'');
   const diet=rvDietTxt(r);
   const sub=[r.tel?`📞 ${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.comp?`comprobante subido por ${esc(nameOf(r.comp.por))} ${fecha(r.comp.t)} ${hora(r.comp.t)}`:''].filter(Boolean).join(' · ');
   return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}"><span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${diet?`<small class="rv-diet">${diet}</small>`:''}${r.nota?`<small class="rv-nota">📝 ${esc(r.nota)}</small>`:''}</button>${acts}</div>`;
@@ -646,7 +638,7 @@ function rvForm(){
   ${vip&&num(d.precio)?`<p class="meta" style="margin:6px 0 0">Ganancia de la mesa: <b>${money(num(d.precio)-num(d.consumo))}</b></p>`:''}
   <label style="display:block;margin-top:8px">Nota (opcional)<textarea data-rv="nota" rows="2" placeholder="Ej: cumpleaños, silla de bebé, mesa afuera…">${esc(d.nota||'')}</textarea></label>
   <div class="row" style="margin-top:12px;flex-wrap:wrap"><button class="pri" data-act="rvGuardar">Guardar</button><button data-act="rvCerrar">Cancelar</button>
-  ${S.rvId?`<span style="margin-left:auto;display:flex;gap:8px">${d.estado==='cancelada'?'<button data-act="rvReactivar">Reactivar</button>':'<button data-act="rvCancelar" style="color:#b42318">Cliente canceló</button>'}<button data-act="rvBorrar" style="color:#b42318">Borrar</button></span>`:''}</div></div>`;
+  ${S.rvId?`<span style="margin-left:auto;display:flex;gap:8px">${d.estado==='cancelada'?'<button data-act="rvReactivar">Reactivar</button>':'<button data-act="rvCancelar" style="color:#b42318">Cliente canceló</button>'}<button data-act="rvBorrar" style="color:#b42318">🗑️ Se bajó · eliminar</button></span>`:''}</div></div>`;
 }
 function vReservas(){
   ensureRes();
@@ -725,10 +717,15 @@ async function rvAccion(a,b,id){
       if(S.rvId){await updateDoc(doc(db,'reservas',S.rvId),o)}else{o.creado=Date.now();o.por=S.uid;o.estado='activa';await addDoc(collection(db,'reservas'),o)}
       S.rvDia=d.fecha;S.rvTipo=d.tipo;S.rvD=null;S.rvId=null;toast('Reserva guardada.');render(true);return}
     if(a==='rvCancelar'||a==='rvReactivar'){await updateDoc(doc(db,'reservas',S.rvId),{estado:a==='rvCancelar'?'cancelada':'activa',editado:Date.now(),editadoPor:S.uid});S.rvD=null;S.rvId=null;toast(a==='rvCancelar'?'Marcada como cancelada.':'Reserva reactivada.');render(true);return}
-    if(a==='rvBorrar'){if(!confirm('¿Borrar esta reserva? Si el cliente canceló, mejor usá «Cliente canceló».'))return;await deleteDoc(doc(db,'reservas',S.rvId));deleteDoc(doc(db,'reservas','c_'+S.rvId)).catch(()=>{});S.rvD=null;S.rvId=null;toast('Reserva borrada.');render(true);return}
+    if(a==='rvBorrar'){if(!confirm('¿Eliminar esta reserva? Se borra para todos.'))return;await deleteDoc(doc(db,'reservas',S.rvId));deleteDoc(doc(db,'reservas','c_'+S.rvId)).catch(()=>{});S.rvD=null;S.rvId=null;toast('Reserva borrada.');render(true);return}
     if(a==='rvTog'){const r=S.res.find(x=>x.id===id),k=b.dataset.k;await updateDoc(doc(db,'reservas',id),{[k]:!r[k],[k+'T']:Date.now(),[k+'Por']:S.uid});return}
     if(a==='rvMsg'){updateDoc(doc(db,'reservas',id),{[b.dataset.k]:Date.now()}).catch(()=>{});return}
     if(a==='rvVer'){rvVer(id);return}
+    if(a==='rvSena'){const r=S.res.find(x=>x.id===id),vip=r.tipo==='vip',k=vip?'pagoOk':'senaOk',ok=!!r[k],tel=telWA(r.tel);
+      const opc=ok?[r.comp?`<button class="pri" data-act="rvVer" data-id="${id}">🧾 Ver comprobante</button>`:'',`<label class="btn">📎 ${r.comp?'Cambiar':'Subir'} comprobante<input type="file" accept="image/*,application/pdf" data-rvcomp="${id}" hidden></label>`,`<button data-act="rvTogC" data-id="${id}" data-k="${k}">Marcar como no ${vip?'pagada':'recibida'}</button>`]
+        :[!vip&&tel?`<a class="btn wa" href="${esc(rvWA(r,'sena'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${id}" data-k="senaPedida">💬 Pedir seña por WhatsApp</a>`:'',`<label class="btn pri">📎 Subir comprobante<input type="file" accept="image/*,application/pdf" data-rvcomp="${id}" hidden></label>`,`<button data-act="rvTogC" data-id="${id}" data-k="${k}">✓ ${vip?'Pagó':'Recibí la seña'} sin comprobante</button>`];
+      $('#sheet').innerHTML=`<div class="sheet" data-act="closeSheet"><div><h3>${vip?'Pago de la mesa':'Seña'} · ${esc(r.nombre)}</h3><p class="meta">${vip?money(r.precio||0):money(r.sena)} · ${ok?(vip?'Pagada':'Recibida')+' ✓':'Pendiente'}${r.senaPedida&&!ok?' · ya se le pidió':''}</p><div class="rv-sh">${opc.filter(Boolean).join('')}<button data-act="closeSheet">Cerrar</button></div></div></div>`;return}
+    if(a==='rvTogC'){$('#sheet').innerHTML='';const r=S.res.find(x=>x.id===id),k=b.dataset.k;await updateDoc(doc(db,'reservas',id),{[k]:!r[k],[k+'T']:Date.now(),[k+'Por']:S.uid});return}
     if(a==='rvElim'){const r=S.res.find(x=>x.id===id);$('#sheet').innerHTML=`<div class="sheet" data-act="closeSheet"><div><h3>¿Eliminar la reserva de ${esc(r?.nombre||'')}?</h3><p class="meta">${esc(rvDiaTxt(r.fecha))}${r.hora?' · '+esc(r.hora):''} · ${esc(r.personas||'')} personas. Se borra para todos y no se puede recuperar.</p><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="rvElimOk" data-id="${id}">Sí, eliminar</button><button style="flex:1" data-act="closeSheet">No</button></div></div></div>`;return}
     if(a==='rvElimOk'){$('#sheet').innerHTML='';await deleteDoc(doc(db,'reservas',id));deleteDoc(doc(db,'reservas','c_'+id)).catch(()=>{});toast('Reserva eliminada.');return}
     if(a==='rvComps'){S.rvComps=true;S.rvD=null;location.hash='reservas';render(true);scrollTo(0,0);return}
@@ -1682,7 +1679,7 @@ document.addEventListener('click',e=>{
   if(a==='recBorrarOk'){$('#sheet').innerHTML='';const rid0=S.recOpen;S.recOpen=null;S.recEdit=false;S.recDraft=null;deleteDoc(doc(db,'recetas',rid0)).then(()=>toast('Receta borrada.')).catch(e=>{S.note=errMsg(e)});render(true);return}
   if(a==='irA'){const f=b.dataset.f||'';if(f.startsWith('est:')){S.fEstado=f.slice(4);S.fProv='';S.fDia='';S.pVer=true;S.pOpen=null}if(f.startsWith('mant:'))S.fMant=f.slice(5);if(f.startsWith('pe:')){S.peF=f.slice(3);S.peElegir=false}location.hash=id;return}
   if(/^(pe|pl)[A-Z]/.test(a)){peAccion(a,b,id);return}
-  if(/^rv[A-Z]/.test(a)){if(a==='rvMsg'){e.preventDefault();const u=b.getAttribute('href');let w=null;try{w=window.open(u,'_blank')}catch(x){}if(!w)location.href=u;setTimeout(()=>rvAccion(a,b,id),400);return}e.preventDefault?.();rvAccion(a,b,id);return}
+  if(/^rv[A-Z]/.test(a)){if(a==='rvMsg'){e.preventDefault();const u=b.getAttribute('href');let w=null;try{w=window.open(u,'_blank')}catch(x){}if(!w)location.href=u;setTimeout(()=>{if(b.closest('#sheet'))$('#sheet').innerHTML='';rvAccion(a,b,id)},400);return}e.preventDefault?.();rvAccion(a,b,id);return}
   if(a==='calM'){S.calM=id;render(true);return}
   if(a==='calPerd'){S.calPerd=!S.calPerd;render(true);return}
   if(a==='cartaEd'){S.cartaEd=!S.cartaEd;S.cItem=null;render(true);return}
@@ -1791,7 +1788,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',e=>{
   const t=e.target;
-  if(t.matches('input[data-rvcomp]')&&t.files?.[0]){rvComprobante(t.files[0],t.dataset.rvcomp);t.value='';return}
+  if(t.matches('input[data-rvcomp]')&&t.files?.[0]){$('#sheet').innerHTML='';rvComprobante(t.files[0],t.dataset.rvcomp);t.value='';return}
   if(t.matches('[data-rvdia]')&&t.value){S.rvDia=t.value;render(true);return}
   if(t.dataset?.rv==='precio'||t.dataset?.rv==='consumo'){render(true);return}
   if(t.matches('input[data-recfoto]')&&t.files?.[0]&&S.recDraft){fotoReceta(t.files[0]);t.value='';return}
@@ -1848,7 +1845,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28f';
+const APP_V='2026-11-28g';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
