@@ -112,6 +112,7 @@ nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;backgroun
 .rv-del{background:none;border-color:transparent;color:#b42318;margin-left:auto}.rv-listo{color:#1f7a3a;font-weight:700;padding-left:2px!important}.rv-ok{background:#e7f5ec;color:#1f7a3a;border-color:#9fd3b0}.rv-no{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}
 .rv-menu{font:600 12px Barlow,sans-serif;background:#efe7dd;color:#5b4636;border-radius:99px;padding:2px 8px;vertical-align:2px;white-space:nowrap}.rv-diet{color:#1f7a3a!important;font-weight:600}
 .rv-lbl{font-weight:600;margin:14px 0 6px}.rv-diets{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.rv-dt2{display:flex!important;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 8px 6px 12px;background:var(--card)}.rv-dt2.on{border-color:#1f7a3a;background:#e7f5ec;color:#1f5e33}.rv-dt2.on button{color:#1f5e33}.rv-stp{display:flex;align-items:center;gap:8px}.rv-stp button{width:34px;height:34px;padding:0;min-height:0;font-size:20px;border-radius:50%}.rv-stp b{min-width:16px;text-align:center}
+.rv-cocina h4{margin:2px 0 4px;font:700 18px "Barlow Condensed",sans-serif}.rv-cocina h4 small{font:400 13px Barlow,sans-serif;opacity:.7}.rs-g{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}.rs-f{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0}.rs-f b{font-size:16px}.rs-0{opacity:.5}.rs-d{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
 .rv-cocina{background:var(--card);color:var(--ink);border:1px solid var(--line);border-left:6px solid #a17a57;border-radius:12px;padding:8px 12px;margin:0 0 12px;font-size:14.5px;display:grid;gap:4px}
 .rv-up{background:#eef2ff;color:#3730a3;border-color:#c7d2fe;cursor:pointer}.rv-add{width:100%;margin:6px 0 18px;border-style:dashed}.rv-form label{display:block}
 .accesos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 22px}.acc2{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:16px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:96px}.acc2 .ai{font-size:28px;line-height:1}.acc2 b{font:700 22px "Barlow Condensed",sans-serif;margin-top:6px}.acc2 small{color:#1f7a3a;font-weight:600;font-size:13px}
@@ -665,14 +666,15 @@ function vReservas(){
   const L=rvLista(T,dia).sort((a,b)=>(a.estado==='cancelada')-(b.estado==='cancelada')||(a.hora||'').localeCompare(b.hora||'')||(a.creado||0)-(b.creado||0)),A=rvActivas(L);
   const pers=A.reduce((s,r)=>s+num(r.personas),0),pend=A.filter(rvPend).length;
   const tot=T==='vip'?A.reduce((s,r)=>s+num(r.precio),0):0,gan=T==='vip'?A.reduce((s,r)=>s+num(r.precio)-num(r.consumo),0):0;
-  const menus=T==='vip'?'':RV_MENUS.map(([k,t])=>{const n=A.filter(r=>r.menu===k).reduce((s,r)=>s+num(r.personas),0);return n?`${t}: <b>${n}</b>`:''}).filter(Boolean).join(' · ');
-  const diets=RV_DIET.map(([k,i,t])=>{const n=A.reduce((s,r)=>s+num(r[k]),0);return n?`${i} ${t}: <b>${n}</b>`:''}).filter(Boolean).join(' · ');
+  const sinM=A.filter(r=>!r.menu).reduce((s,r)=>s+num(r.personas),0);
+  const menus=T==='vip'||!A.length?'':RV_MENUS.map(([k,t])=>{const n=A.filter(r=>r.menu===k).reduce((s,r)=>s+num(r.personas),0);return `<div class="rs-f${n?'':' rs-0'}"><span>${t}</span><b>${n}</b></div>`}).join('')+(sinM?`<div class="rs-f rs-0"><span>Sin elegir</span><b>${sinM}</b></div>`:'');
+  const diets=RV_DIET.map(([k,i,t])=>{const n=A.reduce((s,r)=>s+num(r[k]),0);return n?`<span>${i} ${t}: <b>${n}</b></span>`:''}).filter(Boolean).join('');
   const prox=[...Array(7)].map((_,i)=>rvMas(hoy,i)).map(f=>[f,rvActivas(rvLista(T,f))]);
   return head+`<input type="search" placeholder="Buscar por nombre o teléfono…" value="" data-rvbus style="margin:10px 0">
   <div class="rv-dia"><button data-act="rvDia" data-id="${rvMas(dia,-1)}">‹</button><label class="rv-dt"><b>${esc(rvDiaTxt(dia))}</b><input type="date" data-rvdia value="${dia}"></label><button data-act="rvDia" data-id="${rvMas(dia,1)}">›</button></div>
   <div class="rv-sem">${prox.map(([f,l])=>{const [y,m,d]=f.split('-').map(Number);return `<button class="${f===dia?'on':''}" data-act="rvDia" data-id="${f}"><small>${new Date(y,m-1,d).toLocaleDateString('es-AR',{weekday:'short'})}</small><b>${d}</b><small>${l.length?l.length+(T==='vip'?' m':' r'):'–'}</small></button>`}).join('')}</div>
   <div class="rv-res"><span><b>${A.length}</b> ${T==='vip'?'mesa'+(A.length===1?'':'s'):'reserva'+(A.length===1?'':'s')}</span><span><b>${pers}</b> personas</span>${pend?`<span class="rv-pend"><b>${pend}</b> por confirmar</span>`:A.length?'<span class="rv-allok">Todo confirmado ✓</span>':''}${T==='vip'&&tot&&canResCfg()?`<span>Mesas <b>${money(tot)}</b> · ganancia <b>${money(gan)}</b></span>`:''}</div>
-  ${menus||diets?`<div class="rv-cocina">${menus?`<div>🍽️ ${menus} <small>(personas)</small></div>`:''}${diets?`<div>${diets}</div>`:''}</div>`:''}
+  ${menus||diets?`<div class="rv-cocina"><h4>Resumen de reservas <small>(personas)</small></h4>${menus?`<div class="rs-g">${menus}</div>`:''}${diets?`<div class="rs-d">${diets}</div>`:''}</div>`:''}
   ${L.length?L.map(rvCard).join(''):`<p class="empty">No hay ${T==='vip'?'mesas vendidas':'reservas'} para este día.</p>`}
   ${dia<hoy?'':`<button class="rv-add" data-act="rvNueva">+ Agregar ${T==='vip'?'mesa':'reserva'} para ${esc(rvDiaTxt(dia).toLowerCase())}</button>`}`;
 }
@@ -1853,7 +1855,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28m';
+const APP_V='2026-11-28n';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
