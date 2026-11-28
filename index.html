@@ -100,6 +100,14 @@ body[data-sec=villa] .chatbtn{background:#f93604}body[data-sec=mara] .chatbtn{ba
 nav.tabs{padding:8px 6px calc(8px + env(safe-area-inset-bottom));gap:4px}
 nav.tabs a{font-size:18px;min-height:56px;display:flex;align-items:center;justify-content:center;padding:8px 2px;color:var(--ink);opacity:.72}
 nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;background:#25a244;color:#fff;font:700 11px system-ui;border-radius:9px;min-width:18px;height:18px;line-height:18px;padding:0 4px}
+.rv-tabs{margin:4px 0 6px}.rv-tabs .chip{font-size:17px;padding:10px 18px}
+.rv-dia{display:flex;align-items:center;gap:8px;margin:4px 0 10px}.rv-dia>button{font-size:22px;padding:4px 16px}.rv-dt{flex:1;text-align:center;position:relative;cursor:pointer}.rv-dt b{font:700 24px "Barlow Condensed",sans-serif;text-transform:capitalize}.rv-dt input{position:absolute;inset:0;opacity:0;cursor:pointer;min-height:0}
+.rv-sem{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:12px}.rv-sem button{display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:12px;gap:0;line-height:1.15}.rv-sem button b{font-size:18px}.rv-sem button small{font-size:11px;color:#6b7280}.rv-sem button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}.rv-sem button.on small{color:inherit;opacity:.8}
+.rv-res{display:flex;flex-wrap:wrap;gap:8px 16px;margin:0 0 12px;font-size:15px}.rv-pend{color:#8a5a00}.rv-allok{color:#1f7a3a;font-weight:600}
+.rv-card{background:var(--card);border:1px solid var(--line);border-left:6px solid #e6b85c;border-radius:14px;margin-bottom:10px;overflow:hidden}.rv-card.rv-full{border-left-color:#1f7a3a}.rv-card.rv-can{opacity:.55;border-left-color:#999}
+.rv-top{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:0;border-radius:0;background:none;padding:12px 14px;font-size:17px}.rv-top small{color:#6b7280;font-size:13.5px}.rv-h{font-variant-numeric:tabular-nums}.rv-nota{color:#8a5a00!important}
+.rv-acts{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px}.rv-acts>*{padding:7px 12px;font-size:14px;min-height:0}.rv-ok{background:#e7f5ec;color:#1f7a3a;border-color:#9fd3b0}.rv-no{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}
+.rv-add{width:100%;margin:6px 0 18px;border-style:dashed}.rv-form label{display:block}
 .accesos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 22px}.acc2{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:16px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:96px}.acc2 .ai{font-size:28px;line-height:1}.acc2 b{font:700 22px "Barlow Condensed",sans-serif;margin-top:6px}.acc2 small{color:#1f7a3a;font-weight:600;font-size:13px}
 body[data-sec=villa] .acc2{border-left:6px solid #f93604}body[data-sec=mara] .acc2{border-left:6px solid #a17a57}body[data-sec=todos] .acc2{border-left:6px solid #24303f}
 @media(max-width:480px){.accesos{grid-template-columns:1fr 1fr}}
@@ -193,7 +201,7 @@ const sopLink=()=>'https://wa.me/'+SOPORTE+'?text='+encodeURIComponent(`Hola Mat
 const UNIDADES=['kg','u','caja','bolsa','cajón','bulto'];
 const uTxt=u=>u==='u'?'unidad':u;
 const unidadesDe=loc=>loc==='mara'?['u','caja']:UNIDADES;
-const ROLES=['Gerente','Encargado/a','Administración','Mantenimiento','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
+const ROLES=['Gerente','Encargado/a','Administración','Recepción','Mantenimiento','Jefe/a de cocina','Jefe/a de pedidos','Cocinero/a','Bartender'];
 const NIVEL={'Gerente':2,'Encargado/a':2,'Administración':2,'Jefe/a de cocina':3,'Jefe/a de pedidos':3,'Jefe/a de barra':3};
 const lvl=()=>S.owner?1:(NIVEL[me()?.rol]||4);
 const myLocs=()=>S.owner||!me()?.local||me().local==='todos'?locales().map(l=>l.id):[me().local];
@@ -280,9 +288,11 @@ const faltantes=p=>p.recepcion?p.items.map((i,k)=>({i,x:p.recepcion.items?.[k]})
 function accesos(nPend){
   const L=lvl(),ns=solsPend(listLoc()).length,room=workLocal(),nc=(S.chat[room]||[]).filter(m=>m.uid!==S.uid&&m.t>lastRead(room)).length;
   ensureMant();const nm=mantDe(listLoc()).filter(x=>x.estado!=='hecho').length,nmat=mantDe(listLoc()).filter(x=>matAct(x)?.estado==='pedido'||(matAct(x)&&canComprar())).length,MB=['mant','🔧','Mantenimiento',[nm?`${nm} por hacer`:'',nmat&&canComprar()?`🛒 ${nmat} materiales`:''].filter(Boolean).join(' · ')];
+  const RB=['reservas','📖','Reservas',(()=>{if(!canRes())return '';ensureRes();const h=dayKey(Date.now()),n=(S.res||[]).filter(r=>r.fecha===h&&r.estado!=='cancelada');return n.length?`Hoy: ${n.length} · ${n.reduce((s,r)=>s+num(r.personas),0)} pers.`:''})()];
+  if(esRecep())return `<div class="accesos">${[RB].map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
   if(esMant())return `<div class="accesos">${[MB].map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
   const nav=L<=2?avisosData().reduce((a,g)=>a+g.rows.reduce((b,r)=>b+(r[4]?0:r[1]),0),0):0;
-  const B=[[soloVer()?'pedidos':'ped','📦','Pedidos',nPend?`${nPend} por recibir`:''],L<=2?['avisos','🔔','Solicitudes',nav?`${nav} pendiente${nav>1?'s':''}`:'Todo al día']:['solicitudes','📥','Solicitudes',ns?`${ns} pendiente${ns>1?'s':''}`:''],
+  const B=[...(canRes()?[RB]:[]),[soloVer()?'pedidos':'ped','📦','Pedidos',nPend?`${nPend} por recibir`:''],L<=2?['avisos','🔔','Solicitudes',nav?`${nav} pendiente${nav>1?'s':''}`:'Todo al día']:['solicitudes','📥','Solicitudes',ns?`${ns} pendiente${ns>1?'s':''}`:''],
     ...(esAdm()?[['admin','🏢','Administración','']]:L<=3?[['stock','📊','Stock',''],['catalogo','📒','Catálogo','']]:[]),...(canMant()?[MB]:[]),...(S.owner?[['equipo','👥','Equipo','']]:[])];
   return `<div class="accesos">${B.map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small>${n}</small>`:''}</a>`).join('')}</div>`;
 }
@@ -559,6 +569,108 @@ function vAvisos(){
   return `${locChips('fLoc',1)}<div class="head"><div><h2>🔔 Solicitudes</h2><p class="sub">Todo lo que está esperando que alguien haga algo, separado por área. Tocá una línea para ir.</p></div></div>
   ${G.map(g=>{const tot=g.rows.reduce((a,r)=>a+(r[4]?0:r[1]),0),info=g.rows.some(r=>r[4]&&r[1]);return `<div class="panel" style="margin-bottom:12px"><h3 style="margin:0 0 6px;display:flex;justify-content:space-between">${g.t}<span class="badge ${tot?'b-pendiente':info?'':'b-recibido'}">${tot?tot+' pendiente'+(tot>1?'s':''):info?'Para completar':'Al día ✓'}</span></h3>
     ${g.rows.filter(r=>r[1]).map(([t,n,v,f])=>`<button class="crow" data-act="irA" data-id="${v}" data-f="${f}"><span><b>${t}</b></span><span class="cpre">${n} ›</span></button>`).join('')||'<p class="meta" style="margin:4px 0 0">Nada pendiente.</p>'}</div>`}).join('')}`;
+}
+// ======== RESERVAS (Mara de noche) ========
+const RES_ROLES=['Administración','Gerente','Encargado/a','Recepción'];
+const canRes=()=>S.owner||RES_ROLES.includes(me()?.rol);
+const esRecep=()=>!S.owner&&me()?.rol==='Recepción';
+const canResCfg=()=>S.owner||me()?.rol==='Administración';
+const RV_TIPOS={resto:['🍽️','Restaurante'],vip:['🍾','Mesas boliche']};
+const RV_CFG0={sena:'',msgSena:'Hola {nombre}! Te escribimos de Mara Social Club por tu reserva del {fecha} a las {hora} para {personas} personas. Para dejarla confirmada te pedimos una seña de {seña}.\n{datos}\nCuando la hagas mandanos el comprobante por acá. ¡Gracias!',
+  msgConf:'Hola {nombre}! Te escribimos de Mara Social Club para reconfirmar tu reserva del {fecha} a las {hora} para {personas} personas. ¿Nos confirmás que vienen? ¡Te esperamos!',
+  msgVip:'Hola {nombre}! Te escribimos de Mara Social Club para reconfirmar tu mesa del {fecha} para {personas} personas, con {consumo} de consumo. ¿Nos confirmás que vienen? ¡Te esperamos!'};
+let rvSub=null;
+function ensureRes(){
+  if(rvSub||!canRes())return;
+  const desde=dayKey(Date.now()-45*864e5);
+  rvSub=onSnapshot(query(collection(db,'reservas'),where('fecha','>=',desde)),q=>{S.res=q.docs.map(d=>({id:d.id,...d.data()}));render()},e=>{console.warn('reservas',e);S.res=S.res||[];S.resErr=e.code;render()});
+  getDoc(doc(db,'reservas','_cfg')).then(d=>{S.rvCfg=d.exists()?d.data():{}}).catch(()=>{S.rvCfg={}});
+  S.subs.push(()=>{rvSub&&rvSub();rvSub=null});
+}
+const rvCfg=()=>({...RV_CFG0,...Object.fromEntries(Object.entries(S.rvCfg||{}).filter(([k,v])=>v))});
+const rvDia=()=>S.rvDia||dayKey(Date.now());
+const rvMas=(f,n)=>{const [y,m,d]=f.split('-').map(Number);return dayKey(new Date(y,m-1,d+n).getTime())};
+const rvDiaTxt=f=>{const h=dayKey(Date.now());if(f===h)return 'Hoy';if(f===rvMas(h,1))return 'Mañana';const [y,m,d]=f.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'})};
+const rvFechaMsg=f=>{const [y,m,d]=f.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'})};
+const rvLista=(tipo,f)=>(S.res||[]).filter(r=>r.id!=='_cfg'&&r.tipo===tipo&&r.fecha===f);
+const rvActivas=L=>L.filter(r=>r.estado!=='cancelada');
+const rvPend=r=>r.estado!=='cancelada'&&((r.tipo==='resto'&&num(r.sena)>0&&!r.senaOk)||(r.tipo==='vip'&&!r.pagoOk)||!r.conf);
+function rvMsg(r,k){const c=rvCfg();let t=k==='sena'?c.msgSena:r.tipo==='vip'?c.msgVip:c.msgConf;
+  const v={nombre:(r.nombre||'').split(' ')[0],fecha:rvFechaMsg(r.fecha),hora:r.hora?r.hora+(/hs|h$/i.test(r.hora)?'':' hs'):'',personas:r.personas||'',seña:num(r.sena)?money(r.sena):'',sena:num(r.sena)?money(r.sena):'',consumo:num(r.consumo)?money(r.consumo):'',precio:num(r.precio)?money(r.precio):'',datos:c.sena||''};
+  return t.replace(/\{(\w+|seña)\}/g,(m,x)=>v[x]??m).replace(/ a las  para/,' para').replace(/\n\n\n+/g,'\n\n').trim()}
+const rvWA=(r,k)=>'https://wa.me/'+telWA(r.tel)+'?text='+encodeURIComponent(rvMsg(r,k));
+function rvCard(r){
+  const can=r.estado==='cancelada',vip=r.tipo==='vip',tel=telWA(r.tel);
+  const b=[];
+  if(!can){
+    if(vip){b.push(r.pagoOk?`<button class="rv-ok" data-act="rvTog" data-id="${r.id}" data-k="pagoOk">✓ Pagó</button>`:`<button class="rv-no" data-act="rvTog" data-id="${r.id}" data-k="pagoOk">💰 Marcar pagada</button>`)}
+    else if(num(r.sena)>0){b.push(r.senaOk?`<button class="rv-ok" data-act="rvTog" data-id="${r.id}" data-k="senaOk">✓ Seña ${money(r.sena)}</button>`:`${tel?`<a class="btn wa" href="${esc(rvWA(r,'sena'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="senaPedida">💬 Pedir seña</a>`:''}<button class="rv-no" data-act="rvTog" data-id="${r.id}" data-k="senaOk">💰 Recibí la seña</button>`)}
+    b.push(r.conf?`<button class="rv-ok" data-act="rvTog" data-id="${r.id}" data-k="conf">✓ Reconfirmó</button>`:`${tel?`<a class="btn wa" href="${esc(rvWA(r,'conf'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="confPedida">💬 Reconfirmar</a>`:''}<button class="rv-no" data-act="rvTog" data-id="${r.id}" data-k="conf">✅ Ya reconfirmó</button>`);
+  }
+  const info=[vip?'':r.hora?`<b class="rv-h">${esc(r.hora)}</b>`:'',`<b>${esc(r.nombre||'(sin nombre)')}</b>`,`${esc(r.personas||'?')} pers.`].filter(Boolean).join(' · ');
+  const sub=[r.tel?`📞 ${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.senaPedida&&!r.senaOk&&!vip?'seña pedida':'',r.confPedida&&!r.conf?'reconfirmación enviada':''].filter(Boolean).join(' · ');
+  return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}"><span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${r.nota?`<small class="rv-nota">📝 ${esc(r.nota)}</small>`:''}</button>${b.length?`<div class="rv-acts">${b.join('')}</div>`:''}</div>`;
+}
+function rvForm(){
+  const d=S.rvD,vip=d.tipo==='vip',f=(k,l,ph,t)=>`<label>${l}<input data-rv="${k}" value="${esc(d[k]??'')}" placeholder="${esc(ph||'')}"${t==='n'?' inputmode="numeric"':t==='tel'?' type="tel" inputmode="tel"':''}></label>`;
+  return `<div class="panel rv-form"><h3 style="margin-top:0">${S.rvId?'Editar':'Nueva'} reserva · ${RV_TIPOS[d.tipo][1]}</h3>
+  <div class="pe-g"><label>Día<input type="date" data-rv="fecha" value="${esc(d.fecha||'')}"></label>${vip?'':f('hora','Horario','Ej: 21:30')}
+  ${f('nombre','Nombre y apellido','')}${f('personas','Personas','Ej: 4','n')}${f('tel','Teléfono (WhatsApp)','Ej: 223 555 1234','tel')}
+  ${vip?f('precio','Precio de la mesa','Ej: 150000','n')+f('consumo','Consumo incluido','Ej: 100000','n'):f('sena','Seña a pedir','Ej: 20000 (vacío si no pide)','n')}
+  ${f('de','¿Quién la pasó?','Ej: Matías, Recepción…')}</div>
+  ${vip&&num(d.precio)?`<p class="meta" style="margin:6px 0 0">Ganancia de la mesa: <b>${money(num(d.precio)-num(d.consumo))}</b></p>`:''}
+  <label style="display:block;margin-top:8px">Nota (opcional)<textarea data-rv="nota" rows="2" placeholder="Ej: cumpleaños, silla de bebé, mesa afuera…">${esc(d.nota||'')}</textarea></label>
+  <div class="row" style="margin-top:12px;flex-wrap:wrap"><button class="pri" data-act="rvGuardar">Guardar</button><button data-act="rvCerrar">Cancelar</button>
+  ${S.rvId?`<span style="margin-left:auto;display:flex;gap:8px">${d.estado==='cancelada'?'<button data-act="rvReactivar">Reactivar</button>':'<button data-act="rvCancelar" style="color:#b42318">Cliente canceló</button>'}<button data-act="rvBorrar" style="color:#b42318">Borrar</button></span>`:''}</div></div>`;
+}
+function vReservas(){
+  ensureRes();
+  const T=S.rvTipo||'resto',dia=rvDia(),hoy=dayKey(Date.now());
+  const head=`<div class="head"><div><h2>📖 Reservas</h2><p class="sub">Cargá acá las reservas que llegan por WhatsApp. Todos ven lo mismo al instante.</p></div><div class="row" style="gap:8px">${canResCfg()?'<button data-act="rvCfgAbrir">⚙️ Mensajes</button>':''}<button class="pri" data-act="rvNueva">+ Nueva reserva</button></div></div>
+  <div class="chips rv-tabs">${Object.entries(RV_TIPOS).map(([k,[i,t]])=>`<button class="chip ${T===k?'on':''}" data-act="rvTipo" data-id="${k}">${i} ${t}</button>`).join('')}</div>`;
+  if(S.resErr==='permission-denied')return head+'<p class="note">Todavía no está habilitado el permiso para Reservas. Avisale a Matías.</p>';
+  if(!S.res)return head+'<p class="empty">Cargando…</p>';
+  if(S.rvCfgOn){const c=rvCfg();return head+`<div class="panel"><h3 style="margin-top:0">Mensajes de WhatsApp</h3><p class="meta">Se pueden usar: {nombre} {fecha} {hora} {personas} {seña} {consumo} {precio} {datos}</p>
+    <label>Datos para la seña (alias, CBU, titular)<textarea data-rvc="sena" rows="3" placeholder="Alias: MARA.SOCIAL · Titular: …">${esc(S.rvCfg?.sena||'')}</textarea></label>
+    <label>Pedir seña (restaurante)<textarea data-rvc="msgSena" rows="5">${esc(c.msgSena)}</textarea></label>
+    <label>Reconfirmar (restaurante)<textarea data-rvc="msgConf" rows="4">${esc(c.msgConf)}</textarea></label>
+    <label>Reconfirmar (mesas boliche)<textarea data-rvc="msgVip" rows="4">${esc(c.msgVip)}</textarea></label>
+    <div class="row" style="margin-top:10px"><button class="pri" data-act="rvCfgGuardar">Guardar</button><button data-act="rvCfgCerrar">Cancelar</button></div></div>`}
+  if(S.rvD)return head+rvForm();
+  const q=(S.rvBus||'').trim().toLowerCase();
+  if(q){const L=(S.res||[]).filter(r=>r.id!=='_cfg'&&r.fecha>=hoy&&[r.nombre,r.tel,r.nota,r.de].join(' ').toLowerCase().includes(q)).sort((a,b)=>(a.fecha+(a.hora||'')).localeCompare(b.fecha+(b.hora||'')));
+    return head+`<input type="search" placeholder="Buscar por nombre o teléfono…" value="${esc(S.rvBus)}" data-rvbus style="margin:10px 0">${L.length?L.map(r=>`<p class="meta" style="margin:12px 0 4px">${RV_TIPOS[r.tipo][0]} ${esc(rvDiaTxt(r.fecha))}</p>`+rvCard(r)).join(''):'<p class="empty">No hay reservas próximas con ese nombre o teléfono.</p>'}`}
+  const L=rvLista(T,dia).sort((a,b)=>(a.estado==='cancelada')-(b.estado==='cancelada')||(a.hora||'').localeCompare(b.hora||'')||(a.creado||0)-(b.creado||0)),A=rvActivas(L);
+  const pers=A.reduce((s,r)=>s+num(r.personas),0),pend=A.filter(rvPend).length;
+  const tot=T==='vip'?A.reduce((s,r)=>s+num(r.precio),0):0,gan=T==='vip'?A.reduce((s,r)=>s+num(r.precio)-num(r.consumo),0):0;
+  const prox=[...Array(7)].map((_,i)=>rvMas(hoy,i)).map(f=>[f,rvActivas(rvLista(T,f))]);
+  return head+`<input type="search" placeholder="Buscar por nombre o teléfono…" value="" data-rvbus style="margin:10px 0">
+  <div class="rv-dia"><button data-act="rvDia" data-id="${rvMas(dia,-1)}">‹</button><label class="rv-dt"><b>${esc(rvDiaTxt(dia))}</b><input type="date" data-rvdia value="${dia}"></label><button data-act="rvDia" data-id="${rvMas(dia,1)}">›</button></div>
+  <div class="rv-sem">${prox.map(([f,l])=>{const [y,m,d]=f.split('-').map(Number);return `<button class="${f===dia?'on':''}" data-act="rvDia" data-id="${f}"><small>${new Date(y,m-1,d).toLocaleDateString('es-AR',{weekday:'short'})}</small><b>${d}</b><small>${l.length?l.length+(T==='vip'?' m':' r'):'–'}</small></button>`}).join('')}</div>
+  <div class="rv-res"><span><b>${A.length}</b> ${T==='vip'?'mesa'+(A.length===1?'':'s'):'reserva'+(A.length===1?'':'s')}</span><span><b>${pers}</b> personas</span>${pend?`<span class="rv-pend"><b>${pend}</b> por confirmar</span>`:A.length?'<span class="rv-allok">Todo confirmado ✓</span>':''}${T==='vip'&&tot&&canResCfg()?`<span>Mesas <b>${money(tot)}</b> · ganancia <b>${money(gan)}</b></span>`:''}</div>
+  ${L.length?L.map(rvCard).join(''):`<p class="empty">No hay ${T==='vip'?'mesas vendidas':'reservas'} para este día.</p>`}
+  ${dia<hoy?'':`<button class="rv-add" data-act="rvNueva">+ Agregar ${T==='vip'?'mesa':'reserva'} para ${esc(rvDiaTxt(dia).toLowerCase())}</button>`}`;
+}
+async function rvAccion(a,b,id){
+  try{
+    if(a==='rvTipo'){S.rvTipo=id;S.rvD=null;render(true);return}
+    if(a==='rvDia'){S.rvDia=id;render(true);return}
+    if(a==='rvNueva'){const T=S.rvTipo||'resto';S.rvD={tipo:T,fecha:rvDia()<dayKey(Date.now())?dayKey(Date.now()):rvDia(),hora:'',nombre:'',personas:T==='vip'?'10':'',tel:'',sena:'',precio:'',consumo:'',de:me()?.nombre||(S.owner?'Matías':''),nota:''};S.rvId=null;location.hash='reservas';render(true);scrollTo(0,0);setTimeout(()=>$('[data-rv=nombre]')?.focus(),60);return}
+    if(a==='rvEdit'){const r=S.res.find(x=>x.id===id);S.rvD=JSON.parse(JSON.stringify(r));delete S.rvD.id;S.rvId=id;render(true);scrollTo(0,0);return}
+    if(a==='rvCerrar'){S.rvD=null;S.rvId=null;render(true);return}
+    if(a==='rvGuardar'){const d=S.rvD;
+      if(!d.nombre.trim()){alert('Falta el nombre.');return}if(!d.fecha){alert('Falta el día.');return}
+      const o={...d,nombre:d.nombre.trim(),personas:String(d.personas||'').trim(),tel:String(d.tel||'').trim(),sena:num(d.sena),precio:num(d.precio),consumo:num(d.consumo),local:'mara',editado:Date.now(),editadoPor:S.uid};
+      if(S.rvId){await updateDoc(doc(db,'reservas',S.rvId),o)}else{o.creado=Date.now();o.por=S.uid;o.estado='activa';await addDoc(collection(db,'reservas'),o)}
+      S.rvDia=d.fecha;S.rvTipo=d.tipo;S.rvD=null;S.rvId=null;toast('Reserva guardada.');render(true);return}
+    if(a==='rvCancelar'||a==='rvReactivar'){await updateDoc(doc(db,'reservas',S.rvId),{estado:a==='rvCancelar'?'cancelada':'activa',editado:Date.now(),editadoPor:S.uid});S.rvD=null;S.rvId=null;toast(a==='rvCancelar'?'Marcada como cancelada.':'Reserva reactivada.');render(true);return}
+    if(a==='rvBorrar'){if(!confirm('¿Borrar esta reserva? Si el cliente canceló, mejor usá «Cliente canceló».'))return;await deleteDoc(doc(db,'reservas',S.rvId));S.rvD=null;S.rvId=null;toast('Reserva borrada.');render(true);return}
+    if(a==='rvTog'){const r=S.res.find(x=>x.id===id),k=b.dataset.k;await updateDoc(doc(db,'reservas',id),{[k]:!r[k],[k+'T']:Date.now(),[k+'Por']:S.uid});return}
+    if(a==='rvMsg'){updateDoc(doc(db,'reservas',id),{[b.dataset.k]:Date.now()}).catch(()=>{});return}
+    if(a==='rvCfgAbrir'){S.rvCfgOn=true;S.rvCfgD={...rvCfg(),sena:S.rvCfg?.sena||''};render(true);return}
+    if(a==='rvCfgCerrar'){S.rvCfgOn=false;render(true);return}
+    if(a==='rvCfgGuardar'){await setDoc(doc(db,'reservas','_cfg'),{...S.rvCfgD,fecha:'0000',editado:Date.now()});S.rvCfg={...S.rvCfgD};S.rvCfgOn=false;toast('Mensajes guardados.');render(true);return}
+  }catch(e){console.error(e);S.note=errMsg(e);render(true)}
 }
 // ======== PRESUPUESTOS DE EVENTOS ========
 const canPresup=()=>S.owner||me()?.rol==='Administración';
@@ -1360,12 +1472,12 @@ function render(force){
   $('#chatBtn').hidden=!sec;if(sec){(sec==='todos'?['villa','mara']:[sec]).forEach(ensureChat);updChatBadge()}
   if(!inApp){$('#tabs').hidden=true;$('#main').innerHTML=vAcceso();return}
   if(!sec){$('#main').innerHTML=(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vInicio();return}
-  const L=lvl();const views=esMant()?['panel','mant']:['panel',...(canRec()?['recetario']:[]),...(canMant()?['mant']:[]),...(soloVer()?[]:['pedir','ped']),...(lvl()<=2?['avisos']:[]),'solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo','copia']:[]),...(esAdm()?['admin','cartas','ventas']:[]),...(canPresup()?['presup','pe','eventos']:[])];
+  const L=lvl();const views=esRecep()?['panel','reservas']:esMant()?['panel','mant']:[...(canRes()?['reservas']:[]),'panel',...(canRec()?['recetario']:[]),...(canMant()?['mant']:[]),...(soloVer()?[]:['pedir','ped']),...(lvl()<=2?['avisos']:[]),'solicitudes','pedidos',...(L<=3?['stock','catalogo']:[]),...(S.owner?['equipo','copia']:[]),...(esAdm()?['admin','cartas','ventas']:[]),...(canPresup()?['presup','pe','eventos']:[])];
   document.querySelectorAll('#tabs a').forEach(x=>x.hidden=!views.includes(x.dataset.v));
   let v=location.hash.slice(1),pid=null;if(v==='chat'){S.view='chat';document.querySelectorAll('#tabs a').forEach(x=>x.classList.remove('on'));$('#chatBtn').hidden=true;$('#main').innerHTML=volverBtn()+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+vChat();return}if(v.startsWith('p-')){pid=v.slice(2);v='pedidos'}if(!views.includes(v))v='panel';
   {const n=solsPend(S.local).length,b=$('#solN');b.hidden=!n||!canSend();b.textContent=n>9?'9+':n}
   S.view=v;document.querySelectorAll('#tabs a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
-  const html=pid?vPedido(pid):{panel:vPanel,recetario:vRecetario,mant:vMant,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo,copia:vCopia,admin:vAdmin,ped:vPed,presup:vPresup,pe:vPe,eventos:vEventos,avisos:vAvisos,cartas:vCartas,ventas:vVentas}[v]();
+  const html=pid?vPedido(pid):{panel:vPanel,recetario:vRecetario,mant:vMant,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo,copia:vCopia,admin:vAdmin,ped:vPed,presup:vPresup,pe:vPe,eventos:vEventos,avisos:vAvisos,cartas:vCartas,ventas:vVentas,reservas:vReservas}[v]();
   $('#main').innerHTML=(v!=='panel'&&!pid?volverBtn():'')+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
 }
 const volverBtn=()=>location.hash.slice(1)==='pe'?'<a class="btn volver" href="#presup">‹ Presupuestos</a>':lvl()<=2&&location.hash.slice(1)==='solicitudes'?'<a class="btn volver" href="#avisos">‹ Solicitudes</a>':!soloVer()&&['pedir','pedidos'].includes(location.hash.slice(1))?'<a class="btn volver" href="#ped">‹ Pedidos</a>':esAdm()&&ADMIN_V.includes(location.hash.slice(1))?'<a class="btn volver" href="#admin">‹ Administración</a>':'<a class="btn volver" href="#panel">‹ Inicio</a>';
@@ -1502,6 +1614,7 @@ document.addEventListener('click',e=>{
   if(a==='recBorrarOk'){$('#sheet').innerHTML='';const rid0=S.recOpen;S.recOpen=null;S.recEdit=false;S.recDraft=null;deleteDoc(doc(db,'recetas',rid0)).then(()=>toast('Receta borrada.')).catch(e=>{S.note=errMsg(e)});render(true);return}
   if(a==='irA'){const f=b.dataset.f||'';if(f.startsWith('est:')){S.fEstado=f.slice(4);S.fProv='';S.fDia='';S.pVer=true;S.pOpen=null}if(f.startsWith('mant:'))S.fMant=f.slice(5);if(f.startsWith('pe:')){S.peF=f.slice(3);S.peElegir=false}location.hash=id;return}
   if(/^(pe|pl)[A-Z]/.test(a)){peAccion(a,b,id);return}
+  if(/^rv[A-Z]/.test(a)){if(a==='rvMsg'){rvAccion(a,b,id);return}e.preventDefault?.();rvAccion(a,b,id);return}
   if(a==='calM'){S.calM=id;render(true);return}
   if(a==='calPerd'){S.calPerd=!S.calPerd;render(true);return}
   if(a==='cartaEd'){S.cartaEd=!S.cartaEd;S.cItem=null;render(true);return}
@@ -1580,6 +1693,9 @@ function mencionar(nombre){
 }
 document.addEventListener('input',e=>{
   if(e.target.dataset&&e.target.dataset.pf!==undefined&&S.pe){peSet(e.target.dataset.pf,e.target.value);return}
+  if(e.target.dataset?.rv!==undefined&&S.rvD){S.rvD[e.target.dataset.rv]=e.target.value;return}
+  if(e.target.dataset?.rvc!==undefined&&S.rvCfgD){S.rvCfgD[e.target.dataset.rvc]=e.target.value;return}
+  if(e.target.matches('[data-rvbus]')){S.rvBus=e.target.value;const p=e.target.selectionStart;render(true);const n=$('[data-rvbus]');if(n){n.focus();try{n.setSelectionRange(p,p)}catch(x){}}return}
   if(e.target.matches('[data-pebus]')){S.peBus=e.target.value;const p=e.target.selectionStart;render(true);const n=$('[data-pebus]');if(n){n.focus();try{n.setSelectionRange(p,p)}catch(x){}}return}
   if(e.target.matches('[data-cartabus]')){S.cartaBus=e.target.value;const p=e.target.selectionStart;render(true);const n=$('[data-cartabus]');if(n){n.focus();try{n.setSelectionRange(p,p)}catch(x){}}return}
   const t=e.target,ds=t.dataset;
@@ -1607,6 +1723,8 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',e=>{
   const t=e.target;
+  if(t.matches('[data-rvdia]')&&t.value){S.rvDia=t.value;render(true);return}
+  if(t.dataset?.rv==='precio'||t.dataset?.rv==='consumo'){render(true);return}
   if(t.matches('input[data-recfoto]')&&t.files?.[0]&&S.recDraft){fotoReceta(t.files[0]);t.value='';return}
   if(t.matches('[data-ri]')&&S.recDraft){S.recDraft.ing[+t.dataset.ri][t.dataset.rk]=t.value;recRowCosto(+t.dataset.ri);return}
   if(t.matches('select[data-au]')){const a=S.agr[S.addOpen];if(a)a.unit[t.dataset.au]=t.value}
@@ -1661,7 +1779,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-27o';
+const APP_V='2026-11-28a';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
