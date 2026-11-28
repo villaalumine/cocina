@@ -591,7 +591,7 @@ const rvMenuTxt=k=>(RV_MENUS.find(m=>m[0]===k)||[])[1]||'';
 const rvDietTxt=r=>RV_DIET.filter(([k])=>num(r[k])>0).map(([k,i,t])=>`${i} ${num(r[k])} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · ');
 const RV_QUIEN=['Mara Reservas','Matías Cochi','Mossstro','Quimey','Joni','Fran Ludueña','Manu','Leo Lucente','Fran Cochi','Polaco','Palomo'];
 const RV_TIPOS={resto:['🍽️','Restaurante'],vip:['🍾','Mesas boliche']};
-const RV_CFG0={sena:'',msgSena:'Hola {nombre}! Te escribimos de Mara Social Club por tu reserva del {fecha} a las {hora} para {personas} personas. Para dejarla confirmada te pedimos una seña de {seña}.\n{datos}\nCuando la hagas mandanos el comprobante por acá. ¡Gracias!',
+const RV_CFG0={sena:'',msgSena:'Hola {nombre}! Te escribimos de Mara Social Club por tu reserva del {fecha} a las {hora} para {personas} personas. Para dejarla confirmada deberás hacer una seña de {seña}.\n\nALIAS: SOCIALCLUBMARA.MDP\n\nCuando la hagas mandanos el comprobante por acá. ¡Gracias!',
   msgConf:'Hola {nombre}! 👋 Te escribimos de *Mara Social Club* para reconfirmar tu reserva:\n\n📅 {fecha}\n🕘 {hora}\n👥 {personas} personas\n\n¿Nos confirmás que vienen? Respondé este mensaje y listo.\n\n*A tener en cuenta:*\n🕛 A las 00:00 hs abre el boliche y se levantan las mesas y livings. Por eso te recomendamos llegar puntual a las {hora} para disfrutar la cena tranquilos. Después de las 00 hs podés dejar tus cosas en el guardarropas.\n🔞 No se admiten menores de 18 años en la cena.\n👔 Dress code: canchero-elegante. No se permiten capuchas, gorros, ropa deportiva, bermudas, ojotas ni disfraces.\n📍 Falucho 32, esquina La Costa (Cabo Corrientes). Ingreso por las escalinatas de La Costa.\n\n¡Te esperamos! 🥂',
   msgVip:'Hola {nombre}! Te escribimos de Mara Social Club para reconfirmar tu mesa del {fecha} para {personas} personas, con {consumo} de consumo. ¿Nos confirmás que vienen? ¡Te esperamos!'};
 let rvSub=null;
@@ -1886,7 +1886,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28p';
+const APP_V='2026-11-28q';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
