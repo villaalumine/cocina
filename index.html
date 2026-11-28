@@ -106,7 +106,8 @@ nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;backgroun
 .rv-res{display:flex;flex-wrap:wrap;gap:8px 16px;margin:0 0 12px;font-size:15px}.rv-pend{color:#8a5a00}.rv-allok{color:#1f7a3a;font-weight:600}
 .rv-card{background:var(--card);border:1px solid var(--line);border-left:6px solid #e6b85c;border-radius:14px;margin-bottom:10px;overflow:hidden}.rv-card.rv-full{border-left-color:#1f7a3a}.rv-card.rv-can{opacity:.55;border-left-color:#999}
 .rv-top{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:0;border-radius:0;background:none;padding:12px 14px;font-size:17px}.rv-top small{color:#6b7280;font-size:13.5px}.rv-h{font-variant-numeric:tabular-nums}.rv-nota{color:#8a5a00!important}
-.rv-acts{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px}.rv-acts>*{padding:7px 12px;font-size:14px;min-height:0}.rv-ok{background:#e7f5ec;color:#1f7a3a;border-color:#9fd3b0}.rv-no{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}
+.rv-pasos{display:flex;gap:6px;padding:0 14px 10px}.rv-paso{flex:1;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:left;padding:6px 10px;border-radius:12px;background:#fdf0d5;border:1px solid #e6b85c;color:#5b3c00;font-size:14px;font-weight:600;min-height:0}.rv-paso i{grid-row:span 2;font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#e6b85c;color:#fff;font-size:13px}.rv-paso small{font-weight:500;font-size:12px;opacity:.8}.rv-paso.ok{background:#e7f5ec;border-color:#9fd3b0;color:#1f5e33}.rv-paso.ok i{background:#1f7a3a}
+.rv-acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 14px 12px}.rv-acts>*{padding:7px 12px;font-size:14px;min-height:0}.rv-acts .rv-main{flex:1 1 100%;text-align:center;font-size:16px;font-weight:700;padding:11px 14px}.rv-listo{color:#1f7a3a;font-weight:700;padding-left:2px!important}.rv-ok{background:#e7f5ec;color:#1f7a3a;border-color:#9fd3b0}.rv-no{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}
 .rv-menu{font:600 12px Barlow,sans-serif;background:#efe7dd;color:#5b4636;border-radius:99px;padding:2px 8px;vertical-align:2px;white-space:nowrap}.rv-diet{color:#1f7a3a!important;font-weight:600}
 .rv-lbl{font-weight:600;margin:14px 0 6px}.rv-diets{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.rv-dt2{display:flex!important;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 8px 6px 12px;background:var(--card)}.rv-dt2.on{border-color:#1f7a3a;background:#e7f5ec}.rv-stp{display:flex;align-items:center;gap:8px}.rv-stp button{width:34px;height:34px;padding:0;min-height:0;font-size:20px;border-radius:50%}.rv-stp b{min-width:16px;text-align:center}
 .rv-cocina{background:#f6f1ea;border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:0 0 12px;font-size:14.5px;display:grid;gap:4px}
@@ -608,17 +609,29 @@ function rvMsg(r,k){const c=rvCfg();let t=k==='sena'?c.msgSena:r.tipo==='vip'?c.
 const rvWA=(r,k)=>'https://wa.me/'+telWA(r.tel)+'?text='+encodeURIComponent(rvMsg(r,k));
 function rvCard(r){
   const can=r.estado==='cancelada',vip=r.tipo==='vip',tel=telWA(r.tel);
-  const b=[];
+  let acts='';
   if(!can){
-    b.push(r.comp?`<button class="rv-ok" data-act="rvVer" data-id="${r.id}">🧾 Ver comprobante</button>`:`<label class="btn rv-up">📎 Subir comprobante<input type="file" accept="image/*,application/pdf" data-rvcomp="${r.id}" hidden></label>`);
-    if(vip){b.push(r.pagoOk?`<button class="rv-ok" data-act="rvTog" data-id="${r.id}" data-k="pagoOk">✓ Pagó</button>`:`<button class="rv-no" data-act="rvTog" data-id="${r.id}" data-k="pagoOk">💰 Marcar pagada</button>`)}
-    else if(num(r.sena)>0){b.push(r.senaOk?`<button class="rv-ok" data-act="rvTog" data-id="${r.id}" data-k="senaOk">✓ Seña ${money(r.sena)}</button>`:`${tel?`<a class="btn wa" href="${esc(rvWA(r,'sena'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="senaPedida">💬 Pedir seña</a>`:''}<button class="rv-no" data-act="rvTog" data-id="${r.id}" data-k="senaOk">💰 Recibí la seña</button>`)}
-    b.push(r.conf?`<button class="rv-ok" data-act="rvTog" data-id="${r.id}" data-k="conf">✓ Reconfirmó</button>`:`${tel?`<a class="btn wa" href="${esc(rvWA(r,'conf'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="confPedida">💬 Reconfirmar</a>`:''}<button class="rv-no" data-act="rvTog" data-id="${r.id}" data-k="conf">✅ Ya reconfirmó</button>`);
+    const conSena=vip||num(r.sena)>0,kP=vip?'pagoOk':'senaOk',okP=!!r[kP],nP=vip?'Pago de la mesa':`Seña ${num(r.sena)?money(r.sena):''}`;
+    const paso=(n,t,ok,k)=>`<button class="rv-paso ${ok?'ok':''}" data-act="rvTog" data-id="${r.id}" data-k="${k}" title="Tocá para cambiar"><i>${ok?'✓':n}</i>${t}<small>${ok?(k==='conf'?'Confirmada':vip?'Pagada':'Recibida'):'Pendiente'}</small></button>`;
+    const pasos=`<div class="rv-pasos">${conSena?paso(1,nP,okP,kP):''}${paso(conSena?2:1,'Reconfirmación',!!r.conf,'conf')}</div>`;
+    const wa=(k,t,cls)=>tel?`<a class="btn wa ${cls||''}" href="${esc(rvWA(r,k))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="${k==='sena'?'senaPedida':'confPedida'}">${t}</a>`:'';
+    const sub=`<label class="btn rv-up">📎 Subir comprobante<input type="file" accept="image/*,application/pdf" data-rvcomp="${r.id}" hidden></label>`;
+    let main='',sec=[];
+    if(conSena&&!okP){
+      if(!vip&&!r.senaPedida&&tel){main=wa('sena','💬 Pedir seña por WhatsApp','rv-main');sec=[sub]}
+      else{main=sub.replace('class="btn rv-up"','class="btn rv-up rv-main"');sec=[!vip?wa('sena','Reenviar pedido de seña'):'',`<button data-act="rvTog" data-id="${r.id}" data-k="${kP}">✓ ${vip?'Pagó':'Recibí la seña'} sin comprobante</button>`]}
+    }else if(!r.conf){
+      if(!r.confPedida&&tel){main=wa('conf','💬 Reconfirmar vía WhatsApp','rv-main');sec=[`<button data-act="rvTog" data-id="${r.id}" data-k="conf">✓ Ya confirmó</button>`]}
+      else{main=`<button class="pri rv-main" data-act="rvTog" data-id="${r.id}" data-k="conf">✓ El cliente confirmó</button>`;sec=[wa('conf','💬 Reconfirmar vía WhatsApp')]}
+    }else main='<span class="rv-listo">✓ Todo listo</span>';
+    if(r.comp)sec.push(`<button data-act="rvVer" data-id="${r.id}">🧾 Ver comprobante</button>`);
+    if(!tel&&!(conSena&&okP&&r.conf))sec.push('<span class="meta">Cargá el teléfono para mandar WhatsApp</span>');
+    acts=`${pasos}<div class="rv-acts">${main}${sec.filter(Boolean).join('')}</div>`;
   }
   const info=[vip?'':r.hora?`<b class="rv-h">${esc(r.hora)}</b>`:'',`<b>${esc(r.nombre||'(sin nombre)')}</b>`,`${esc(r.personas||'?')} pers.`].filter(Boolean).join(' · ')+(!vip&&r.menu?` <span class="rv-menu">${esc(rvMenuTxt(r.menu))}</span>`:'');
   const diet=rvDietTxt(r);
-  const sub=[r.tel?`📞 ${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.senaPedida&&!r.senaOk&&!vip?'seña pedida':'',r.confPedida&&!r.conf?'reconfirmación enviada':'',r.comp?`comprobante subido por ${esc(nameOf(r.comp.por))} ${fecha(r.comp.t)} ${hora(r.comp.t)}`:''].filter(Boolean).join(' · ');
-  return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}"><span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${diet?`<small class="rv-diet">${diet}</small>`:''}${r.nota?`<small class="rv-nota">📝 ${esc(r.nota)}</small>`:''}</button>${b.length?`<div class="rv-acts">${b.join('')}</div>`:''}</div>`;
+  const sub=[r.tel?`📞 ${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.comp?`comprobante subido por ${esc(nameOf(r.comp.por))} ${fecha(r.comp.t)} ${hora(r.comp.t)}`:''].filter(Boolean).join(' · ');
+  return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}"><span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${diet?`<small class="rv-diet">${diet}</small>`:''}${r.nota?`<small class="rv-nota">📝 ${esc(r.nota)}</small>`:''}</button>${acts}</div>`;
 }
 function rvForm(){
   const d=S.rvD,vip=d.tipo==='vip',f=(k,l,ph,t)=>`<label>${l}<input data-rv="${k}" value="${esc(d[k]??'')}" placeholder="${esc(ph||'')}"${t==='n'?' inputmode="numeric"':t==='tel'?' type="tel" inputmode="tel"':''}></label>`;
@@ -1832,7 +1845,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28c';
+const APP_V='2026-11-28d';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
