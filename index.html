@@ -588,6 +588,8 @@ const canRes=()=>S.owner||RES_ROLES.includes(me()?.rol);
 const esRecep=()=>!S.owner&&me()?.rol==='Recepción';
 const canResCfg=()=>S.owner||me()?.rol==='Administración';
 const RV_MENUS=[['carta','A la carta'],['finger','Finger food'],['pasos','Menú pasos'],['sushi','Menú sushi']];
+const RV_SUSHI=[['suSushi','Sushi'],['suChow','Chow mein'],['suBondiola','Bondiola']];
+const rvSushiTxt=r=>r.menu==='sushi'?RV_SUSHI.filter(([k])=>num(r[k])>0).map(([k,t])=>`${num(r[k])} ${t.toLowerCase()}`).join(' · '):'';
 const RV_DIET=[['celiaco','','Sin TACC'],['vegetariano','','Vegetariano'],['vegano','','Vegano']];
 const rvMenuTxt=k=>(RV_MENUS.find(m=>m[0]===k)||[])[1]||'';
 const rvDietTxt=r=>RV_DIET.filter(([k])=>num(r[k])>0).map(([k,i,t])=>`${num(r[k])} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · ');
@@ -634,7 +636,7 @@ function rvCard(r){
   const falta=can?[]:[vip?(!r.pagoOk?'pago':''):(num(r.sena)>0&&!r.senaOk?'seña':''),!r.conf?'confirmar':''].filter(Boolean);
   const estTag=can?'':falta.length?`<span class="rv-falta">Falta ${falta.join(' y ')}</span>`:'<span class="rv-ok2">Todo listo ✓</span>';
   const sub=[r.tel?`${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.comp?'con comprobante':'',(()=>{const n=rvNombres(r).length,p=num(r.personas);return n?`${n}${p?'/'+p:''} nombres`:p?'sin nombres':''})()].filter(Boolean).join(' · ');
-  return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}">${estTag}<span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${diet?`<small class="rv-diet">${diet}</small>`:''}${r.nota?`<small class="rv-nota">${esc(r.nota)}</small>`:''}</button>${acts}</div>`;
+  return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}">${estTag}<span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${rvSushiTxt(r)?`<small>Sushi: ${rvSushiTxt(r)}</small>`:''}${diet?`<small class="rv-diet">${diet}</small>`:''}${r.nota?`<small class="rv-nota">${esc(r.nota)}</small>`:''}</button>${acts}</div>`;
 }
 function rvForm(){
   const d=S.rvD,vip=d.tipo==='vip',f=(k,l,ph,t)=>`<label>${l}<input data-rv="${k}" value="${esc(d[k]??'')}" placeholder="${esc(ph||'')}"${t==='n'?' inputmode="numeric"':t==='m'?' inputmode="numeric" data-money':t==='tel'?' type="tel" inputmode="tel"':''}></label>`;
@@ -643,7 +645,7 @@ function rvForm(){
   ${f('nombre','Nombre y apellido','')}${f('personas','Personas','Ej: 4','n')}${f('tel','Teléfono (WhatsApp)','Ej: 223 555 1234','tel')}
   ${vip?f('precio','Precio de la mesa','Ej: $ 150.000','m')+f('consumo','Consumo incluido','Ej: $ 100.000','m'):f('sena','Seña a pedir','Ej: $ 20.000 (vacío si no pide)','m')}
   <label>¿Quién la pasó?<select data-rv="de"><option value="">— Elegí —</option>${[...RV_QUIEN,...(d.de&&!RV_QUIEN.includes(d.de)?[d.de]:[])].map(n=>`<option ${d.de===n?'selected':''}>${esc(n)}</option>`).join('')}</select></label></div>
-  ${vip?'':`<p class="rv-lbl">¿Qué van a comer?</p><div class="chips">${RV_MENUS.map(([k,t])=>`<button class="chip ${d.menu===k?'on':''}" data-act="rvMenu" data-id="${k}">${t}</button>`).join('')}</div>`}
+  ${vip?'':`<p class="rv-lbl">¿Qué van a comer?</p><div class="chips">${RV_MENUS.map(([k,t])=>`<button class="chip ${d.menu===k?'on':''}" data-act="rvMenu" data-id="${k}">${t}</button>`).join('')}</div>${d.menu==='sushi'?`<div class="rv-sushi"><p class="rv-lbl" style="margin-top:4px">Opciones del menú sushi (cuántas personas)</p><div class="rv-diets">${RV_SUSHI.map(([k,t])=>`<div class="rv-dt2${num(d[k])>0?' on':''}"><span>${t}</span><span class="rv-stp"><button data-act="rvDiet" data-id="${k}" data-n="-1">−</button><b>${num(d[k])||0}</b><button data-act="rvDiet" data-id="${k}" data-n="1">+</button></span></div>`).join('')}</div>${(()=>{const t=RV_SUSHI.reduce((a,[k])=>a+num(d[k]),0),p=num(d.personas);return p&&t&&t!==p?`<p class="meta" style="color:#b42318;margin:6px 0 0">Suman ${t} y la reserva es de ${p} personas.</p>`:''})()}</div>`:''}`}
   <p class="rv-lbl">Restricciones (cuántas personas)</p><div class="rv-diets">${RV_DIET.map(([k,i,t])=>`<div class="rv-dt2${num(d[k])>0?' on':''}"><span>${t}</span><span class="rv-stp"><button data-act="rvDiet" data-id="${k}" data-n="-1">−</button><b>${num(d[k])||0}</b><button data-act="rvDiet" data-id="${k}" data-n="1">+</button></span></div>`).join('')}</div>
   ${vip&&num(d.precio)?`<p class="meta" style="margin:6px 0 0">Ganancia de la mesa: <b>${money(num(d.precio)-num(d.consumo))}</b></p>`:''}
   <div class="rv-lbl">Comprobante de ${vip?'pago':'la seña'} (opcional)</div>${S.rvId&&d.comp?'<p class="meta" style="margin:0">Ya tiene comprobante cargado.</p>':`<label class="btn rv-up" style="display:inline-flex">${S.rvCompFile?'Cambiar archivo':'Subir comprobante'}<input type="file" accept="image/*,application/pdf" data-rvcompform hidden></label>${S.rvCompFile?` <span class="rv-diet">✓ ${esc(S.rvCompFile.name||'archivo')} listo</span>`:''}`}
@@ -668,7 +670,7 @@ async function rvListaPDF(dia){
     pdf.setFont('helvetica','bold');pdf.setFontSize(13);
     const tit=[r.tipo==='resto'&&r.hora?rvHora(r.hora):'',r.nombre,`${r.personas||'?'} pers.`,r.tipo==='resto'?rvMenuTxt(r.menu):''].filter(Boolean).join('  ·  ');
     pdf.text(tit,M,y+4);
-    const d=rvDietTxt(r).replace(/[^\x20-\xFF]/g,'').replace(/\s+/g,' ').trim();pdf.setFont('helvetica','normal');pdf.setFontSize(10);pdf.setTextColor(90);if(d||r.nota)pdf.text([d,r.nota].filter(Boolean).join('  ·  ').slice(0,110),M,y+9);pdf.setTextColor(0);
+    const d=[rvSushiTxt(r),rvDietTxt(r)].filter(Boolean).join('  ·  ').replace(/[^\x20-\xFF]/g,'').replace(/\s+/g,' ').trim();pdf.setFont('helvetica','normal');pdf.setFontSize(10);pdf.setTextColor(90);if(d||r.nota)pdf.text([d,r.nota].filter(Boolean).join('  ·  ').slice(0,110),M,y+9);pdf.setTextColor(0);
     y+=(d||r.nota)?16:11;pdf.setFontSize(11.5);
     const cw=(W-2*M)/2;
     for(let i=0;i<cant;i++){const col=i%2,row=Math.floor(i/2),x=M+col*cw,yy=y+row*7.5;
@@ -680,13 +682,13 @@ async function rvListaPDF(dia){
 }
 function rvResumenData(dia){
   const A=rvActivas(rvLista('resto',dia)).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
-  const grupos=[...RV_MENUS,['','Sin menú elegido']].map(([k,t])=>{const L=A.filter(r=>(r.menu||'')===k);return {k,t,L,pers:L.reduce((s,r)=>s+num(r.personas),0),diet:RV_DIET.map(([dk,i,dt])=>[i,dt,L.reduce((s,r)=>s+num(r[dk]),0)]).filter(x=>x[2])}}).filter(g=>g.L.length);
+  const grupos=[...RV_MENUS,['','Sin menú elegido']].map(([k,t])=>{const L=A.filter(r=>(r.menu||'')===k);return {k,t,L,pers:L.reduce((s,r)=>s+num(r.personas),0),diet:RV_DIET.map(([dk,i,dt])=>[i,dt,L.reduce((s,r)=>s+num(r[dk]),0)]).filter(x=>x[2]),su:k==='sushi'?RV_SUSHI.map(([sk,st])=>[st,L.reduce((s,r)=>s+num(r[sk]),0)]).filter(x=>x[1]):[]}}).filter(g=>g.L.length);
   return {A,grupos,pers:A.reduce((s,r)=>s+num(r.personas),0)};
 }
 function rvResumenTxt(dia){
   const {A,grupos,pers}=rvResumenData(dia),f=rvFechaMsg(dia);
   const L=[`*Resumen de reservas · ${f}*`,`${A.length} reserva${A.length===1?'':'s'} · ${pers} personas`];
-  grupos.forEach(g=>{L.push('',`*${g.t}: ${g.pers}*`);g.diet.forEach(([i,t,n])=>L.push(`   ${n} ${t.toLowerCase().replace('tacc','TACC')}`));g.L.filter(r=>r.nota).forEach(r=>L.push(`   ${r.nombre.split(' ')[0]} (${r.personas}): ${r.nota}`))});
+  grupos.forEach(g=>{L.push('',`*${g.t}: ${g.pers}*`);g.su.forEach(([t,n])=>L.push(`   ${n} ${t.toLowerCase()}`));g.diet.forEach(([i,t,n])=>L.push(`   ${n} ${t.toLowerCase().replace('tacc','TACC')}`));g.L.filter(r=>r.nota).forEach(r=>L.push(`   ${r.nombre.split(' ')[0]} (${r.personas}): ${r.nota}`))});
   const tot=RV_DIET.map(([k,i,t])=>[i,t,A.reduce((s,r)=>s+num(r[k]),0)]).filter(x=>x[2]);
   if(tot.length)L.push('','*Total restricciones:* '+tot.map(([i,t,n])=>`${n} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · '));
   return L.join('\n');
@@ -694,7 +696,7 @@ function rvResumenTxt(dia){
 function vRvResumen(){
   const dia=rvDia(),{A,grupos,pers}=rvResumenData(dia);
   return `<div class="head"><div><h2>Resumen de reservas</h2><p class="sub" style="text-transform:capitalize">${esc(rvDiaTxt(dia))} · ${A.length} reserva${A.length===1?'':'s'} · ${pers} personas</p></div></div>
-  ${grupos.length?grupos.map(g=>`<div class="panel rs-card"><h3><span>${esc(g.t)}</span><b>${g.pers} <small>pers.</small></b></h3>${g.diet.length?`<p class="rs-dl">${g.diet.map(([i,t,n])=>`${n} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · ')}</p>`:''}
+  ${grupos.length?grupos.map(g=>`<div class="panel rs-card"><h3><span>${esc(g.t)}</span><b>${g.pers} <small>pers.</small></b></h3>${g.su.length?`<p class="rs-dl" style="color:inherit">${g.su.map(([t,n])=>`${t}: <b>${n}</b>`).join(' · ')}</p>`:''}${g.diet.length?`<p class="rs-dl">${g.diet.map(([i,t,n])=>`${n} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · ')}</p>`:''}
     ${g.L.map(r=>`<div class="rs-r"><span>${r.hora?`<b>${esc(rvHora(r.hora))}</b> · `:''}${esc(r.nombre)} · ${esc(r.personas)}</span>${rvDietTxt(r)?`<small class="rv-diet">${rvDietTxt(r)}</small>`:''}${r.nota?`<small class="rv-nota">${esc(r.nota)}</small>`:''}</div>`).join('')}</div>`).join(''):'<p class="empty">No hay reservas del restaurante para este día.</p>'}
   ${A.length?`<div class="rv-sh" style="margin-bottom:20px"><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(rvResumenTxt(dia))}" target="_blank" rel="noopener" data-act="rvShare">Compartir por WhatsApp</a><button data-act="rvCopiarRes">Copiar texto</button></div>`:''}`;
 }
@@ -721,7 +723,7 @@ function vReservas(){
   const pers=A.reduce((s,r)=>s+num(r.personas),0),pend=A.filter(rvPend).length;
   const tot=T==='vip'?A.reduce((s,r)=>s+num(r.precio),0):0,gan=T==='vip'?A.reduce((s,r)=>s+num(r.precio)-num(r.consumo),0):0;
   const sinM=A.filter(r=>!r.menu).reduce((s,r)=>s+num(r.personas),0);
-  const menus=T==='vip'||!A.length?'':RV_MENUS.map(([k,t])=>{const n=A.filter(r=>r.menu===k).reduce((s,r)=>s+num(r.personas),0);return `<div class="rs-f${n?'':' rs-0'}"><span>${t}</span><b>${n}</b></div>`}).join('')+(sinM?`<div class="rs-f rs-0"><span>Sin elegir</span><b>${sinM}</b></div>`:'');
+  const menus=T==='vip'||!A.length?'':RV_MENUS.map(([k,t])=>{const n=A.filter(r=>r.menu===k).reduce((s,r)=>s+num(r.personas),0);const su=k==='sushi'&&n?RV_SUSHI.map(([sk,st])=>[st,A.filter(r=>r.menu==='sushi').reduce((s,r)=>s+num(r[sk]),0)]).filter(x=>x[1]).map(([st,x])=>`${x} ${st.toLowerCase()}`).join(' · '):'';return `<div class="rs-f${n?'':' rs-0'}"><span>${t}${su?`<small style="display:block;font-size:12px;opacity:.8">${su}</small>`:''}</span><b>${n}</b></div>`}).join('')+(sinM?`<div class="rs-f rs-0"><span>Sin elegir</span><b>${sinM}</b></div>`:'');
   const diets=RV_DIET.map(([k,i,t])=>{const n=A.reduce((s,r)=>s+num(r[k]),0);return n?`<span>${t}: <b>${n}</b></span>`:''}).filter(Boolean).join('');
   const prox=[...Array(7)].map((_,i)=>rvMas(hoy,i)).map(f=>[f,rvActivas(rvLista(T,f))]);
   return head+`<input type="search" placeholder="Buscar por nombre o teléfono…" value="" data-rvbus style="margin:10px 0">
@@ -774,7 +776,7 @@ async function rvAccion(a,b,id){
     if(a==='rvCerrar'){S.rvD=null;S.rvId=null;S.rvCompFile=null;S.rvComps=false;S.rvCfgOn=false;S.rvRes=false;render(true);scrollTo(0,0);return}
     if(a==='rvGuardar'){const d=S.rvD;
       if(!d.nombre.trim()){alert('Falta el nombre.');return}if(!d.fecha){alert('Falta el día.');return}
-      const o={...d,celiaco:num(d.celiaco),vegetariano:num(d.vegetariano),vegano:num(d.vegano),nombre:d.nombre.trim(),personas:String(d.personas||'').trim(),tel:String(d.tel||'').trim(),sena:num(d.sena),precio:num(d.precio),consumo:num(d.consumo),local:'mara',editado:Date.now(),editadoPor:S.uid};
+      const o={...d,...Object.fromEntries(RV_SUSHI.map(([k])=>[k,d.menu==='sushi'?num(d[k]):0])),celiaco:num(d.celiaco),vegetariano:num(d.vegetariano),vegano:num(d.vegano),nombre:d.nombre.trim(),personas:String(d.personas||'').trim(),tel:String(d.tel||'').trim(),sena:num(d.sena),precio:num(d.precio),consumo:num(d.consumo),local:'mara',editado:Date.now(),editadoPor:S.uid};
       let rid=S.rvId;if(S.rvId){await updateDoc(doc(db,'reservas',S.rvId),o)}else{o.creado=Date.now();o.por=S.uid;o.estado='activa';rid=(await addDoc(collection(db,'reservas'),o)).id}
       const cf=S.rvCompFile;S.rvCompFile=null;if(cf)await rvComprobante(cf,rid,{...o,id:rid});
       S.rvDia=d.fecha;S.rvTipo=d.tipo;S.rvD=null;S.rvId=null;if(!cf)toast('Reserva guardada.');render(true);return}
@@ -1922,7 +1924,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28v';
+const APP_V='2026-11-28w';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
