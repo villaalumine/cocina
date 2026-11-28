@@ -644,7 +644,7 @@ function rvForm(){
 function vReservas(){
   ensureRes();
   const T=S.rvTipo||'resto',dia=rvDia(),hoy=dayKey(Date.now());
-  const head=`<div class="head"><div><h2>📖 Reservas</h2><p class="sub">Cargá acá las reservas que llegan por WhatsApp. Todos ven lo mismo al instante.</p></div><div class="row" style="gap:8px;flex-wrap:wrap">${canResCfg()?'<button data-act="rvComps">🧾 Comprobantes</button><button data-act="rvCfgAbrir">⚙️ Mensajes</button>':''}<button class="pri" data-act="rvNueva">+ Nueva reserva</button></div></div>
+  const head=`<div class="head"><div><h2>📖 Reservas</h2><p class="sub">Cargá acá las reservas que llegan por WhatsApp. Todos ven lo mismo al instante.</p></div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="pri" data-act="rvNueva">+ Nueva reserva</button></div></div>
   <div class="chips rv-tabs">${Object.entries(RV_TIPOS).map(([k,[i,t]])=>`<button class="chip ${T===k?'on':''}" data-act="rvTipo" data-id="${k}">${i} ${t}</button>`).join('')}</div>`;
   if(S.resErr==='permission-denied')return head+'<p class="note">Todavía no está habilitado el permiso para Reservas. Avisale a Matías.</p>';
   if(!S.res)return head+'<p class="empty">Cargando…</p>';
@@ -1846,7 +1846,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28j';
+const APP_V='2026-11-28k';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
