@@ -617,6 +617,8 @@ const rvDia=()=>S.rvDia||dayKey(Date.now());
 const rvMas=(f,n)=>{const [y,m,d]=f.split('-').map(Number);return dayKey(new Date(y,m-1,d+n).getTime())};
 const rvDiaTxt=f=>{const h=dayKey(Date.now());if(f===h)return 'Hoy';if(f===rvMas(h,1))return 'Mañana';const [y,m,d]=f.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'})};
 const rvHora=x=>{let h=String(x||'').trim().replace(/\s*h(s|rs)?\.?$/i,'');if(/^\d{3,4}$/.test(h))h=h.padStart(4,'0').replace(/(\d\d)$/,':$1');else if(/^\d{1,2}$/.test(h))h+=':00';return h};
+const rvHK=r=>{const h=rvHora(r.hora);return h?h.padStart(5,'0'):'99:99'};
+const rvOrd=(a,b)=>rvHK(a).localeCompare(rvHK(b))||(a.nombre||'').localeCompare(b.nombre||'','es');
 const rvFechaMsg=f=>{const [y,m,d]=f.split('-').map(Number),x=new Date(y,m-1,d),w=x.toLocaleDateString('es-AR',{weekday:'long'});return `${w[0].toUpperCase()+w.slice(1)} ${d} de ${x.toLocaleDateString('es-AR',{month:'long'})}`};
 const rvLista=(tipo,f)=>(S.res||[]).filter(r=>r.id!=='_cfg'&&r.tipo===tipo&&r.fecha===f&&(r.local||'mara')===rvLoc());
 const rvActivas=L=>L.filter(r=>r.estado!=='cancelada');
@@ -663,7 +665,7 @@ function rvForm(){
 const rvNombres=r=>String(r.invitados||'').split(/\n|;/).map(x=>x.replace(/^\s*(\d+[\.\)-]?|[-•*])\s*/,'').trim()).filter(Boolean);
 async function rvListaPDF(dia){
   const JS=await cargarJsPDF(),pdf=new JS({unit:'mm',format:'a4'}),W=210,H=297,M=16;let y=M;
-  const A=[...rvActivas(rvLista('resto',dia)).sort((a,b)=>rvHora(a.hora).localeCompare(rvHora(b.hora))||a.nombre.localeCompare(b.nombre)),...rvActivas(rvLista('vip',dia)).sort((a,b)=>a.nombre.localeCompare(b.nombre))];
+  const A=[...rvActivas(rvLista('resto',dia)).sort(rvOrd),...rvActivas(rvLista('vip',dia)).sort((a,b)=>a.nombre.localeCompare(b.nombre))];
   if(!A.length&&!rvEventos(dia).length){alert('No hay reservas para este día.');return}
   const nuevaPag=()=>{pdf.addPage();y=M};const lugar=h=>{if(y+h>H-M)nuevaPag()};
   pdf.setFont('helvetica','bold');pdf.setFontSize(18);pdf.text('Lista de ingreso · '+rvL().full,M,y+4);y+=10;
@@ -694,7 +696,7 @@ const rvEvTxt=e=>[e.titulo||e.cliente,e.invitados?`${e.invitados} invitados`:'',
 function rvEvHTML(dia){const E=rvEventos(dia);if(!E.length)return '';const G={};E.forEach(e=>(G[e.sector||'Sin sector']=G[e.sector||'Sin sector']||[]).push(e));
   return `<div class="rv-ev"><h4>Eventos del día</h4>${Object.entries(G).map(([sec,L])=>`<div class="rv-evs"><b>${esc(sec)}</b>${L.map(e=>`<div class="rv-evr${e.estado==='confirmado'?'':' rv-evp'}">${esc(rvEvTxt(e))}</div>`).join('')}</div>`).join('')}</div>`}
 function rvResumenData(dia){
-  const A=rvActivas(rvLista('resto',dia)).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+  const A=rvActivas(rvLista('resto',dia)).sort(rvOrd);
   const grupos=[...RV_MENUS,['','Sin menú elegido']].map(([k,t])=>{const L=A.filter(r=>(r.menu||'')===k);return {k,t,L,pers:L.reduce((s,r)=>s+num(r.personas),0),diet:RV_DIET.map(([dk,i,dt])=>[i,dt,L.reduce((s,r)=>s+num(r[dk]),0)]).filter(x=>x[2]),su:k==='sushi'?RV_SUSHI.map(([sk,st])=>[st,L.reduce((s,r)=>s+num(r[sk]),0)]).filter(x=>x[1]):[]}}).filter(g=>g.L.length);
   return {A,grupos,pers:A.reduce((s,r)=>s+num(r.personas),0)};
 }
@@ -735,9 +737,9 @@ function vReservas(){
   if(S.rvRes)return vRvResumen();
   if(S.rvComps&&canResCfg())return head+vComprobantes();
   const q=(S.rvBus||'').trim().toLowerCase();
-  if(q){const L=(S.res||[]).filter(r=>r.id!=='_cfg'&&r.tipo!=='evento'&&(r.local||'mara')===rvLoc()&&r.fecha>=hoy&&[r.nombre,r.tel,r.nota,r.de].join(' ').toLowerCase().includes(q)).sort((a,b)=>(a.fecha+(a.hora||'')).localeCompare(b.fecha+(b.hora||'')));
+  if(q){const L=(S.res||[]).filter(r=>r.id!=='_cfg'&&r.tipo!=='evento'&&(r.local||'mara')===rvLoc()&&r.fecha>=hoy&&[r.nombre,r.tel,r.nota,r.de].join(' ').toLowerCase().includes(q)).sort((a,b)=>a.fecha.localeCompare(b.fecha)||rvOrd(a,b));
     return head+`<input type="search" placeholder="Buscar por nombre o teléfono…" value="${esc(S.rvBus)}" data-rvbus style="margin:10px 0">${L.length?L.map(r=>`<p class="meta" style="margin:12px 0 4px">${esc(rvDiaTxt(r.fecha))}</p>`+rvCard(r)).join(''):'<p class="empty">No hay reservas próximas con ese nombre o teléfono.</p>'}`}
-  const L=rvLista(T,dia).sort((a,b)=>(a.estado==='cancelada')-(b.estado==='cancelada')||(a.hora||'').localeCompare(b.hora||'')||(a.creado||0)-(b.creado||0)),A=rvActivas(L);
+  const L=rvLista(T,dia).sort((a,b)=>(a.estado==='cancelada')-(b.estado==='cancelada')||rvOrd(a,b)),A=rvActivas(L);
   const pers=A.reduce((s,r)=>s+num(r.personas),0),pend=A.filter(rvPend).length;
   const tot=T==='vip'?A.reduce((s,r)=>s+num(r.precio),0):0,gan=T==='vip'?A.reduce((s,r)=>s+num(r.precio)-num(r.consumo),0):0;
   const sinM=A.filter(r=>!r.menu).reduce((s,r)=>s+num(r.personas),0);
@@ -1948,7 +1950,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28z';
+const APP_V='2026-11-29a';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
