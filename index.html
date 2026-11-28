@@ -112,6 +112,7 @@ nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;backgroun
 .rv-del{background:none;border-color:transparent;color:#b42318;margin-left:auto}.rv-listo{color:#1f7a3a;font-weight:700;padding-left:2px!important}.rv-ok{background:#e7f5ec;color:#1f7a3a;border-color:#9fd3b0}.rv-no{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}
 .rv-menu{font:600 12px Barlow,sans-serif;background:#efe7dd;color:#5b4636;border-radius:99px;padding:2px 8px;vertical-align:2px;white-space:nowrap}.rv-diet{color:#1f7a3a!important;font-weight:600}
 .rv-lbl{font-weight:600;margin:14px 0 6px}.rv-diets{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.rv-dt2{display:flex!important;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 8px 6px 12px;background:var(--card)}.rv-dt2.on{border-color:#1f7a3a;background:#e7f5ec;color:#1f5e33}.rv-dt2.on button{color:#1f5e33}.rv-stp{display:flex;align-items:center;gap:8px}.rv-stp button{width:34px;height:34px;padding:0;min-height:0;font-size:20px;border-radius:50%}.rv-stp b{min-width:16px;text-align:center}
+.rv-exp{width:100%;margin:0 0 12px;font-weight:700}
 .rv-cocina{display:block;width:100%;text-align:left;cursor:pointer}.rs-card h3{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 4px}.rs-card h3 small{font-weight:400;font-size:13px}.rs-dl{margin:0 0 6px;color:#1f7a3a;font-weight:600}.rs-r{display:flex;flex-direction:column;padding:6px 0;border-top:1px solid var(--line)}.rs-r small{font-size:13.5px}
 .rv-cocina h4{margin:2px 0 4px;font:700 18px "Barlow Condensed",sans-serif}.rv-cocina h4 small{font:400 13px Barlow,sans-serif;opacity:.7}.rs-g{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}.rs-f{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0}.rs-f b{font-size:16px}.rs-0{opacity:.5}.rs-d{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
 .rv-cocina{background:var(--card);color:var(--ink);border:1px solid var(--line);border-left:6px solid #a17a57;border-radius:12px;padding:8px 12px;margin:0 0 12px;font-size:14.5px;display:grid;gap:4px}
@@ -629,7 +630,7 @@ function rvCard(r){
   }
   const info=[vip?'':r.hora?`<b class="rv-h">${esc(rvHora(r.hora))}</b>`:'',`<b>${esc(r.nombre||'(sin nombre)')}</b>`,`${esc(r.personas||'?')} pers.`].filter(Boolean).join(' · ')+(!vip&&r.menu?` <span class="rv-menu">${esc(rvMenuTxt(r.menu))}</span>`:'');
   const diet=rvDietTxt(r);
-  const sub=[r.tel?`📞 ${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.comp?'🧾 con comprobante':''].filter(Boolean).join(' · ');
+  const sub=[r.tel?`📞 ${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.comp?'🧾 con comprobante':'',(()=>{const n=rvNombres(r).length,p=num(r.personas);return n?`👥 ${n}${p?'/'+p:''} nombres`:p?'👥 sin nombres':''})()].filter(Boolean).join(' · ');
   return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}"><span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${diet?`<small class="rv-diet">${diet}</small>`:''}${r.nota?`<small class="rv-nota">📝 ${esc(r.nota)}</small>`:''}</button>${acts}</div>`;
 }
 function rvForm(){
@@ -642,9 +643,36 @@ function rvForm(){
   ${vip?'':`<p class="rv-lbl">¿Qué van a comer?</p><div class="chips">${RV_MENUS.map(([k,t])=>`<button class="chip ${d.menu===k?'on':''}" data-act="rvMenu" data-id="${k}">${t}</button>`).join('')}</div>`}
   <p class="rv-lbl">Restricciones (cuántas personas)</p><div class="rv-diets">${RV_DIET.map(([k,i,t])=>`<div class="rv-dt2${num(d[k])>0?' on':''}"><span>${i} ${t}</span><span class="rv-stp"><button data-act="rvDiet" data-id="${k}" data-n="-1">−</button><b>${num(d[k])||0}</b><button data-act="rvDiet" data-id="${k}" data-n="1">+</button></span></div>`).join('')}</div>
   ${vip&&num(d.precio)?`<p class="meta" style="margin:6px 0 0">Ganancia de la mesa: <b>${money(num(d.precio)-num(d.consumo))}</b></p>`:''}
+  <label style="display:block;margin-top:12px">Nombres y apellidos de la reserva <small class="meta">(uno por renglón · se pueden pegar del WhatsApp)</small><textarea data-rv="invitados" rows="${Math.min(12,Math.max(3,num(d.personas)||3))}" placeholder="Juan Pérez&#10;Ana Gómez&#10;…">${esc(d.invitados||'')}</textarea></label>
   <label style="display:block;margin-top:8px">Nota (opcional)<textarea data-rv="nota" rows="2" placeholder="Ej: cumpleaños, silla de bebé, mesa afuera…">${esc(d.nota||'')}</textarea></label>
   <div class="row" style="margin-top:12px;flex-wrap:wrap"><button class="pri" data-act="rvGuardar">Guardar</button><button data-act="rvCerrar">Cancelar</button>
   ${S.rvId?`<span style="margin-left:auto;display:flex;gap:8px">${d.estado==='cancelada'?'<button data-act="rvReactivar">Reactivar</button>':'<button data-act="rvCancelar" style="color:#b42318">Cliente canceló</button>'}<button data-act="rvBorrar" style="color:#b42318">🗑️ Se bajó · eliminar</button></span>`:''}</div></div>`;
+}
+const rvNombres=r=>String(r.invitados||'').split(/\n|;/).map(x=>x.replace(/^\s*(\d+[\.\)-]?|[-•*])\s*/,'').trim()).filter(Boolean);
+async function rvListaPDF(dia){
+  const JS=await cargarJsPDF(),pdf=new JS({unit:'mm',format:'a4'}),W=210,H=297,M=16;let y=M;
+  const A=[...rvActivas(rvLista('resto',dia)).sort((a,b)=>rvHora(a.hora).localeCompare(rvHora(b.hora))||a.nombre.localeCompare(b.nombre)),...rvActivas(rvLista('vip',dia)).sort((a,b)=>a.nombre.localeCompare(b.nombre))];
+  if(!A.length){alert('No hay reservas para este día.');return}
+  const nuevaPag=()=>{pdf.addPage();y=M};const lugar=h=>{if(y+h>H-M)nuevaPag()};
+  pdf.setFont('helvetica','bold');pdf.setFontSize(18);pdf.text('Lista de ingreso · Mara Social Club',M,y+4);y+=10;
+  pdf.setFont('helvetica','normal');pdf.setFontSize(12);const tp=A.reduce((s,r)=>s+num(r.personas),0);pdf.text(`${rvFechaMsg(dia)}  ·  ${A.length} reservas  ·  ${tp} personas`,M,y+2);pdf.setFontSize(10);pdf.setTextColor(90);pdf.text('Tildar el casillero al entregar las consumiciones.',M,y+7);pdf.setTextColor(0);y+=13;
+  let tipoAnt='';
+  A.forEach(r=>{
+    const N=rvNombres(r),cant=Math.max(num(r.personas),N.length),filas=Math.ceil(cant/2);
+    if(r.tipo!==tipoAnt){lugar(20);tipoAnt=r.tipo;pdf.setFillColor(36,48,63);pdf.rect(M,y,W-2*M,8,'F');pdf.setTextColor(255);pdf.setFont('helvetica','bold');pdf.setFontSize(12);pdf.text(r.tipo==='vip'?'MESAS BOLICHE':'RESTAURANTE',M+3,y+5.6);pdf.setTextColor(0);y+=11}
+    lugar(16+filas*7.5);
+    pdf.setFont('helvetica','bold');pdf.setFontSize(13);
+    const tit=[r.tipo==='resto'&&r.hora?rvHora(r.hora):'',r.nombre,`${r.personas||'?'} pers.`,r.tipo==='resto'?rvMenuTxt(r.menu):''].filter(Boolean).join('  ·  ');
+    pdf.text(tit,M,y+4);
+    const d=rvDietTxt(r).replace(/[^\x20-\xFF]/g,'').replace(/\s+/g,' ').trim();pdf.setFont('helvetica','normal');pdf.setFontSize(10);pdf.setTextColor(90);if(d||r.nota)pdf.text([d,r.nota].filter(Boolean).join('  ·  ').slice(0,110),M,y+9);pdf.setTextColor(0);
+    y+=(d||r.nota)?16:11;pdf.setFontSize(11.5);
+    const cw=(W-2*M)/2;
+    for(let i=0;i<cant;i++){const col=i%2,row=Math.floor(i/2),x=M+col*cw,yy=y+row*7.5;
+      pdf.setDrawColor(120);pdf.rect(x,yy-3.6,4.2,4.2);pdf.text(`${i+1}.`,x+6,yy);
+      if(N[i])pdf.text(N[i].slice(0,38),x+12,yy);else{pdf.setDrawColor(190);pdf.line(x+12,yy+0.8,x+cw-6,yy+0.8)}}
+    y+=filas*7.5-2;pdf.setDrawColor(210);pdf.line(M,y,W-M,y);y+=6;
+  });
+  await guardarPDF(pdf,`Lista ingreso ${dia}.pdf`);
 }
 function rvResumenData(dia){
   const A=rvActivas(rvLista('resto',dia)).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
@@ -697,6 +725,7 @@ function vReservas(){
   <div class="rv-sem">${prox.map(([f,l])=>{const [y,m,d]=f.split('-').map(Number);return `<button class="${f===dia?'on':''}" data-act="rvDia" data-id="${f}"><small>${new Date(y,m-1,d).toLocaleDateString('es-AR',{weekday:'short'})}</small><b>${d}</b><small>${l.length?l.length+(T==='vip'?' m':' r'):'–'}</small></button>`}).join('')}</div>
   <div class="rv-res"><span><b>${A.length}</b> ${T==='vip'?'mesa'+(A.length===1?'':'s'):'reserva'+(A.length===1?'':'s')}</span><span><b>${pers}</b> personas</span>${pend?`<span class="rv-pend"><b>${pend}</b> por confirmar</span>`:A.length?'<span class="rv-allok">Todo confirmado ✓</span>':''}${T==='vip'&&tot&&canResCfg()?`<span>Mesas <b>${money(tot)}</b> · ganancia <b>${money(gan)}</b></span>`:''}</div>
   ${menus||diets?`<button class="rv-cocina" data-act="rvResumen"><h4>Resumen de reservas <small>(personas) · tocá para ver el detalle ›</small></h4>${menus?`<div class="rs-g">${menus}</div>`:''}${diets?`<div class="rs-d">${diets}</div>`:''}</button>`:''}
+  ${rvActivas([...rvLista('resto',dia),...rvLista('vip',dia)]).length?`<button class="rv-exp" data-act="rvListaPDF">📄 Exportar lista por reserva (PDF)</button>`:''}
   ${L.length?L.map(rvCard).join(''):`<p class="empty">No hay ${T==='vip'?'mesas vendidas':'reservas'} para este día.</p>`}
   ${dia<hoy?'':`<button class="rv-add" data-act="rvNueva">+ Agregar ${T==='vip'?'mesa':'reserva'} para ${esc(rvDiaTxt(dia).toLowerCase())}</button>`}`;
 }
@@ -749,6 +778,7 @@ async function rvAccion(a,b,id){
     if(a==='rvTog'){const r=S.res.find(x=>x.id===id),k=b.dataset.k;await updateDoc(doc(db,'reservas',id),{[k]:!r[k],[k+'T']:Date.now(),[k+'Por']:S.uid});return}
     if(a==='rvMsg'){updateDoc(doc(db,'reservas',id),{[b.dataset.k]:Date.now()}).catch(()=>{});return}
     if(a==='rvVer'){rvVer(id);return}
+    if(a==='rvListaPDF'){const t=b.textContent;b.textContent='Armando PDF…';try{await rvListaPDF(rvDia())}finally{b.textContent=t}return}
     if(a==='rvResumen'){S.rvRes=true;render(true);scrollTo(0,0);return}
     if(a==='rvCopiarRes'){try{await navigator.clipboard.writeText(rvResumenTxt(rvDia()));toast('Resumen copiado.')}catch(x){toast('No se pudo copiar.')}return}
     if(a==='rvSena'){const r=S.res.find(x=>x.id===id),vip=r.tipo==='vip',k=vip?'pagoOk':'senaOk',ok=!!r[k],tel=telWA(r.tel);
@@ -1886,7 +1916,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28q';
+const APP_V='2026-11-28s';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
