@@ -107,7 +107,7 @@ nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;backgroun
 .rv-card{background:var(--card);border:1px solid var(--line);border-left:6px solid #e6b85c;border-radius:14px;margin-bottom:10px;overflow:hidden}.rv-card.rv-full{border-left-color:#1f7a3a}.rv-card.rv-can{opacity:.55;border-left-color:#999}
 .rv-top{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:0;border-radius:0;background:none;padding:12px 14px;font-size:17px}.rv-top small{color:#6b7280;font-size:13.5px}.rv-h{font-variant-numeric:tabular-nums}.rv-nota{color:#8a5a00!important}
 .rv-acts{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px}.rv-acts>*{padding:7px 12px;font-size:14px;min-height:0}.rv-ok{background:#e7f5ec;color:#1f7a3a;border-color:#9fd3b0}.rv-no{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}
-.rv-add{width:100%;margin:6px 0 18px;border-style:dashed}.rv-form label{display:block}
+.rv-up{background:#eef2ff;color:#3730a3;border-color:#c7d2fe;cursor:pointer}.rv-add{width:100%;margin:6px 0 18px;border-style:dashed}.rv-form label{display:block}
 .accesos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 22px}.acc2{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:16px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:96px}.acc2 .ai{font-size:28px;line-height:1}.acc2 b{font:700 22px "Barlow Condensed",sans-serif;margin-top:6px}.acc2 small{color:#1f7a3a;font-weight:600;font-size:13px}
 body[data-sec=villa] .acc2{border-left:6px solid #f93604}body[data-sec=mara] .acc2{border-left:6px solid #a17a57}body[data-sec=todos] .acc2{border-left:6px solid #24303f}
 @media(max-width:480px){.accesos{grid-template-columns:1fr 1fr}}
@@ -603,12 +603,13 @@ function rvCard(r){
   const can=r.estado==='cancelada',vip=r.tipo==='vip',tel=telWA(r.tel);
   const b=[];
   if(!can){
+    b.push(r.comp?`<button class="rv-ok" data-act="rvVer" data-id="${r.id}">🧾 Ver comprobante</button>`:`<label class="btn rv-up">📎 Subir comprobante<input type="file" accept="image/*,application/pdf" data-rvcomp="${r.id}" hidden></label>`);
     if(vip){b.push(r.pagoOk?`<button class="rv-ok" data-act="rvTog" data-id="${r.id}" data-k="pagoOk">✓ Pagó</button>`:`<button class="rv-no" data-act="rvTog" data-id="${r.id}" data-k="pagoOk">💰 Marcar pagada</button>`)}
     else if(num(r.sena)>0){b.push(r.senaOk?`<button class="rv-ok" data-act="rvTog" data-id="${r.id}" data-k="senaOk">✓ Seña ${money(r.sena)}</button>`:`${tel?`<a class="btn wa" href="${esc(rvWA(r,'sena'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="senaPedida">💬 Pedir seña</a>`:''}<button class="rv-no" data-act="rvTog" data-id="${r.id}" data-k="senaOk">💰 Recibí la seña</button>`)}
     b.push(r.conf?`<button class="rv-ok" data-act="rvTog" data-id="${r.id}" data-k="conf">✓ Reconfirmó</button>`:`${tel?`<a class="btn wa" href="${esc(rvWA(r,'conf'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="confPedida">💬 Reconfirmar</a>`:''}<button class="rv-no" data-act="rvTog" data-id="${r.id}" data-k="conf">✅ Ya reconfirmó</button>`);
   }
   const info=[vip?'':r.hora?`<b class="rv-h">${esc(r.hora)}</b>`:'',`<b>${esc(r.nombre||'(sin nombre)')}</b>`,`${esc(r.personas||'?')} pers.`].filter(Boolean).join(' · ');
-  const sub=[r.tel?`📞 ${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.senaPedida&&!r.senaOk&&!vip?'seña pedida':'',r.confPedida&&!r.conf?'reconfirmación enviada':''].filter(Boolean).join(' · ');
+  const sub=[r.tel?`📞 ${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.senaPedida&&!r.senaOk&&!vip?'seña pedida':'',r.confPedida&&!r.conf?'reconfirmación enviada':'',r.comp?`comprobante subido por ${esc(nameOf(r.comp.por))} ${fecha(r.comp.t)} ${hora(r.comp.t)}`:''].filter(Boolean).join(' · ');
   return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}"><span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${r.nota?`<small class="rv-nota">📝 ${esc(r.nota)}</small>`:''}</button>${b.length?`<div class="rv-acts">${b.join('')}</div>`:''}</div>`;
 }
 function rvForm(){
@@ -626,7 +627,7 @@ function rvForm(){
 function vReservas(){
   ensureRes();
   const T=S.rvTipo||'resto',dia=rvDia(),hoy=dayKey(Date.now());
-  const head=`<div class="head"><div><h2>📖 Reservas</h2><p class="sub">Cargá acá las reservas que llegan por WhatsApp. Todos ven lo mismo al instante.</p></div><div class="row" style="gap:8px">${canResCfg()?'<button data-act="rvCfgAbrir">⚙️ Mensajes</button>':''}<button class="pri" data-act="rvNueva">+ Nueva reserva</button></div></div>
+  const head=`<div class="head"><div><h2>📖 Reservas</h2><p class="sub">Cargá acá las reservas que llegan por WhatsApp. Todos ven lo mismo al instante.</p></div><div class="row" style="gap:8px;flex-wrap:wrap">${canResCfg()?'<button data-act="rvComps">🧾 Comprobantes</button><button data-act="rvCfgAbrir">⚙️ Mensajes</button>':''}<button class="pri" data-act="rvNueva">+ Nueva reserva</button></div></div>
   <div class="chips rv-tabs">${Object.entries(RV_TIPOS).map(([k,[i,t]])=>`<button class="chip ${T===k?'on':''}" data-act="rvTipo" data-id="${k}">${i} ${t}</button>`).join('')}</div>`;
   if(S.resErr==='permission-denied')return head+'<p class="note">Todavía no está habilitado el permiso para Reservas. Avisale a Matías.</p>';
   if(!S.res)return head+'<p class="empty">Cargando…</p>';
@@ -637,6 +638,7 @@ function vReservas(){
     <label>Reconfirmar (mesas boliche)<textarea data-rvc="msgVip" rows="4">${esc(c.msgVip)}</textarea></label>
     <div class="row" style="margin-top:10px"><button class="pri" data-act="rvCfgGuardar">Guardar</button><button data-act="rvCfgCerrar">Cancelar</button></div></div>`}
   if(S.rvD)return head+rvForm();
+  if(S.rvComps&&canResCfg())return head+vComprobantes();
   const q=(S.rvBus||'').trim().toLowerCase();
   if(q){const L=(S.res||[]).filter(r=>r.id!=='_cfg'&&r.fecha>=hoy&&[r.nombre,r.tel,r.nota,r.de].join(' ').toLowerCase().includes(q)).sort((a,b)=>(a.fecha+(a.hora||'')).localeCompare(b.fecha+(b.hora||'')));
     return head+`<input type="search" placeholder="Buscar por nombre o teléfono…" value="${esc(S.rvBus)}" data-rvbus style="margin:10px 0">${L.length?L.map(r=>`<p class="meta" style="margin:12px 0 4px">${RV_TIPOS[r.tipo][0]} ${esc(rvDiaTxt(r.fecha))}</p>`+rvCard(r)).join(''):'<p class="empty">No hay reservas próximas con ese nombre o teléfono.</p>'}`}
@@ -651,9 +653,39 @@ function vReservas(){
   ${L.length?L.map(rvCard).join(''):`<p class="empty">No hay ${T==='vip'?'mesas vendidas':'reservas'} para este día.</p>`}
   ${dia<hoy?'':`<button class="rv-add" data-act="rvNueva">+ Agregar ${T==='vip'?'mesa':'reserva'} para ${esc(rvDiaTxt(dia).toLowerCase())}</button>`}`;
 }
+async function rvComprobante(file,id){
+  const r=S.res.find(x=>x.id===id);if(!r)return;let data='',tipo='img';
+  try{
+    if(file.type==='application/pdf'){if(file.size>650000){alert('El PDF es muy pesado. Mandá una captura de pantalla del comprobante.');return}
+      data=await new Promise((ok,no)=>{const fr=new FileReader();fr.onload=()=>ok(fr.result);fr.onerror=no;fr.readAsDataURL(file)});tipo='pdf'}
+    else{const img=await createImageBitmap(file),k=Math.min(1,1300/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);let q=.75;data=c.toDataURL('image/jpeg',q);while(data.length>650000&&q>.35){q-=.1;data=c.toDataURL('image/jpeg',q)}}
+    toast('Subiendo comprobante…');
+    const t=Date.now();await setDoc(doc(db,'reservas','c_'+id),{fecha:'0000',rid:id,data,tipo,t,por:S.uid});
+    await updateDoc(doc(db,'reservas',id),{comp:{t,por:S.uid,tipo},...(r.tipo==='vip'?{pagoOk:true,pagoOkT:t,pagoOkPor:S.uid}:{senaOk:true,senaOkT:t,senaOkPor:S.uid})});
+    toast(r.tipo==='vip'?'Comprobante subido. Mesa marcada como pagada.':'Comprobante subido. Seña marcada como recibida.');
+  }catch(e){console.error(e);S.note=e.code?errMsg(e):'No se pudo leer el archivo. Probá con una captura de pantalla.';render(true)}
+}
+async function rvVer(id){
+  const r=S.res.find(x=>x.id===id);$('#sheet').innerHTML=`<div class="sheet" data-act="closeSheet"><div><h3>Comprobante · ${esc(r?.nombre||'')}</h3><p class="empty">Cargando…</p></div></div>`;
+  try{const d=await getDoc(doc(db,'reservas','c_'+id));if(!d.exists())throw 0;const c=d.data();
+    let cuerpo;if(c.tipo==='pdf'){const bin=atob(c.data.split(',')[1]),u8=Uint8Array.from(bin,x=>x.charCodeAt(0)),url=URL.createObjectURL(new Blob([u8],{type:'application/pdf'}));cuerpo=`<a class="btn pri" style="display:block;text-align:center" href="${url}" target="_blank" rel="noopener">📄 Abrir PDF del comprobante</a>`}
+    else cuerpo=`<img src="${c.data}" alt="Comprobante" style="width:100%;border-radius:10px;border:1px solid var(--line)">`;
+    $('#sheet').innerHTML=`<div class="sheet" data-act="closeSheet"><div><h3>Comprobante · ${esc(r?.nombre||'')}</h3><p class="meta">${r?`${RV_TIPOS[r.tipo][1]} · ${esc(rvDiaTxt(r.fecha))}${num(r.sena)&&r.tipo==='resto'?` · seña ${money(r.sena)}`:''}${num(r.precio)&&r.tipo==='vip'?` · mesa ${money(r.precio)}`:''} · `:''}subido por ${esc(nameOf(c.por))} el ${fecha(c.t)} ${hora(c.t)}</p>${cuerpo}
+    <div class="row" style="margin-top:12px"><button style="flex:1" data-act="closeSheet">Cerrar</button><button data-act="rvCompBorrar" data-id="${id}" style="color:#b42318">Quitar comprobante</button></div></div></div>`;
+  }catch(e){$('#sheet').innerHTML=`<div class="sheet" data-act="closeSheet"><div><h3>No se encontró el comprobante</h3><button style="width:100%" data-act="closeSheet">Cerrar</button></div></div>`}
+}
+function vComprobantes(){
+  const desde=Date.now()-(S.rvCompDias||7)*864e5,L=(S.res||[]).filter(r=>r.comp&&r.comp.t>=desde).sort((a,b)=>b.comp.t-a.comp.t);
+  const tot=L.reduce((s,r)=>s+(r.tipo==='vip'?num(r.precio):num(r.sena)),0),porDia={};L.forEach(r=>{const k=dayKey(r.comp.t);(porDia[k]=porDia[k]||[]).push(r)});
+  return `<div class="panel"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h3 style="margin:0">🧾 Comprobantes recibidos</h3><button data-act="rvCompCerrar">‹ Volver a reservas</button></div>
+  <div class="chips" style="margin:10px 0">${[[1,'Hoy'],[7,'7 días'],[30,'30 días']].map(([d,t])=>`<button class="chip ${(S.rvCompDias||7)===d?'on':''}" data-act="rvCompDias" data-id="${d}">${t}</button>`).join('')}</div>
+  <p class="meta">${L.length} comprobante${L.length===1?'':'s'} · total ${money(tot)} (señas del restaurante + mesas boliche)</p>
+  ${Object.keys(porDia).map(k=>`<h4 style="margin:14px 0 6px">Subidos ${esc(rvDiaTxt(k).toLowerCase())} · ${money(porDia[k].reduce((s,r)=>s+(r.tipo==='vip'?num(r.precio):num(r.sena)),0))}</h4>${porDia[k].map(r=>`<button class="crow" data-act="rvVer" data-id="${r.id}"><span><b>${RV_TIPOS[r.tipo][0]} ${esc(r.nombre)}</b><small>Reserva ${esc(rvDiaTxt(r.fecha).toLowerCase())} · subió ${esc(nameOf(r.comp.por))} ${hora(r.comp.t)}${r.estado==='cancelada'?' · CANCELADA':''}</small></span><span class="cpre">${money(r.tipo==='vip'?num(r.precio):num(r.sena))} ›</span></button>`).join('')}`).join('')||'<p class="empty">No hay comprobantes en este período.</p>'}</div>`;
+}
 async function rvAccion(a,b,id){
   try{
-    if(a==='rvTipo'){S.rvTipo=id;S.rvD=null;render(true);return}
+    if(a==='rvTipo'){S.rvTipo=id;S.rvD=null;S.rvComps=false;render(true);return}
     if(a==='rvDia'){S.rvDia=id;render(true);return}
     if(a==='rvNueva'){const T=S.rvTipo||'resto';S.rvD={tipo:T,fecha:rvDia()<dayKey(Date.now())?dayKey(Date.now()):rvDia(),hora:'',nombre:'',personas:T==='vip'?'10':'',tel:'',sena:'',precio:'',consumo:'',de:me()?.nombre||(S.owner?'Matías':''),nota:''};S.rvId=null;location.hash='reservas';render(true);scrollTo(0,0);setTimeout(()=>$('[data-rv=nombre]')?.focus(),60);return}
     if(a==='rvEdit'){const r=S.res.find(x=>x.id===id);S.rvD=JSON.parse(JSON.stringify(r));delete S.rvD.id;S.rvId=id;render(true);scrollTo(0,0);return}
@@ -664,9 +696,14 @@ async function rvAccion(a,b,id){
       if(S.rvId){await updateDoc(doc(db,'reservas',S.rvId),o)}else{o.creado=Date.now();o.por=S.uid;o.estado='activa';await addDoc(collection(db,'reservas'),o)}
       S.rvDia=d.fecha;S.rvTipo=d.tipo;S.rvD=null;S.rvId=null;toast('Reserva guardada.');render(true);return}
     if(a==='rvCancelar'||a==='rvReactivar'){await updateDoc(doc(db,'reservas',S.rvId),{estado:a==='rvCancelar'?'cancelada':'activa',editado:Date.now(),editadoPor:S.uid});S.rvD=null;S.rvId=null;toast(a==='rvCancelar'?'Marcada como cancelada.':'Reserva reactivada.');render(true);return}
-    if(a==='rvBorrar'){if(!confirm('¿Borrar esta reserva? Si el cliente canceló, mejor usá «Cliente canceló».'))return;await deleteDoc(doc(db,'reservas',S.rvId));S.rvD=null;S.rvId=null;toast('Reserva borrada.');render(true);return}
+    if(a==='rvBorrar'){if(!confirm('¿Borrar esta reserva? Si el cliente canceló, mejor usá «Cliente canceló».'))return;await deleteDoc(doc(db,'reservas',S.rvId));deleteDoc(doc(db,'reservas','c_'+S.rvId)).catch(()=>{});S.rvD=null;S.rvId=null;toast('Reserva borrada.');render(true);return}
     if(a==='rvTog'){const r=S.res.find(x=>x.id===id),k=b.dataset.k;await updateDoc(doc(db,'reservas',id),{[k]:!r[k],[k+'T']:Date.now(),[k+'Por']:S.uid});return}
     if(a==='rvMsg'){updateDoc(doc(db,'reservas',id),{[b.dataset.k]:Date.now()}).catch(()=>{});return}
+    if(a==='rvVer'){rvVer(id);return}
+    if(a==='rvComps'){S.rvComps=true;S.rvD=null;location.hash='reservas';render(true);scrollTo(0,0);return}
+    if(a==='rvCompCerrar'){S.rvComps=false;render(true);return}
+    if(a==='rvCompDias'){S.rvCompDias=+id;render(true);return}
+    if(a==='rvCompBorrar'){if(!confirm('¿Quitar este comprobante?'))return;await deleteDoc(doc(db,'reservas','c_'+id));const r=S.res.find(x=>x.id===id);await updateDoc(doc(db,'reservas',id),{comp:null,...(r?.tipo==='vip'?{pagoOk:false}:{senaOk:false})});$('#sheet').innerHTML='';toast('Comprobante quitado.');return}
     if(a==='rvCfgAbrir'){S.rvCfgOn=true;S.rvCfgD={...rvCfg(),sena:S.rvCfg?.sena||''};render(true);return}
     if(a==='rvCfgCerrar'){S.rvCfgOn=false;render(true);return}
     if(a==='rvCfgGuardar'){await setDoc(doc(db,'reservas','_cfg'),{...S.rvCfgD,fecha:'0000',editado:Date.now()});S.rvCfg={...S.rvCfgD};S.rvCfgOn=false;toast('Mensajes guardados.');render(true);return}
@@ -829,7 +866,7 @@ function vPed(){
   return `<div class="head"><div><h2>📦 Pedidos</h2><p class="sub">${uni()?'Villa Aluminé y Mara':esc(locName(workLocal()))}</p></div></div><div class="accesos">${B.map(([v,i,t,x])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b><small${v==='pedir'?' style="color:var(--mut,#6b7280)"':''}>${x}</small></a>`).join('')}</div>`;
 }
 function vAdmin(){
-  const B=[...(canPresup()?[['presup','🧾','Presupuestos','Eventos y clientes'],['eventos','📅','Eventos','Calendario']]:[]),['cartas','📋','Cartas','Villa y Mara'],['ventas','📈','Ventas','Morphi'],['stock','📊','Stock',''],['catalogo','📒','Catálogo','Proveedores y precios'],['recetario','📖','Recetario',''],...(S.owner?[['copia','💾','Copia de seguridad','']]:[])];
+  const B=[...(canRes()?[['reservas','📖','Reservas','Restaurante y boliche']]:[]),...(canPresup()?[['presup','🧾','Presupuestos','Eventos y clientes'],['eventos','📅','Eventos','Calendario']]:[]),['cartas','📋','Cartas','Villa y Mara'],['ventas','📈','Ventas','Morphi'],['stock','📊','Stock',''],['catalogo','📒','Catálogo','Proveedores y precios'],['recetario','📖','Recetario',''],...(S.owner?[['copia','💾','Copia de seguridad','']]:[])];
   return `<div class="head"><div><h2>🏢 Administración</h2><p class="sub">${uni()?'Villa Aluminé y Mara':esc(locName(workLocal()))}</p></div></div><div class="accesos">${B.map(([v,i,t,n])=>`<a class="acc2" href="#${v}"><span class="ai">${i}</span><b>${t}</b>${n?`<small style="color:var(--mut,#6b7280)">${n}</small>`:''}</a>`).join('')}</div>`;
 }
 let cartaSub=null;
@@ -1723,6 +1760,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',e=>{
   const t=e.target;
+  if(t.matches('input[data-rvcomp]')&&t.files?.[0]){rvComprobante(t.files[0],t.dataset.rvcomp);t.value='';return}
   if(t.matches('[data-rvdia]')&&t.value){S.rvDia=t.value;render(true);return}
   if(t.dataset?.rv==='precio'||t.dataset?.rv==='consumo'){render(true);return}
   if(t.matches('input[data-recfoto]')&&t.files?.[0]&&S.recDraft){fotoReceta(t.files[0]);t.value='';return}
@@ -1779,7 +1817,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28a';
+const APP_V='2026-11-28b';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
