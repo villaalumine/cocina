@@ -587,13 +587,13 @@ const canRes=()=>S.owner||RES_ROLES.includes(me()?.rol);
 const esRecep=()=>!S.owner&&me()?.rol==='Recepción';
 const canResCfg=()=>S.owner||me()?.rol==='Administración';
 const RV_MENUS=[['carta','A la carta'],['finger','Finger food'],['pasos','Menú pasos'],['sushi','Menú sushi']];
-const RV_DIET=[['celiaco','🌾','Sin TACC'],['vegetariano','🥕','Vegetariano'],['vegano','🌱','Vegano']];
+const RV_DIET=[['celiaco','','Sin TACC'],['vegetariano','','Vegetariano'],['vegano','','Vegano']];
 const rvMenuTxt=k=>(RV_MENUS.find(m=>m[0]===k)||[])[1]||'';
-const rvDietTxt=r=>RV_DIET.filter(([k])=>num(r[k])>0).map(([k,i,t])=>`${i} ${num(r[k])} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · ');
+const rvDietTxt=r=>RV_DIET.filter(([k])=>num(r[k])>0).map(([k,i,t])=>`${num(r[k])} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · ');
 const RV_QUIEN=['Mara Reservas','Matías Cochi','Mossstro','Quimey','Joni','Fran Ludueña','Manu','Leo Lucente','Fran Cochi','Polaco','Palomo'];
-const RV_TIPOS={resto:['🍽️','Restaurante'],vip:['🍾','Mesas boliche']};
+const RV_TIPOS={resto:['','Restaurante'],vip:['','Mesas boliche']};
 const RV_CFG0={sena:'',msgSena:'Hola {nombre}! Te escribimos de Mara Social Club por tu reserva del {fecha} a las {hora} para {personas} personas. Para dejarla confirmada deberás hacer una seña de {seña}.\n\nALIAS: SOCIALCLUBMARA.MDP\n\nCuando la hagas mandanos el comprobante por acá. ¡Gracias!',
-  msgConf:'Hola {nombre}! 👋 Te escribimos de *Mara Social Club* para reconfirmar tu reserva:\n\n📅 {fecha}\n🕘 {hora}\n👥 {personas} personas\n\n¿Nos confirmás que vienen? Respondé este mensaje y listo.\n\n*A tener en cuenta:*\n🕛 A las 00:00 hs abre el boliche y se levantan las mesas y livings. Por eso te recomendamos llegar puntual a las {hora} para disfrutar la cena tranquilos. Después de las 00 hs podés dejar tus cosas en el guardarropas.\n🔞 No se admiten menores de 18 años en la cena.\n👔 Dress code: canchero-elegante. No se permiten capuchas, gorros, ropa deportiva, bermudas, ojotas ni disfraces.\n📍 Falucho 32, esquina La Costa (Cabo Corrientes). Ingreso por las escalinatas de La Costa.\n\n¡Te esperamos! 🥂',
+  msgConf:'Hola {nombre}! Te escribimos de *Mara Social Club* para reconfirmar tu reserva:\n\nDía: {fecha}\nHora: {hora}\nPersonas: {personas}\n\n¿Nos confirmás que vienen? Respondé este mensaje y listo.\n\n*A tener en cuenta:*\n• A las 00:00 hs abre el boliche y se levantan las mesas y livings. Por eso te recomendamos llegar puntual a las {hora} para disfrutar la cena tranquilos. Después de las 00 hs podés dejar tus cosas en el guardarropas.\n• No se admiten menores de 18 años en la cena.\n• Dress code: canchero-elegante. No se permiten capuchas, gorros, ropa deportiva, bermudas, ojotas ni disfraces.\n• Falucho 32, esquina La Costa (Cabo Corrientes). Ingreso por las escalinatas de La Costa.\n\n¡Te esperamos! ',
   msgVip:'Hola {nombre}! Te escribimos de Mara Social Club para reconfirmar tu mesa del {fecha} para {personas} personas, con {consumo} de consumo. ¿Nos confirmás que vienen? ¡Te esperamos!'};
 let rvSub=null;
 function ensureRes(){
@@ -622,16 +622,16 @@ function rvCard(r){
   if(!can){
     const conSena=vip||num(r.sena)>0,kP=vip?'pagoOk':'senaOk',okP=!!r[kP];
     const ch=[];
-    if(conSena)ch.push(`<button class="rv-ch ${okP?'ok':'pe'}" data-act="rvSena" data-id="${r.id}">${okP?'✓':'💰'} ${vip?(okP?'Pagada':'Pago')+(num(r.precio)?' '+money(r.precio):''):'Seña '+money(r.sena)}</button>`);
-    if(!r.conf&&tel)ch.push(`<a class="rv-ch wa" href="${esc(rvWA(r,'conf'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="confPedida">💬 Reconfirmar</a>`);
+    if(conSena)ch.push(`<button class="rv-ch ${okP?'ok':'pe'}" data-act="rvSena" data-id="${r.id}">${okP?'✓ ':''}${vip?(okP?'Pagada':'Pago')+(num(r.precio)?' '+money(r.precio):''):'Seña '+money(r.sena)}</button>`);
+    if(!r.conf&&tel)ch.push(`<a class="rv-ch wa" href="${esc(rvWA(r,'conf'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="confPedida">Reconfirmar</a>`);
     ch.push(`<button class="rv-ch ${r.conf?'ok':'pe'}" data-act="rvTog" data-id="${r.id}" data-k="conf">${r.conf?'✓ Confirmó':'Sin confirmar'}</button>`);
-    ch.push(`<button class="rv-ch del" data-act="rvElim" data-id="${r.id}">🗑️ Eliminar</button>`);
+    ch.push(`<button class="rv-ch del" data-act="rvElim" data-id="${r.id}">Eliminar</button>`);
     acts=`<div class="rv-chs">${ch.join('')}</div>`;
   }
   const info=[vip?'':r.hora?`<b class="rv-h">${esc(rvHora(r.hora))}</b>`:'',`<b>${esc(r.nombre||'(sin nombre)')}</b>`,`${esc(r.personas||'?')} pers.`].filter(Boolean).join(' · ')+(!vip&&r.menu?` <span class="rv-menu">${esc(rvMenuTxt(r.menu))}</span>`:'');
   const diet=rvDietTxt(r);
-  const sub=[r.tel?`📞 ${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.comp?'🧾 con comprobante':'',(()=>{const n=rvNombres(r).length,p=num(r.personas);return n?`👥 ${n}${p?'/'+p:''} nombres`:p?'👥 sin nombres':''})()].filter(Boolean).join(' · ');
-  return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}"><span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${diet?`<small class="rv-diet">${diet}</small>`:''}${r.nota?`<small class="rv-nota">📝 ${esc(r.nota)}</small>`:''}</button>${acts}</div>`;
+  const sub=[r.tel?`${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.comp?'con comprobante':'',(()=>{const n=rvNombres(r).length,p=num(r.personas);return n?`${n}${p?'/'+p:''} nombres`:p?'sin nombres':''})()].filter(Boolean).join(' · ');
+  return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}"><span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${diet?`<small class="rv-diet">${diet}</small>`:''}${r.nota?`<small class="rv-nota">${esc(r.nota)}</small>`:''}</button>${acts}</div>`;
 }
 function rvForm(){
   const d=S.rvD,vip=d.tipo==='vip',f=(k,l,ph,t)=>`<label>${l}<input data-rv="${k}" value="${esc(d[k]??'')}" placeholder="${esc(ph||'')}"${t==='n'?' inputmode="numeric"':t==='m'?' inputmode="numeric" data-money':t==='tel'?' type="tel" inputmode="tel"':''}></label>`;
@@ -641,13 +641,13 @@ function rvForm(){
   ${vip?f('precio','Precio de la mesa','Ej: $ 150.000','m')+f('consumo','Consumo incluido','Ej: $ 100.000','m'):f('sena','Seña a pedir','Ej: $ 20.000 (vacío si no pide)','m')}
   <label>¿Quién la pasó?<select data-rv="de"><option value="">— Elegí —</option>${[...RV_QUIEN,...(d.de&&!RV_QUIEN.includes(d.de)?[d.de]:[])].map(n=>`<option ${d.de===n?'selected':''}>${esc(n)}</option>`).join('')}</select></label></div>
   ${vip?'':`<p class="rv-lbl">¿Qué van a comer?</p><div class="chips">${RV_MENUS.map(([k,t])=>`<button class="chip ${d.menu===k?'on':''}" data-act="rvMenu" data-id="${k}">${t}</button>`).join('')}</div>`}
-  <p class="rv-lbl">Restricciones (cuántas personas)</p><div class="rv-diets">${RV_DIET.map(([k,i,t])=>`<div class="rv-dt2${num(d[k])>0?' on':''}"><span>${i} ${t}</span><span class="rv-stp"><button data-act="rvDiet" data-id="${k}" data-n="-1">−</button><b>${num(d[k])||0}</b><button data-act="rvDiet" data-id="${k}" data-n="1">+</button></span></div>`).join('')}</div>
+  <p class="rv-lbl">Restricciones (cuántas personas)</p><div class="rv-diets">${RV_DIET.map(([k,i,t])=>`<div class="rv-dt2${num(d[k])>0?' on':''}"><span>${t}</span><span class="rv-stp"><button data-act="rvDiet" data-id="${k}" data-n="-1">−</button><b>${num(d[k])||0}</b><button data-act="rvDiet" data-id="${k}" data-n="1">+</button></span></div>`).join('')}</div>
   ${vip&&num(d.precio)?`<p class="meta" style="margin:6px 0 0">Ganancia de la mesa: <b>${money(num(d.precio)-num(d.consumo))}</b></p>`:''}
-  <div class="rv-lbl">Comprobante de ${vip?'pago':'la seña'} (opcional)</div>${S.rvId&&d.comp?'<p class="meta" style="margin:0">🧾 Ya tiene comprobante cargado.</p>':`<label class="btn rv-up" style="display:inline-flex">📎 ${S.rvCompFile?'Cambiar archivo':'Subir comprobante'}<input type="file" accept="image/*,application/pdf" data-rvcompform hidden></label>${S.rvCompFile?` <span class="rv-diet">✓ ${esc(S.rvCompFile.name||'archivo')} listo</span>`:''}`}
+  <div class="rv-lbl">Comprobante de ${vip?'pago':'la seña'} (opcional)</div>${S.rvId&&d.comp?'<p class="meta" style="margin:0">Ya tiene comprobante cargado.</p>':`<label class="btn rv-up" style="display:inline-flex">${S.rvCompFile?'Cambiar archivo':'Subir comprobante'}<input type="file" accept="image/*,application/pdf" data-rvcompform hidden></label>${S.rvCompFile?` <span class="rv-diet">✓ ${esc(S.rvCompFile.name||'archivo')} listo</span>`:''}`}
   <label style="display:block;margin-top:12px">Nombres y apellidos de la reserva <small class="meta">(uno por renglón · se pueden pegar del WhatsApp)</small><textarea data-rv="invitados" rows="${Math.min(12,Math.max(3,num(d.personas)||3))}" placeholder="Juan Pérez&#10;Ana Gómez&#10;…">${esc(d.invitados||'')}</textarea></label>
   <label style="display:block;margin-top:8px">Nota (opcional)<textarea data-rv="nota" rows="2" placeholder="Ej: cumpleaños, silla de bebé, mesa afuera…">${esc(d.nota||'')}</textarea></label>
   <div class="row" style="margin-top:12px;flex-wrap:wrap"><button class="pri" data-act="rvGuardar">Guardar</button><button data-act="rvCerrar">Cancelar</button>
-  ${S.rvId?`<span style="margin-left:auto;display:flex;gap:8px">${d.estado==='cancelada'?'<button data-act="rvReactivar">Reactivar</button>':'<button data-act="rvCancelar" style="color:#b42318">Cliente canceló</button>'}<button data-act="rvBorrar" style="color:#b42318">🗑️ Se bajó · eliminar</button></span>`:''}</div></div>`;
+  ${S.rvId?`<span style="margin-left:auto;display:flex;gap:8px">${d.estado==='cancelada'?'<button data-act="rvReactivar">Reactivar</button>':'<button data-act="rvCancelar" style="color:#b42318">Cliente canceló</button>'}<button data-act="rvBorrar" style="color:#b42318">Se bajó · eliminar</button></span>`:''}</div></div>`;
 }
 const rvNombres=r=>String(r.invitados||'').split(/\n|;/).map(x=>x.replace(/^\s*(\d+[\.\)-]?|[-•*])\s*/,'').trim()).filter(Boolean);
 async function rvListaPDF(dia){
@@ -683,23 +683,23 @@ function rvResumenData(dia){
 function rvResumenTxt(dia){
   const {A,grupos,pers}=rvResumenData(dia),f=rvFechaMsg(dia);
   const L=[`*Resumen de reservas · ${f}*`,`${A.length} reserva${A.length===1?'':'s'} · ${pers} personas`];
-  grupos.forEach(g=>{L.push('',`🍽️ *${g.t}: ${g.pers}*`);g.diet.forEach(([i,t,n])=>L.push(`   ${i} ${n} ${t.toLowerCase().replace('tacc','TACC')}`));g.L.filter(r=>r.nota).forEach(r=>L.push(`   📝 ${r.nombre.split(' ')[0]} (${r.personas}): ${r.nota}`))});
+  grupos.forEach(g=>{L.push('',`*${g.t}: ${g.pers}*`);g.diet.forEach(([i,t,n])=>L.push(`   ${n} ${t.toLowerCase().replace('tacc','TACC')}`));g.L.filter(r=>r.nota).forEach(r=>L.push(`   ${r.nombre.split(' ')[0]} (${r.personas}): ${r.nota}`))});
   const tot=RV_DIET.map(([k,i,t])=>[i,t,A.reduce((s,r)=>s+num(r[k]),0)]).filter(x=>x[2]);
-  if(tot.length)L.push('','*Total restricciones:* '+tot.map(([i,t,n])=>`${i} ${n} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · '));
+  if(tot.length)L.push('','*Total restricciones:* '+tot.map(([i,t,n])=>`${n} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · '));
   return L.join('\n');
 }
 function vRvResumen(){
   const dia=rvDia(),{A,grupos,pers}=rvResumenData(dia);
-  return `<div class="head"><div><h2>📋 Resumen de reservas</h2><p class="sub" style="text-transform:capitalize">${esc(rvDiaTxt(dia))} · ${A.length} reserva${A.length===1?'':'s'} · ${pers} personas</p></div></div>
-  ${grupos.length?grupos.map(g=>`<div class="panel rs-card"><h3><span>${esc(g.t)}</span><b>${g.pers} <small>pers.</small></b></h3>${g.diet.length?`<p class="rs-dl">${g.diet.map(([i,t,n])=>`${i} ${n} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · ')}</p>`:''}
-    ${g.L.map(r=>`<div class="rs-r"><span>${r.hora?`<b>${esc(rvHora(r.hora))}</b> · `:''}${esc(r.nombre)} · ${esc(r.personas)}</span>${rvDietTxt(r)?`<small class="rv-diet">${rvDietTxt(r)}</small>`:''}${r.nota?`<small class="rv-nota">📝 ${esc(r.nota)}</small>`:''}</div>`).join('')}</div>`).join(''):'<p class="empty">No hay reservas del restaurante para este día.</p>'}
-  ${A.length?`<div class="rv-sh" style="margin-bottom:20px"><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(rvResumenTxt(dia))}" target="_blank" rel="noopener" data-act="rvShare">📤 Compartir por WhatsApp</a><button data-act="rvCopiarRes">📋 Copiar texto</button></div>`:''}`;
+  return `<div class="head"><div><h2>Resumen de reservas</h2><p class="sub" style="text-transform:capitalize">${esc(rvDiaTxt(dia))} · ${A.length} reserva${A.length===1?'':'s'} · ${pers} personas</p></div></div>
+  ${grupos.length?grupos.map(g=>`<div class="panel rs-card"><h3><span>${esc(g.t)}</span><b>${g.pers} <small>pers.</small></b></h3>${g.diet.length?`<p class="rs-dl">${g.diet.map(([i,t,n])=>`${n} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · ')}</p>`:''}
+    ${g.L.map(r=>`<div class="rs-r"><span>${r.hora?`<b>${esc(rvHora(r.hora))}</b> · `:''}${esc(r.nombre)} · ${esc(r.personas)}</span>${rvDietTxt(r)?`<small class="rv-diet">${rvDietTxt(r)}</small>`:''}${r.nota?`<small class="rv-nota">${esc(r.nota)}</small>`:''}</div>`).join('')}</div>`).join(''):'<p class="empty">No hay reservas del restaurante para este día.</p>'}
+  ${A.length?`<div class="rv-sh" style="margin-bottom:20px"><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(rvResumenTxt(dia))}" target="_blank" rel="noopener" data-act="rvShare">Compartir por WhatsApp</a><button data-act="rvCopiarRes">Copiar texto</button></div>`:''}`;
 }
 function vReservas(){
   ensureRes();
   const T=S.rvTipo||'resto',dia=rvDia(),hoy=dayKey(Date.now());
-  const head=`<div class="head"><div><h2>📖 Reservas</h2><p class="sub">Cargá acá las reservas que llegan por WhatsApp. Todos ven lo mismo al instante.</p></div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="pri" data-act="rvNueva">+ Nueva reserva</button></div></div>
-  <div class="chips rv-tabs">${Object.entries(RV_TIPOS).map(([k,[i,t]])=>`<button class="chip ${T===k?'on':''}" data-act="rvTipo" data-id="${k}">${i} ${t}</button>`).join('')}</div>`;
+  const head=`<div class="head"><div><h2>Reservas</h2><p class="sub">Cargá acá las reservas que llegan por WhatsApp. Todos ven lo mismo al instante.</p></div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="pri" data-act="rvNueva">+ Nueva reserva</button></div></div>
+  <div class="chips rv-tabs">${Object.entries(RV_TIPOS).map(([k,[i,t]])=>`<button class="chip ${T===k?'on':''}" data-act="rvTipo" data-id="${k}">${t}</button>`).join('')}</div>`;
   if(S.resErr==='permission-denied')return head+'<p class="note">Todavía no está habilitado el permiso para Reservas. Avisale a Matías.</p>';
   if(!S.res)return head+'<p class="empty">Cargando…</p>';
   if(S.rvCfgOn){const c=rvCfg();return head+`<div class="panel"><h3 style="margin-top:0">Mensajes de WhatsApp</h3><p class="meta">Se pueden usar: {nombre} {fecha} {hora} {personas} {seña} {consumo} {precio} {datos}</p>
@@ -713,20 +713,20 @@ function vReservas(){
   if(S.rvComps&&canResCfg())return head+vComprobantes();
   const q=(S.rvBus||'').trim().toLowerCase();
   if(q){const L=(S.res||[]).filter(r=>r.id!=='_cfg'&&r.fecha>=hoy&&[r.nombre,r.tel,r.nota,r.de].join(' ').toLowerCase().includes(q)).sort((a,b)=>(a.fecha+(a.hora||'')).localeCompare(b.fecha+(b.hora||'')));
-    return head+`<input type="search" placeholder="Buscar por nombre o teléfono…" value="${esc(S.rvBus)}" data-rvbus style="margin:10px 0">${L.length?L.map(r=>`<p class="meta" style="margin:12px 0 4px">${RV_TIPOS[r.tipo][0]} ${esc(rvDiaTxt(r.fecha))}</p>`+rvCard(r)).join(''):'<p class="empty">No hay reservas próximas con ese nombre o teléfono.</p>'}`}
+    return head+`<input type="search" placeholder="Buscar por nombre o teléfono…" value="${esc(S.rvBus)}" data-rvbus style="margin:10px 0">${L.length?L.map(r=>`<p class="meta" style="margin:12px 0 4px">${esc(rvDiaTxt(r.fecha))}</p>`+rvCard(r)).join(''):'<p class="empty">No hay reservas próximas con ese nombre o teléfono.</p>'}`}
   const L=rvLista(T,dia).sort((a,b)=>(a.estado==='cancelada')-(b.estado==='cancelada')||(a.hora||'').localeCompare(b.hora||'')||(a.creado||0)-(b.creado||0)),A=rvActivas(L);
   const pers=A.reduce((s,r)=>s+num(r.personas),0),pend=A.filter(rvPend).length;
   const tot=T==='vip'?A.reduce((s,r)=>s+num(r.precio),0):0,gan=T==='vip'?A.reduce((s,r)=>s+num(r.precio)-num(r.consumo),0):0;
   const sinM=A.filter(r=>!r.menu).reduce((s,r)=>s+num(r.personas),0);
   const menus=T==='vip'||!A.length?'':RV_MENUS.map(([k,t])=>{const n=A.filter(r=>r.menu===k).reduce((s,r)=>s+num(r.personas),0);return `<div class="rs-f${n?'':' rs-0'}"><span>${t}</span><b>${n}</b></div>`}).join('')+(sinM?`<div class="rs-f rs-0"><span>Sin elegir</span><b>${sinM}</b></div>`:'');
-  const diets=RV_DIET.map(([k,i,t])=>{const n=A.reduce((s,r)=>s+num(r[k]),0);return n?`<span>${i} ${t}: <b>${n}</b></span>`:''}).filter(Boolean).join('');
+  const diets=RV_DIET.map(([k,i,t])=>{const n=A.reduce((s,r)=>s+num(r[k]),0);return n?`<span>${t}: <b>${n}</b></span>`:''}).filter(Boolean).join('');
   const prox=[...Array(7)].map((_,i)=>rvMas(hoy,i)).map(f=>[f,rvActivas(rvLista(T,f))]);
   return head+`<input type="search" placeholder="Buscar por nombre o teléfono…" value="" data-rvbus style="margin:10px 0">
   <div class="rv-dia"><button data-act="rvDia" data-id="${rvMas(dia,-1)}">‹</button><label class="rv-dt"><b>${esc(rvDiaTxt(dia))}</b><input type="date" data-rvdia value="${dia}"></label><button data-act="rvDia" data-id="${rvMas(dia,1)}">›</button></div>
   <div class="rv-sem">${prox.map(([f,l])=>{const [y,m,d]=f.split('-').map(Number);return `<button class="${f===dia?'on':''}" data-act="rvDia" data-id="${f}"><small>${new Date(y,m-1,d).toLocaleDateString('es-AR',{weekday:'short'})}</small><b>${d}</b><small>${l.length?l.length+(T==='vip'?' m':' r'):'–'}</small></button>`}).join('')}</div>
   <div class="rv-res"><span><b>${A.length}</b> ${T==='vip'?'mesa'+(A.length===1?'':'s'):'reserva'+(A.length===1?'':'s')}</span><span><b>${pers}</b> personas</span>${pend?`<span class="rv-pend"><b>${pend}</b> por confirmar</span>`:A.length?'<span class="rv-allok">Todo confirmado ✓</span>':''}${T==='vip'&&tot&&canResCfg()?`<span>Mesas <b>${money(tot)}</b> · ganancia <b>${money(gan)}</b></span>`:''}</div>
   ${menus||diets?`<button class="rv-cocina" data-act="rvResumen"><h4>Resumen de reservas <small>(personas) · tocá para ver el detalle ›</small></h4>${menus?`<div class="rs-g">${menus}</div>`:''}${diets?`<div class="rs-d">${diets}</div>`:''}</button>`:''}
-  ${rvActivas([...rvLista('resto',dia),...rvLista('vip',dia)]).length?`<button class="rv-exp" data-act="rvListaPDF">📄 Exportar lista por reserva (PDF)</button>`:''}
+  ${rvActivas([...rvLista('resto',dia),...rvLista('vip',dia)]).length?`<button class="rv-exp" data-act="rvListaPDF">Exportar lista por reserva (PDF)</button>`:''}
   ${L.length?L.map(rvCard).join(''):`<p class="empty">No hay ${T==='vip'?'mesas vendidas':'reservas'} para este día.</p>`}
   ${dia<hoy?'':`<button class="rv-add" data-act="rvNueva">+ Agregar ${T==='vip'?'mesa':'reserva'} para ${esc(rvDiaTxt(dia).toLowerCase())}</button>`}`;
 }
@@ -746,7 +746,7 @@ async function rvComprobante(file,id,r0){
 async function rvVer(id){
   const r=S.res.find(x=>x.id===id);$('#sheet').innerHTML=`<div class="sheet" data-act="closeSheet"><div><h3>Comprobante · ${esc(r?.nombre||'')}</h3><p class="empty">Cargando…</p></div></div>`;
   try{const d=await getDoc(doc(db,'reservas','c_'+id));if(!d.exists())throw 0;const c=d.data();
-    let cuerpo;if(c.tipo==='pdf'){const bin=atob(c.data.split(',')[1]),u8=Uint8Array.from(bin,x=>x.charCodeAt(0)),url=URL.createObjectURL(new Blob([u8],{type:'application/pdf'}));cuerpo=`<a class="btn pri" style="display:block;text-align:center" href="${url}" target="_blank" rel="noopener">📄 Abrir PDF del comprobante</a>`}
+    let cuerpo;if(c.tipo==='pdf'){const bin=atob(c.data.split(',')[1]),u8=Uint8Array.from(bin,x=>x.charCodeAt(0)),url=URL.createObjectURL(new Blob([u8],{type:'application/pdf'}));cuerpo=`<a class="btn pri" style="display:block;text-align:center" href="${url}" target="_blank" rel="noopener">Abrir PDF del comprobante</a>`}
     else cuerpo=`<img src="${c.data}" alt="Comprobante" style="width:100%;border-radius:10px;border:1px solid var(--line)">`;
     $('#sheet').innerHTML=`<div class="sheet" data-act="closeSheet"><div><h3>Comprobante · ${esc(r?.nombre||'')}</h3><p class="meta">${r?`${RV_TIPOS[r.tipo][1]} · ${esc(rvDiaTxt(r.fecha))}${num(r.sena)&&r.tipo==='resto'?` · seña ${money(r.sena)}`:''}${num(r.precio)&&r.tipo==='vip'?` · mesa ${money(r.precio)}`:''} · `:''}subido por ${esc(nameOf(c.por))} el ${fecha(c.t)} ${hora(c.t)}</p>${cuerpo}
     <div class="row" style="margin-top:12px"><button style="flex:1" data-act="closeSheet">Cerrar</button><button data-act="rvCompBorrar" data-id="${id}" style="color:#b42318">Quitar comprobante</button></div></div></div>`;
@@ -755,10 +755,10 @@ async function rvVer(id){
 function vComprobantes(){
   const desde=Date.now()-(S.rvCompDias||7)*864e5,L=(S.res||[]).filter(r=>r.comp&&r.comp.t>=desde).sort((a,b)=>b.comp.t-a.comp.t);
   const tot=L.reduce((s,r)=>s+(r.tipo==='vip'?num(r.precio):num(r.sena)),0),porDia={};L.forEach(r=>{const k=dayKey(r.comp.t);(porDia[k]=porDia[k]||[]).push(r)});
-  return `<div class="panel"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h3 style="margin:0">🧾 Comprobantes recibidos</h3><button data-act="rvCompCerrar">‹ Volver a reservas</button></div>
+  return `<div class="panel"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h3 style="margin:0">Comprobantes recibidos</h3><button data-act="rvCompCerrar">‹ Volver a reservas</button></div>
   <div class="chips" style="margin:10px 0">${[[1,'Hoy'],[7,'7 días'],[30,'30 días']].map(([d,t])=>`<button class="chip ${(S.rvCompDias||7)===d?'on':''}" data-act="rvCompDias" data-id="${d}">${t}</button>`).join('')}</div>
   <p class="meta">${L.length} comprobante${L.length===1?'':'s'} · total ${money(tot)} (señas del restaurante + mesas boliche)</p>
-  ${Object.keys(porDia).map(k=>`<h4 style="margin:14px 0 6px">Subidos ${esc(rvDiaTxt(k).toLowerCase())} · ${money(porDia[k].reduce((s,r)=>s+(r.tipo==='vip'?num(r.precio):num(r.sena)),0))}</h4>${porDia[k].map(r=>`<button class="crow" data-act="rvVer" data-id="${r.id}"><span><b>${RV_TIPOS[r.tipo][0]} ${esc(r.nombre)}</b><small>Reserva ${esc(rvDiaTxt(r.fecha).toLowerCase())} · subió ${esc(nameOf(r.comp.por))} ${hora(r.comp.t)}${r.estado==='cancelada'?' · CANCELADA':''}</small></span><span class="cpre">${money(r.tipo==='vip'?num(r.precio):num(r.sena))} ›</span></button>`).join('')}`).join('')||'<p class="empty">No hay comprobantes en este período.</p>'}</div>`;
+  ${Object.keys(porDia).map(k=>`<h4 style="margin:14px 0 6px">Subidos ${esc(rvDiaTxt(k).toLowerCase())} · ${money(porDia[k].reduce((s,r)=>s+(r.tipo==='vip'?num(r.precio):num(r.sena)),0))}</h4>${porDia[k].map(r=>`<button class="crow" data-act="rvVer" data-id="${r.id}"><span><b>${esc(r.nombre)}</b><small>Reserva ${esc(rvDiaTxt(r.fecha).toLowerCase())} · subió ${esc(nameOf(r.comp.por))} ${hora(r.comp.t)}${r.estado==='cancelada'?' · CANCELADA':''}</small></span><span class="cpre">${money(r.tipo==='vip'?num(r.precio):num(r.sena))} ›</span></button>`).join('')}`).join('')||'<p class="empty">No hay comprobantes en este período.</p>'}</div>`;
 }
 async function rvAccion(a,b,id){
   try{
@@ -784,8 +784,8 @@ async function rvAccion(a,b,id){
     if(a==='rvResumen'){S.rvRes=true;render(true);scrollTo(0,0);return}
     if(a==='rvCopiarRes'){try{await navigator.clipboard.writeText(rvResumenTxt(rvDia()));toast('Resumen copiado.')}catch(x){toast('No se pudo copiar.')}return}
     if(a==='rvSena'){const r=S.res.find(x=>x.id===id),vip=r.tipo==='vip',k=vip?'pagoOk':'senaOk',ok=!!r[k],tel=telWA(r.tel);
-      const opc=ok?[r.comp?`<button class="pri" data-act="rvVer" data-id="${id}">🧾 Ver comprobante</button>`:'',`<label class="btn">📎 ${r.comp?'Cambiar':'Subir'} comprobante<input type="file" accept="image/*,application/pdf" data-rvcomp="${id}" hidden></label>`,`<button data-act="rvTogC" data-id="${id}" data-k="${k}">Marcar como no ${vip?'pagada':'recibida'}</button>`]
-        :[!vip&&tel?`<a class="btn wa" href="${esc(rvWA(r,'sena'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${id}" data-k="senaPedida">💬 Pedir seña por WhatsApp</a>`:'',`<label class="btn pri">📎 Subir comprobante<input type="file" accept="image/*,application/pdf" data-rvcomp="${id}" hidden></label>`,`<button data-act="rvTogC" data-id="${id}" data-k="${k}">✓ ${vip?'Pagó':'Recibí la seña'} sin comprobante</button>`];
+      const opc=ok?[r.comp?`<button class="pri" data-act="rvVer" data-id="${id}">Ver comprobante</button>`:'',`<label class="btn">${r.comp?'Cambiar':'Subir'} comprobante<input type="file" accept="image/*,application/pdf" data-rvcomp="${id}" hidden></label>`,`<button data-act="rvTogC" data-id="${id}" data-k="${k}">Marcar como no ${vip?'pagada':'recibida'}</button>`]
+        :[!vip&&tel?`<a class="btn wa" href="${esc(rvWA(r,'sena'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${id}" data-k="senaPedida">Pedir seña por WhatsApp</a>`:'',`<label class="btn pri">Subir comprobante<input type="file" accept="image/*,application/pdf" data-rvcomp="${id}" hidden></label>`,`<button data-act="rvTogC" data-id="${id}" data-k="${k}">✓ ${vip?'Pagó':'Recibí la seña'} sin comprobante</button>`];
       $('#sheet').innerHTML=`<div class="sheet" data-act="closeSheet"><div><h3>${vip?'Pago de la mesa':'Seña'} · ${esc(r.nombre)}</h3><p class="meta">${vip?money(r.precio||0):money(r.sena)} · ${ok?(vip?'Pagada':'Recibida')+' ✓':'Pendiente'}${r.senaPedida&&!ok?' · ya se le pidió':''}</p><div class="rv-sh">${opc.filter(Boolean).join('')}<button data-act="closeSheet">Cerrar</button></div></div></div>`;return}
     if(a==='rvTogC'){$('#sheet').innerHTML='';const r=S.res.find(x=>x.id===id),k=b.dataset.k;await updateDoc(doc(db,'reservas',id),{[k]:!r[k],[k+'T']:Date.now(),[k+'Por']:S.uid});return}
     if(a==='rvElim'){const r=S.res.find(x=>x.id===id);$('#sheet').innerHTML=`<div class="sheet" data-act="closeSheet"><div><h3>¿Eliminar la reserva de ${esc(r?.nombre||'')}?</h3><p class="meta">${esc(rvDiaTxt(r.fecha))}${r.hora?' · '+esc(r.hora):''} · ${esc(r.personas||'')} personas. Se borra para todos y no se puede recuperar.</p><div class="row" style="margin-top:14px"><button class="del" style="flex:1" data-act="rvElimOk" data-id="${id}">Sí, eliminar</button><button style="flex:1" data-act="closeSheet">No</button></div></div></div>`;return}
@@ -1919,7 +1919,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28t';
+const APP_V='2026-11-28u';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
