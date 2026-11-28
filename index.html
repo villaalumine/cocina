@@ -196,7 +196,9 @@ productos:[['p1','Tomate redondo','kg','vverd',8,5],['p2','Cebolla','kg','vverd'
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rid=p=>p+Math.random().toString(36).slice(2,9);
-const num=v=>{const n=parseFloat(String(v).replace(',','.'));return isFinite(n)?n:0};
+const num=v=>{let s=String(v??'');if(s.includes('$'))s=s.replace(/[^\d,]/g,'');const n=parseFloat(s.replace(',','.'));return isFinite(n)?n:0};
+const fmtPesos=(n,dec)=>{if(n===''||n==null)return '';const [i,d]=String(n).split(',');const e=i.replace(/\D/g,'').replace(/^0+(?=\d)/,'');if(!e&&d===undefined)return '';return '$ '+(e||'0').replace(/\B(?=(\d{3})+(?!\d))/g,'.')+(d!==undefined?','+d.replace(/\D/g,'').slice(0,2):'')};
+const numAPesos=v=>{if(v===''||v==null)return '';const n=num(v);if(!n&&!/\d/.test(String(v)))return '';const [i,d]=String(Math.round(n*100)/100).split('.');return fmtPesos(i+(d?','+d:''))};
 const fmt=n=>(Math.round(n*100)/100).toLocaleString('es-AR');
 const money=n=>'$ '+Math.round(n).toLocaleString('es-AR');
 const fecha=t=>new Date(t).toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'numeric'});
@@ -366,7 +368,7 @@ function vRec(p){
   <input placeholder="Comentario (opcional)" data-rnota="${k}" value="${esc(x.nota)}"></div>`}).join('')}
   <div class="grid2" style="margin:14px 0">
   <div><label for="nr-${p.id}">N° de remito / factura</label><input id="nr-${p.id}" data-rf="nro" value="${esc(d.nro)}"></div>
-  <div><label for="m-${p.id}">Total del remito ($)</label><input id="m-${p.id}" inputmode="decimal" data-rf="monto" value="${esc(d.monto)}"></div>
+  <div><label for="m-${p.id}">Total del remito ($)</label><input id="m-${p.id}" inputmode="decimal" data-money data-rf="monto" value="${esc(d.monto)}"></div>
   <div><label for="pg-${p.id}">Pago</label><select id="pg-${p.id}" data-rf="pago">${PAGOS.map(([v,n])=>`<option value="${v}" ${d.pago===v?'selected':''}>${n}</option>`).join('')}</select></div>
   <div><label for="en-${p.id}">Quién lo entregó</label><input id="en-${p.id}" data-rf="entrego" value="${esc(d.entrego)}" placeholder="Nombre del repartidor"></div>
   <div><label for="n-${p.id}">Nota de la entrega</label><input id="n-${p.id}" data-rf="nota" value="${esc(d.nota)}" placeholder="Llegó tarde, faltó remito…"></div></div>
@@ -628,11 +630,11 @@ function rvCard(r){
   return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}"><span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${diet?`<small class="rv-diet">${diet}</small>`:''}${r.nota?`<small class="rv-nota">📝 ${esc(r.nota)}</small>`:''}</button>${acts}</div>`;
 }
 function rvForm(){
-  const d=S.rvD,vip=d.tipo==='vip',f=(k,l,ph,t)=>`<label>${l}<input data-rv="${k}" value="${esc(d[k]??'')}" placeholder="${esc(ph||'')}"${t==='n'?' inputmode="numeric"':t==='tel'?' type="tel" inputmode="tel"':''}></label>`;
+  const d=S.rvD,vip=d.tipo==='vip',f=(k,l,ph,t)=>`<label>${l}<input data-rv="${k}" value="${esc(d[k]??'')}" placeholder="${esc(ph||'')}"${t==='n'?' inputmode="numeric"':t==='m'?' inputmode="numeric" data-money':t==='tel'?' type="tel" inputmode="tel"':''}></label>`;
   return `<div class="panel rv-form"><h3 style="margin-top:0">${S.rvId?'Editar':'Nueva'} reserva · ${RV_TIPOS[d.tipo][1]}</h3>
   <div class="pe-g"><label>Día<input type="date" data-rv="fecha" value="${esc(d.fecha||'')}"></label>${vip?'':f('hora','Horario','Ej: 21:30')}
   ${f('nombre','Nombre y apellido','')}${f('personas','Personas','Ej: 4','n')}${f('tel','Teléfono (WhatsApp)','Ej: 223 555 1234','tel')}
-  ${vip?f('precio','Precio de la mesa','Ej: 150000','n')+f('consumo','Consumo incluido','Ej: 100000','n'):f('sena','Seña a pedir','Ej: 20000 (vacío si no pide)','n')}
+  ${vip?f('precio','Precio de la mesa','Ej: $ 150.000','m')+f('consumo','Consumo incluido','Ej: $ 100.000','m'):f('sena','Seña a pedir','Ej: $ 20.000 (vacío si no pide)','m')}
   ${f('de','¿Quién la pasó?','Ej: Matías, Recepción…')}</div>
   ${vip?'':`<p class="rv-lbl">¿Qué van a comer?</p><div class="chips">${RV_MENUS.map(([k,t])=>`<button class="chip ${d.menu===k?'on':''}" data-act="rvMenu" data-id="${k}">${t}</button>`).join('')}</div>`}
   <p class="rv-lbl">Restricciones (cuántas personas)</p><div class="rv-diets">${RV_DIET.map(([k,i,t])=>`<div class="rv-dt2${num(d[k])>0?' on':''}"><span>${i} ${t}</span><span class="rv-stp"><button data-act="rvDiet" data-id="${k}" data-n="-1">−</button><b>${num(d[k])||0}</b><button data-act="rvDiet" data-id="${k}" data-n="1">+</button></span></div>`).join('')}</div>
@@ -793,7 +795,7 @@ function vPe(){
   return `<div class="head"><div><h2>${esPl?'Plantilla: ':''}${esc(esPl?p.nombre:(p.titulo||p.cliente||'Nuevo presupuesto'))}</h2><p class="sub">${esPl?'Lo que cambies acá se usa en los próximos presupuestos.':`${esc(p.plNombre||'')}${et?` · <span class="badge ${ec}">${et}</span>`:''}${p.enviadoT?` · enviado ${diasDesde(p.enviadoT)}`:''}`}</p></div></div>
   ${esPl?`<div class="panel"><h3 style="margin-top:0">Plantilla</h3><div class="pe-g"><label>Nombre${pfAttr('nombre',p.nombre)}</label><label>Encabezado<select data-pf="marca">${[['mara','Mara Social Club'],['villa','Villa Aluminé'],['ambos','Villa + Mara']].map(([v,t])=>`<option value="${v}" ${p.marca===v?'selected':''}>${t}</option>`).join('')}</select></label><label>Tamaño de hoja<select data-pf="formato"><option value="a4" ${p.formato!=='largo'?'selected':''}>A4</option><option value="largo" ${p.formato==='largo'?'selected':''}>Larga (como Finger food)</option></select></label><label>Tipo de menú${pfAttr('menuTipo',p.menuTipo)}</label><label>Propina${pfAttr('propina',p.propina)}</label><label>Precios<select data-pf="precio.modo"><option value="dos" ${dos?'selected':''}>Efectivo y otros medios</option><option value="uno" ${!dos?'selected':''}>Un solo valor (+IVA con tarjeta)</option></select></label></div><label style="display:block;margin-top:8px">Aviso abajo (opcional)${pfAttr('nota',p.nota,'Ej: El acceso a la discoteca MARA no está incluido…','ta')}</label></div>`
   :`<div class="panel"><h3 style="margin-top:0">Cliente y evento</h3><label style="display:block;margin-bottom:10px">Nombre del presupuesto (para vos y para el mensaje; no sale en el PDF)${pfAttr('titulo',p.titulo,'Ej: Coca-Cola · Fin de año')}</label><div class="pe-g"><label>Cliente${pfAttr('cliente',p.cliente,'Nombre')}</label><label>Teléfono (WhatsApp)${pfAttr('tel',p.tel,'Ej: 223 537 2414')}</label><label>Fecha<input type="date" data-pf="fecha" value="${esc(p.fecha||'')}"></label><label>Horario${pfAttr('hora',p.hora,'Ej: 21hs a 02hs')}</label><label>Invitados<input type="number" inputmode="numeric" data-pf="invitados" value="${esc(p.invitados||'')}"></label><label>Sector<select data-pf="sector">${[...new Set([...SECTORES,p.sector].filter(Boolean))].map(s=>`<option ${p.sector===s?'selected':''}>${esc(s)}</option>`).join('')}</select></label><label>Menú${pfAttr('menuTipo',p.menuTipo)}</label></div>
-  <h3>Precios</h3><div class="pe-g">${dos?`<label>Efectivo, por persona<input inputmode="numeric" data-pf="precioEf" value="${esc(p.precioEf||'')}" placeholder="Ej: 120000"></label><label>Otros medios, por persona<input inputmode="numeric" data-pf="precioOtros" value="${esc(p.precioOtros||'')}" placeholder="Ej: 125000"></label>`:`<label>Valor por persona (efectivo)<input inputmode="numeric" data-pf="precioEf" value="${esc(p.precioEf||'')}"></label>`}<label>Propina<input inputmode="numeric" data-pf="propina" value="${esc(p.propina||'')}"></label></div>
+  <h3>Precios</h3><div class="pe-g">${dos?`<label>Efectivo, por persona<input inputmode="numeric" data-money data-pf="precioEf" value="${esc(p.precioEf||'')}" placeholder="Ej: 120000"></label><label>Otros medios, por persona<input inputmode="numeric" data-money data-pf="precioOtros" value="${esc(p.precioOtros||'')}" placeholder="Ej: 125000"></label>`:`<label>Valor por persona (efectivo)<input inputmode="numeric" data-money data-pf="precioEf" value="${esc(p.precioEf||'')}"></label>`}<label>Propina<input inputmode="numeric" data-money data-pf="propina" value="${esc(p.propina||'')}"></label></div>
   ${p.invitados&&num(p.precioEf)?`<p class="meta" style="margin:8px 0 0">Total en efectivo: <b>${money(num(p.precioEf)*num(p.invitados))}</b>${dos&&num(p.precioOtros)?` · con otros medios: <b>${money(num(p.precioOtros)*num(p.invitados))}</b>`:''} (sin propina)</p>`:''}
   <label style="display:block;margin-top:8px">Aviso abajo (opcional)${pfAttr('nota',p.nota,'','ta')}</label></div>`}
   <h3 style="margin:18px 0 8px">Menú, bebidas y extras</h3><p class="meta" style="margin-top:-4px">Cambiá lo que el cliente pidió distinto. Lo de la plantilla no se toca.</p>${bl}
@@ -930,7 +932,7 @@ function vCartas(){
 function cartaForm(it,loc){
   const R=(S.recetas||[]).filter(r=>r.local===loc).sort((a,b)=>a.nombre.localeCompare(b.nombre)),cur=cartaRec(it,loc);
   return `<div class="cform"><label>Nombre<input id="cf-n" value="${esc(it.nombre)}"></label><label>Descripción<input id="cf-d" value="${esc(it.desc||'')}"></label>
-  <div class="row"><label style="flex:1">Precio<input id="cf-p" inputmode="numeric" value="${num(it.precio)||''}"></label><label style="flex:1">Precio botella (opcional)<input id="cf-p2" inputmode="numeric" value="${num(it.precio2)||''}"></label></div>
+  <div class="row"><label style="flex:1">Precio<input id="cf-p" inputmode="numeric" data-money value="${num(it.precio)||''}"></label><label style="flex:1">Precio botella (opcional)<input id="cf-p2" inputmode="numeric" data-money value="${num(it.precio2)||''}"></label></div>
   <label>Sección<select id="cf-s">${(S.cartas[loc].cartas[S.cItem.c]?.secciones||[]).map((x,k)=>`<option value="${k}" ${k===S.cItem.s?'selected':''}>${esc(x.nombre)}</option>`).join('')}</select></label>
   <label>Receta<select id="cf-r"><option value="">— Sin receta —</option>${R.map(r=>`<option value="${r.id}" ${cur?.id===r.id?'selected':''}>${esc(r.nombre)}</option>`).join('')}</select></label>
   <div class="row" style="margin-top:8px"><button class="pri" data-act="cGuardar">Guardar</button><button data-act="cCancelar">Cancelar</button>${S.cItem.i>=0?'<button data-act="cBorrar" style="margin-left:auto;color:#b42318">Borrar</button>':''}</div></div>`;
@@ -1446,7 +1448,7 @@ function vCatalogo(){
   <button class="del" style="margin-top:10px" data-act="delPv" data-id="${k}">Quitar proveedor</button></details>`:''}
   <div class="prodlist">${items.map(({x,pk})=>ed?`<div class="prodrow"><input data-pr="${pk}" data-f="nombre" value="${esc(x.nombre)}" aria-label="Producto" placeholder="Producto">
   <input data-pr="${pk}" data-f="unidad" value="${esc(x.unidad)}" list="unidades" aria-label="Unidad" class="pu">
-  <div class="pp"><span>$</span><input inputmode="decimal" data-pr="${pk}" data-f="precio" value="${esc(x.precio??'')}" aria-label="Precio" placeholder="Precio"></div>
+  <div class="pp"><span>$</span><input inputmode="decimal" data-money data-pr="${pk}" data-f="precio" value="${esc(x.precio??'')}" aria-label="Precio" placeholder="Precio"></div>
   <input inputmode="decimal" data-pr="${pk}" data-min="${loc}" value="${esc(x.min?.[loc]??'')}" aria-label="Mínimo de stock" placeholder="Mín." class="pm">
   <button class="pq" data-act="delPr" data-id="${pk}" aria-label="Quitar ${esc(x.nombre)}">✕</button></div>${x.info?`<small class="meta pinfo2">${esc([x.cat,infoTxt(x)].filter(Boolean).join(' · '))}</small>`:''}`
   :`<div class="li"><span>${esc(x.nombre)} <small class="meta">· ${esc(x.unidad)}</small>${x.info?`<small class="meta">${esc([x.cat,infoTxt(x)].filter(Boolean).join(' · '))}</small>`:''}</span><b class="q">${x.precio?money(x.precio):'–'}</b></div>`).join('')||'<p class="empty">Todavía no tiene productos.</p>'}</div>
@@ -1757,6 +1759,10 @@ function mencionar(nombre){
   const t=document.querySelector('textarea[data-chatin]');if(!t)return;const pos=t.selectionStart,antes=t.value.slice(0,pos).replace(/@([^\s@]*)$/,'@'+nombre+' ');
   t.value=antes+t.value.slice(pos);t.focus();t.setSelectionRange(antes.length,antes.length);$('#mentions').hidden=true;
 }
+document.addEventListener('input',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-money]'))return;const v=fmtPesos(t.value);if(v!==t.value){t.value=v;try{t.setSelectionRange(v.length,v.length)}catch(x){}}},true);
+{const fmtAll=root=>root.querySelectorAll?.('input[data-money]').forEach(i=>{if(document.activeElement!==i)i.value=numAPesos(i.value)});
+ const mo=new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1){if(n.matches('input[data-money]'))fmtAll(n.parentNode);else fmtAll(n)}})));
+ ['#main','#sheet'].forEach(q=>{const el=document.querySelector(q);if(el)mo.observe(el,{childList:true,subtree:true})});}
 document.addEventListener('input',e=>{
   if(e.target.dataset&&e.target.dataset.pf!==undefined&&S.pe){peSet(e.target.dataset.pf,e.target.value);return}
   if(e.target.dataset?.rv!==undefined&&S.rvD){S.rvD[e.target.dataset.rv]=e.target.value;return}
@@ -1846,7 +1852,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28k';
+const APP_V='2026-11-28l';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
