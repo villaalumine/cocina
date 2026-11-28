@@ -112,6 +112,7 @@ nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;backgroun
 .rv-del{background:none;border-color:transparent;color:#b42318;margin-left:auto}.rv-listo{color:#1f7a3a;font-weight:700;padding-left:2px!important}.rv-ok{background:#e7f5ec;color:#1f7a3a;border-color:#9fd3b0}.rv-no{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}
 .rv-menu{font:600 12px Barlow,sans-serif;background:#efe7dd;color:#5b4636;border-radius:99px;padding:2px 8px;vertical-align:2px;white-space:nowrap}.rv-diet{color:#1f7a3a!important;font-weight:600}
 .rv-lbl{font-weight:600;margin:14px 0 6px}.rv-diets{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.rv-dt2{display:flex!important;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 8px 6px 12px;background:var(--card)}.rv-dt2.on{border-color:#1f7a3a;background:#e7f5ec;color:#1f5e33}.rv-dt2.on button{color:#1f5e33}.rv-stp{display:flex;align-items:center;gap:8px}.rv-stp button{width:34px;height:34px;padding:0;min-height:0;font-size:20px;border-radius:50%}.rv-stp b{min-width:16px;text-align:center}
+.rv-falta,.rv-ok2{font:700 12px Barlow,sans-serif;border-radius:99px;padding:2px 9px;margin-bottom:2px}.rv-falta{background:#fdf0d5;color:#7a4f00;border:1px solid #e6b85c}.rv-ok2{background:#e7f5ec;color:#1f5e33;border:1px solid #9fd3b0}
 .rv-exp{width:100%;margin:0 0 12px;font-weight:700}
 .rv-cocina{display:block;width:100%;text-align:left;cursor:pointer}.rs-card h3{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 4px}.rs-card h3 small{font-weight:400;font-size:13px}.rs-dl{margin:0 0 6px;color:#1f7a3a;font-weight:600}.rs-r{display:flex;flex-direction:column;padding:6px 0;border-top:1px solid var(--line)}.rs-r small{font-size:13.5px}
 .rv-cocina h4{margin:2px 0 4px;font:700 18px "Barlow Condensed",sans-serif}.rv-cocina h4 small{font:400 13px Barlow,sans-serif;opacity:.7}.rs-g{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}.rs-f{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0}.rs-f b{font-size:16px}.rs-0{opacity:.5}.rs-d{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
@@ -630,8 +631,10 @@ function rvCard(r){
   }
   const info=[vip?'':r.hora?`<b class="rv-h">${esc(rvHora(r.hora))}</b>`:'',`<b>${esc(r.nombre||'(sin nombre)')}</b>`,`${esc(r.personas||'?')} pers.`].filter(Boolean).join(' · ')+(!vip&&r.menu?` <span class="rv-menu">${esc(rvMenuTxt(r.menu))}</span>`:'');
   const diet=rvDietTxt(r);
+  const falta=can?[]:[vip?(!r.pagoOk?'pago':''):(num(r.sena)>0&&!r.senaOk?'seña':''),!r.conf?'confirmar':''].filter(Boolean);
+  const estTag=can?'':falta.length?`<span class="rv-falta">Falta ${falta.join(' y ')}</span>`:'<span class="rv-ok2">Todo listo ✓</span>';
   const sub=[r.tel?`${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.comp?'con comprobante':'',(()=>{const n=rvNombres(r).length,p=num(r.personas);return n?`${n}${p?'/'+p:''} nombres`:p?'sin nombres':''})()].filter(Boolean).join(' · ');
-  return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}"><span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${diet?`<small class="rv-diet">${diet}</small>`:''}${r.nota?`<small class="rv-nota">${esc(r.nota)}</small>`:''}</button>${acts}</div>`;
+  return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}">${estTag}<span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${diet?`<small class="rv-diet">${diet}</small>`:''}${r.nota?`<small class="rv-nota">${esc(r.nota)}</small>`:''}</button>${acts}</div>`;
 }
 function rvForm(){
   const d=S.rvD,vip=d.tipo==='vip',f=(k,l,ph,t)=>`<label>${l}<input data-rv="${k}" value="${esc(d[k]??'')}" placeholder="${esc(ph||'')}"${t==='n'?' inputmode="numeric"':t==='m'?' inputmode="numeric" data-money':t==='tel'?' type="tel" inputmode="tel"':''}></label>`;
@@ -1919,7 +1922,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28u';
+const APP_V='2026-11-28v';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
