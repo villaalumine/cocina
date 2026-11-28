@@ -114,6 +114,7 @@ nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;backgroun
 .rv-lbl{font-weight:600;margin:14px 0 6px}.rv-diets{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.rv-dt2{display:flex!important;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 8px 6px 12px;background:var(--card)}.rv-dt2.on{border-color:#1f7a3a;background:#e7f5ec;color:#1f5e33}.rv-dt2.on button{color:#1f5e33}.rv-stp{display:flex;align-items:center;gap:8px}.rv-stp button{width:34px;height:34px;padding:0;min-height:0;font-size:20px;border-radius:50%}.rv-stp b{min-width:16px;text-align:center}
 .rv-falta,.rv-ok2{font:700 12px Barlow,sans-serif;border-radius:99px;padding:2px 9px;margin-bottom:2px}.rv-falta{background:#fdf0d5;color:#7a4f00;border:1px solid #e6b85c}.rv-ok2{background:#e7f5ec;color:#1f5e33;border:1px solid #9fd3b0}
 .rv-ev{background:var(--card);border:1px solid var(--line);border-left:6px solid #24303f;border-radius:12px;padding:8px 12px;margin:0 0 12px}.rv-ev h4{margin:2px 0 6px;font:700 18px "Barlow Condensed",sans-serif}.rv-evs{padding:4px 0;border-top:1px solid var(--line)}.rv-evs b{display:block;font-size:14px}.rv-evr{font-size:14.5px}.rv-evp{opacity:.65}
+.rv-locs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.rv-loc{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:22px 16px;border-radius:16px;min-height:110px;text-align:left}.rv-loc b{font:700 26px "Barlow Condensed",sans-serif}.rv-loc small{color:#6b7280;font-size:14px}.rv-loc-villa{border-left:6px solid #f93604}.rv-loc-mara{border-left:6px solid #a17a57}
 .rv-exp{width:100%;margin:0 0 12px;font-weight:700}
 .rv-cocina{display:block;width:100%;text-align:left;cursor:pointer}.rs-card h3{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 4px}.rs-card h3 small{font-weight:400;font-size:13px}.rs-dl{margin:0 0 6px;color:#1f7a3a;font-weight:600}.rs-r{display:flex;flex-direction:column;padding:6px 0;border-top:1px solid var(--line)}.rs-r small{font-size:13.5px}
 .rv-cocina h4{margin:2px 0 4px;font:700 18px "Barlow Condensed",sans-serif}.rv-cocina h4 small{font:400 13px Barlow,sans-serif;opacity:.7}.rs-g{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}.rs-f{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0}.rs-f b{font-size:16px}.rs-0{opacity:.5}.rs-d{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
@@ -596,6 +597,10 @@ const rvMenuTxt=k=>(RV_MENUS.find(m=>m[0]===k)||[])[1]||'';
 const rvDietTxt=r=>RV_DIET.filter(([k])=>num(r[k])>0).map(([k,i,t])=>`${num(r[k])} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · ');
 const RV_QUIEN=['Mara Reservas','Matías Cochi','Mossstro','Quimey','Joni','Fran Ludueña','Manu','Leo Lucente','Fran Cochi','Polaco','Palomo'];
 const RV_TIPOS={resto:['','Restaurante'],vip:['','Mesas boliche']};
+const RV_LOCS={mara:{n:'Mara',full:'Mara Social Club',sect:['Mara','Chiquita','Salón Falucho'],tipos:['resto','vip']},villa:{n:'Villa Aluminé',full:'Villa Aluminé',sect:['Villa Aluminé'],tipos:['resto']}};
+const rvLoc=()=>S.rvLoc||'mara',rvL=()=>RV_LOCS[rvLoc()];
+const RV_VILLA={msgSena:'Hola {nombre}! Te escribimos de Villa Aluminé por tu reserva del {fecha} a las {hora} para {personas} personas. Para dejarla confirmada deberás hacer una seña de {seña}.\n\nCuando la hagas mandanos el comprobante por acá. ¡Gracias!',
+  msgConf:'Hola {nombre}! Te escribimos de *Villa Aluminé* para reconfirmar tu reserva:\n\nDía: {fecha}\nHora: {hora}\nPersonas: {personas}\n\n¿Nos confirmás que vienen? Respondé este mensaje y listo.\n\nFalucho 32, Mar del Plata.\n\n¡Te esperamos!'};
 const RV_CFG0={sena:'',msgSena:'Hola {nombre}! Te escribimos de Mara Social Club por tu reserva del {fecha} a las {hora} para {personas} personas. Para dejarla confirmada deberás hacer una seña de {seña}.\n\nALIAS: SOCIALCLUBMARA.MDP\n\nCuando la hagas mandanos el comprobante por acá. ¡Gracias!',
   msgConf:'Hola {nombre}! Te escribimos de *Mara Social Club* para reconfirmar tu reserva:\n\nDía: {fecha}\nHora: {hora}\nPersonas: {personas}\n\n¿Nos confirmás que vienen? Respondé este mensaje y listo.\n\n*A tener en cuenta:*\n• A las 00:00 hs abre el boliche y se levantan las mesas y livings. Por eso te recomendamos llegar puntual a las {hora} para disfrutar la cena tranquilos. Después de las 00 hs podés dejar tus cosas en el guardarropas.\n• No se admiten menores de 18 años en la cena.\n• Dress code: canchero-elegante. No se permiten capuchas, gorros, ropa deportiva, bermudas, ojotas ni disfraces.\n• Falucho 32, esquina La Costa (Cabo Corrientes). Ingreso por las escalinatas de La Costa.\n\n¡Te esperamos! ',
   msgVip:'Hola {nombre}! Te escribimos de Mara Social Club para reconfirmar tu mesa del {fecha} para {personas} personas, con {consumo} de consumo. ¿Nos confirmás que vienen? ¡Te esperamos!'};
@@ -613,10 +618,10 @@ const rvMas=(f,n)=>{const [y,m,d]=f.split('-').map(Number);return dayKey(new Dat
 const rvDiaTxt=f=>{const h=dayKey(Date.now());if(f===h)return 'Hoy';if(f===rvMas(h,1))return 'Mañana';const [y,m,d]=f.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'})};
 const rvHora=x=>{let h=String(x||'').trim().replace(/\s*h(s|rs)?\.?$/i,'');if(/^\d{3,4}$/.test(h))h=h.padStart(4,'0').replace(/(\d\d)$/,':$1');else if(/^\d{1,2}$/.test(h))h+=':00';return h};
 const rvFechaMsg=f=>{const [y,m,d]=f.split('-').map(Number),x=new Date(y,m-1,d),w=x.toLocaleDateString('es-AR',{weekday:'long'});return `${w[0].toUpperCase()+w.slice(1)} ${d} de ${x.toLocaleDateString('es-AR',{month:'long'})}`};
-const rvLista=(tipo,f)=>(S.res||[]).filter(r=>r.id!=='_cfg'&&r.tipo===tipo&&r.fecha===f);
+const rvLista=(tipo,f)=>(S.res||[]).filter(r=>r.id!=='_cfg'&&r.tipo===tipo&&r.fecha===f&&(r.local||'mara')===rvLoc());
 const rvActivas=L=>L.filter(r=>r.estado!=='cancelada');
 const rvPend=r=>r.estado!=='cancelada'&&((r.tipo==='resto'&&num(r.sena)>0&&!r.senaOk)||(r.tipo==='vip'&&!r.pagoOk)||!r.conf);
-function rvMsg(r,k){const c=rvCfg();let t=k==='sena'?c.msgSena:r.tipo==='vip'?c.msgVip:c.msgConf;
+function rvMsg(r,k){const c=(r.local||'mara')==='villa'?{...rvCfg(),...RV_VILLA}:rvCfg();let t=k==='sena'?c.msgSena:r.tipo==='vip'?c.msgVip:c.msgConf;
   const v={nombre:(r.nombre||'').split(' ')[0],fecha:rvFechaMsg(r.fecha),hora:r.hora?rvHora(r.hora)+' hs':'',personas:r.personas||'',seña:num(r.sena)?money(r.sena):'',sena:num(r.sena)?money(r.sena):'',consumo:num(r.consumo)?money(r.consumo):'',precio:num(r.precio)?money(r.precio):'',datos:c.sena||''};
   return t.replace(/\{(\w+|seña)\}/g,(m,x)=>v[x]??m).replace(/ a las  para/,' para').replace(/\n\n\n+/g,'\n\n').trim()}
 const rvWA=(r,k)=>'https://wa.me/'+telWA(r.tel)+'?text='+encodeURIComponent(rvMsg(r,k));
@@ -661,7 +666,7 @@ async function rvListaPDF(dia){
   const A=[...rvActivas(rvLista('resto',dia)).sort((a,b)=>rvHora(a.hora).localeCompare(rvHora(b.hora))||a.nombre.localeCompare(b.nombre)),...rvActivas(rvLista('vip',dia)).sort((a,b)=>a.nombre.localeCompare(b.nombre))];
   if(!A.length&&!rvEventos(dia).length){alert('No hay reservas para este día.');return}
   const nuevaPag=()=>{pdf.addPage();y=M};const lugar=h=>{if(y+h>H-M)nuevaPag()};
-  pdf.setFont('helvetica','bold');pdf.setFontSize(18);pdf.text('Lista de ingreso · Mara Social Club',M,y+4);y+=10;
+  pdf.setFont('helvetica','bold');pdf.setFontSize(18);pdf.text('Lista de ingreso · '+rvL().full,M,y+4);y+=10;
   pdf.setFont('helvetica','normal');pdf.setFontSize(12);const tp=A.reduce((s,r)=>s+num(r.personas),0);pdf.text(`${rvFechaMsg(dia)}  ·  ${A.length} reservas  ·  ${tp} personas`,M,y+2);pdf.setFontSize(10);pdf.setTextColor(90);pdf.text('Tildar el casillero al entregar las consumiciones.',M,y+7);pdf.setTextColor(0);y+=13;
   {const E=rvEventos(dia);if(E.length){pdf.setFillColor(161,122,87);pdf.rect(M,y,W-2*M,8,'F');pdf.setTextColor(255);pdf.setFont('helvetica','bold');pdf.setFontSize(12);pdf.text('EVENTOS DEL DÍA',M+3,y+5.6);pdf.setTextColor(0);y+=12;pdf.setFontSize(11);
     E.forEach(e=>{lugar(7);pdf.setFont('helvetica','bold');pdf.text((e.sector||'Sin sector')+':',M,y);pdf.setFont('helvetica','normal');pdf.text(rvEvTxt(e).slice(0,90),M+38,y);y+=6.5});y+=4}}
@@ -684,7 +689,7 @@ async function rvListaPDF(dia){
   await guardarPDF(pdf,`Lista ingreso ${dia}.pdf`);
 }
 const SECT_ORD=['Villa Aluminé','Salón Falucho','Chiquita','Mara'];
-const rvEventos=dia=>(S.res||[]).filter(r=>r.tipo==='evento'&&r.fecha===dia&&(r.estado==='confirmado'||r.estado==='enviado')).sort((a,b)=>{const i=x=>{const k=SECT_ORD.indexOf(x);return k<0?99:k};return i(a.sector)-i(b.sector)||(a.hora||'').localeCompare(b.hora||'')});
+const rvEventos=dia=>(S.res||[]).filter(r=>r.tipo==='evento'&&r.fecha===dia&&rvL().sect.includes(r.sector)&&(r.estado==='confirmado'||r.estado==='enviado')).sort((a,b)=>{const i=x=>{const k=SECT_ORD.indexOf(x);return k<0?99:k};return i(a.sector)-i(b.sector)||(a.hora||'').localeCompare(b.hora||'')});
 const rvEvTxt=e=>[e.titulo||e.cliente,e.invitados?`${e.invitados} invitados`:'',e.menuTipo||'',e.hora||''].filter(Boolean).join(' · ')+(e.estado==='confirmado'?'':' (a confirmar)');
 function rvEvHTML(dia){const E=rvEventos(dia);if(!E.length)return '';const G={};E.forEach(e=>(G[e.sector||'Sin sector']=G[e.sector||'Sin sector']||[]).push(e));
   return `<div class="rv-ev"><h4>Eventos del día</h4>${Object.entries(G).map(([sec,L])=>`<div class="rv-evs"><b>${esc(sec)}</b>${L.map(e=>`<div class="rv-evr${e.estado==='confirmado'?'':' rv-evp'}">${esc(rvEvTxt(e))}</div>`).join('')}</div>`).join('')}</div>`}
@@ -695,7 +700,7 @@ function rvResumenData(dia){
 }
 function rvResumenTxt(dia){
   const {A,grupos,pers}=rvResumenData(dia),f=rvFechaMsg(dia);
-  const L=[`*Resumen de reservas · ${f}*`,`${A.length} reserva${A.length===1?'':'s'} · ${pers} personas`];
+  const L=[`*Resumen de reservas ${rvL().n} · ${f}*`,`${A.length} reserva${A.length===1?'':'s'} · ${pers} personas`];
   grupos.forEach(g=>{L.push('',`*${g.t}: ${g.pers}*`);g.su.forEach(([t,n])=>L.push(`   ${n} ${t.toLowerCase()}`));g.diet.forEach(([i,t,n])=>L.push(`   ${n} ${t.toLowerCase().replace('tacc','TACC')}`));g.L.filter(r=>r.nota).forEach(r=>L.push(`   ${r.nombre.split(' ')[0]} (${r.personas}): ${r.nota}`))});
   const tot=RV_DIET.map(([k,i,t])=>[i,t,A.reduce((s,r)=>s+num(r[k]),0)]).filter(x=>x[2]);
   const E=rvEventos(dia);if(E.length){L.push('','*Eventos del día*');const G={};E.forEach(e=>(G[e.sector||'Sin sector']=G[e.sector||'Sin sector']||[]).push(e));Object.entries(G).forEach(([sec,X])=>{L.push(`${sec}:`);X.forEach(e=>L.push(`   ${rvEvTxt(e)}`))})}
@@ -704,7 +709,7 @@ function rvResumenTxt(dia){
 }
 function vRvResumen(){
   const dia=rvDia(),{A,grupos,pers}=rvResumenData(dia);
-  return `<div class="head"><div><h2>Resumen de reservas</h2><p class="sub" style="text-transform:capitalize">${esc(rvDiaTxt(dia))} · ${A.length} reserva${A.length===1?'':'s'} · ${pers} personas</p></div></div>
+  return `<div class="head"><div><h2>Resumen de reservas · ${esc(rvL().n)}</h2><p class="sub" style="text-transform:capitalize">${esc(rvDiaTxt(dia))} · ${A.length} reserva${A.length===1?'':'s'} · ${pers} personas</p></div></div>
   ${rvEvHTML(dia)}
   ${grupos.length?grupos.map(g=>`<div class="panel rs-card"><h3><span>${esc(g.t)}</span><b>${g.pers} <small>pers.</small></b></h3>${g.su.length?`<p class="rs-dl" style="color:inherit">${g.su.map(([t,n])=>`${t}: <b>${n}</b>`).join(' · ')}</p>`:''}${g.diet.length?`<p class="rs-dl">${g.diet.map(([i,t,n])=>`${n} ${t.toLowerCase().replace('tacc','TACC')}`).join(' · ')}</p>`:''}
     ${g.L.map(r=>`<div class="rs-r"><span>${r.hora?`<b>${esc(rvHora(r.hora))}</b> · `:''}${esc(r.nombre)} · ${esc(r.personas)}</span>${rvDietTxt(r)?`<small class="rv-diet">${rvDietTxt(r)}</small>`:''}${r.nota?`<small class="rv-nota">${esc(r.nota)}</small>`:''}</div>`).join('')}</div>`).join(''):'<p class="empty">No hay reservas del restaurante para este día.</p>'}
@@ -712,9 +717,12 @@ function vRvResumen(){
 }
 function vReservas(){
   ensureRes();
+  if(!S.rvLoc){const h=dayKey(Date.now()),c=l=>(S.res||[]).filter(r=>r.fecha===h&&r.tipo!=='evento'&&r.estado!=='cancelada'&&(r.local||'mara')===l).length;
+    return `<div class="head"><div><h2>Reservas</h2><p class="sub">Elegí el negocio.</p></div></div><div class="rv-locs">${[['villa','logo-villa.png','Villa Aluminé'],['mara','logo-mara.png','Mara']].map(([k,img,t])=>`<button class="rv-loc rv-loc-${k}" data-act="rvLoc" data-id="${k}"><b>${t}</b><small>${S.res?`Hoy: ${c(k)} reserva${c(k)===1?'':'s'}`:''}</small></button>`).join('')}</div>`}
+  if(!rvL().tipos.includes(S.rvTipo||'resto'))S.rvTipo='resto';
   const T=S.rvTipo||'resto',dia=rvDia(),hoy=dayKey(Date.now());
-  const head=`<div class="head"><div><h2>Reservas</h2><p class="sub">Cargá acá las reservas que llegan por WhatsApp. Todos ven lo mismo al instante.</p></div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="pri" data-act="rvNueva">+ Nueva reserva</button></div></div>
-  <div class="chips rv-tabs">${Object.entries(RV_TIPOS).map(([k,[i,t]])=>`<button class="chip ${T===k?'on':''}" data-act="rvTipo" data-id="${k}">${t}</button>`).join('')}</div>`;
+  const head=`<div class="head"><div><h2>Reservas · ${esc(rvL().n)}</h2><p class="sub">Cargá acá las reservas que llegan por WhatsApp. Todos ven lo mismo al instante.</p></div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="pri" data-act="rvNueva">+ Nueva reserva</button></div></div>
+  <div class="chips rv-tabs">${Object.entries(RV_TIPOS).filter(([k])=>rvL().tipos.includes(k)).map(([k,[i,t]])=>`<button class="chip ${T===k?'on':''}" data-act="rvTipo" data-id="${k}">${t}</button>`).join('')}</div>`;
   if(S.resErr==='permission-denied')return head+'<p class="note">Todavía no está habilitado el permiso para Reservas. Avisale a Matías.</p>';
   if(!S.res)return head+'<p class="empty">Cargando…</p>';
   if(S.rvCfgOn){const c=rvCfg();return head+`<div class="panel"><h3 style="margin-top:0">Mensajes de WhatsApp</h3><p class="meta">Se pueden usar: {nombre} {fecha} {hora} {personas} {seña} {consumo} {precio} {datos}</p>
@@ -727,7 +735,7 @@ function vReservas(){
   if(S.rvRes)return vRvResumen();
   if(S.rvComps&&canResCfg())return head+vComprobantes();
   const q=(S.rvBus||'').trim().toLowerCase();
-  if(q){const L=(S.res||[]).filter(r=>r.id!=='_cfg'&&r.tipo!=='evento'&&r.fecha>=hoy&&[r.nombre,r.tel,r.nota,r.de].join(' ').toLowerCase().includes(q)).sort((a,b)=>(a.fecha+(a.hora||'')).localeCompare(b.fecha+(b.hora||'')));
+  if(q){const L=(S.res||[]).filter(r=>r.id!=='_cfg'&&r.tipo!=='evento'&&(r.local||'mara')===rvLoc()&&r.fecha>=hoy&&[r.nombre,r.tel,r.nota,r.de].join(' ').toLowerCase().includes(q)).sort((a,b)=>(a.fecha+(a.hora||'')).localeCompare(b.fecha+(b.hora||'')));
     return head+`<input type="search" placeholder="Buscar por nombre o teléfono…" value="${esc(S.rvBus)}" data-rvbus style="margin:10px 0">${L.length?L.map(r=>`<p class="meta" style="margin:12px 0 4px">${esc(rvDiaTxt(r.fecha))}</p>`+rvCard(r)).join(''):'<p class="empty">No hay reservas próximas con ese nombre o teléfono.</p>'}`}
   const L=rvLista(T,dia).sort((a,b)=>(a.estado==='cancelada')-(b.estado==='cancelada')||(a.hora||'').localeCompare(b.hora||'')||(a.creado||0)-(b.creado||0)),A=rvActivas(L);
   const pers=A.reduce((s,r)=>s+num(r.personas),0),pend=A.filter(rvPend).length;
@@ -778,6 +786,8 @@ function vComprobantes(){
 }
 async function rvAccion(a,b,id){
   try{
+    if(a==='rvLoc'){S.rvLoc=id;try{localStorage.setItem('cocina.rvLoc',id)}catch(x){}S.rvD=null;S.rvRes=false;render(true);scrollTo(0,0);return}
+    if(a==='rvLocSalir'){S.rvLoc=null;S.rvD=null;S.rvRes=false;render(true);scrollTo(0,0);return}
     if(a==='rvTipo'){S.rvTipo=id;S.rvD=null;S.rvComps=false;S.rvRes=false;render(true);return}
     if(a==='rvDia'){S.rvDia=id;render(true);return}
     if(a==='rvNueva'){S.rvCompFile=null;const T=S.rvTipo||'resto';S.rvD={tipo:T,fecha:rvDia()<dayKey(Date.now())?dayKey(Date.now()):rvDia(),hora:'',menu:'',nombre:'',personas:T==='vip'?'10':'',tel:'',sena:'',precio:'',consumo:'',de:esRecep()?'Mara Reservas':S.owner?'Matías Cochi':(RV_QUIEN.find(n=>n.toLowerCase().startsWith(String(me()?.nombre||'~').toLowerCase()))||''),nota:''};S.rvId=null;location.hash='reservas';render(true);scrollTo(0,0);setTimeout(()=>$('[data-rv=nombre]')?.focus(),60);return}
@@ -787,7 +797,7 @@ async function rvAccion(a,b,id){
     if(a==='rvCerrar'){S.rvD=null;S.rvId=null;S.rvCompFile=null;S.rvComps=false;S.rvCfgOn=false;S.rvRes=false;render(true);scrollTo(0,0);return}
     if(a==='rvGuardar'){const d=S.rvD;
       if(!d.nombre.trim()){alert('Falta el nombre.');return}if(!d.fecha){alert('Falta el día.');return}
-      const o={...d,...Object.fromEntries(RV_SUSHI.map(([k])=>[k,d.menu==='sushi'?num(d[k]):0])),celiaco:num(d.celiaco),vegetariano:num(d.vegetariano),vegano:num(d.vegano),nombre:d.nombre.trim(),personas:String(d.personas||'').trim(),tel:String(d.tel||'').trim(),sena:num(d.sena),precio:num(d.precio),consumo:num(d.consumo),local:'mara',editado:Date.now(),editadoPor:S.uid};
+      const o={...d,...Object.fromEntries(RV_SUSHI.map(([k])=>[k,d.menu==='sushi'?num(d[k]):0])),celiaco:num(d.celiaco),vegetariano:num(d.vegetariano),vegano:num(d.vegano),nombre:d.nombre.trim(),personas:String(d.personas||'').trim(),tel:String(d.tel||'').trim(),sena:num(d.sena),precio:num(d.precio),consumo:num(d.consumo),local:rvLoc(),editado:Date.now(),editadoPor:S.uid};
       let rid=S.rvId;if(S.rvId){await updateDoc(doc(db,'reservas',S.rvId),o)}else{o.creado=Date.now();o.por=S.uid;o.estado='activa';rid=(await addDoc(collection(db,'reservas'),o)).id}
       const cf=S.rvCompFile;S.rvCompFile=null;if(cf)await rvComprobante(cf,rid,{...o,id:rid});
       S.rvDia=d.fecha;S.rvTipo=d.tipo;S.rvD=null;S.rvId=null;if(!cf)toast('Reserva guardada.');render(true);return}
@@ -1626,9 +1636,9 @@ function render(force){
   const html=pid?vPedido(pid):{panel:vPanel,recetario:vRecetario,mant:vMant,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo,copia:vCopia,admin:vAdmin,ped:vPed,presup:vPresup,pe:vPe,eventos:vEventos,avisos:vAvisos,cartas:vCartas,ventas:vVentas,reservas:vReservas}[v]();
   $('#main').innerHTML=(v!=='panel'&&!pid?volverBtn():'')+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
 }
-const volverBtn=()=>location.hash.slice(1)==='reservas'&&(S.rvD||S.rvComps||S.rvCfgOn||S.rvRes)?'<button class="btn volver" data-act="rvCerrar">‹ Reservas</button>':location.hash.slice(1)==='pe'?'<a class="btn volver" href="#presup">‹ Presupuestos</a>':lvl()<=2&&location.hash.slice(1)==='solicitudes'?'<a class="btn volver" href="#avisos">‹ Solicitudes</a>':!soloVer()&&['pedir','pedidos'].includes(location.hash.slice(1))?'<a class="btn volver" href="#ped">‹ Pedidos</a>':esAdm()&&ADMIN_V.includes(location.hash.slice(1))?'<a class="btn volver" href="#admin">‹ Administración</a>':'<a class="btn volver" href="#panel">‹ Inicio</a>';
+const volverBtn=()=>location.hash.slice(1)==='reservas'&&(S.rvD||S.rvComps||S.rvCfgOn||S.rvRes)?'<button class="btn volver" data-act="rvCerrar">‹ Reservas</button>':location.hash.slice(1)==='reservas'&&S.rvLoc?'<button class="btn volver" data-act="rvLocSalir">‹ Villa / Mara</button>':location.hash.slice(1)==='pe'?'<a class="btn volver" href="#presup">‹ Presupuestos</a>':lvl()<=2&&location.hash.slice(1)==='solicitudes'?'<a class="btn volver" href="#avisos">‹ Solicitudes</a>':!soloVer()&&['pedir','pedidos'].includes(location.hash.slice(1))?'<a class="btn volver" href="#ped">‹ Pedidos</a>':esAdm()&&ADMIN_V.includes(location.hash.slice(1))?'<a class="btn volver" href="#admin">‹ Administración</a>':'<a class="btn volver" href="#panel">‹ Inicio</a>';
 document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(S.pending&&!(a&&a.closest&&a.closest('#main')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))render()},50));
-addEventListener('hashchange',()=>{S.recOpen=null;S.note='';render(true);scrollTo(0,0)});
+addEventListener('hashchange',()=>{S.recOpen=null;if(location.hash==='#reservas'){S.rvLoc=null;S.rvD=null;S.rvRes=false}S.note='';render(true);scrollTo(0,0)});
 $('#localSel').addEventListener('change',e=>{S.local=e.target.value;try{localStorage.setItem('cocina.local',S.local)}catch(x){}render(true)});
 $('#salir').addEventListener('click',()=>signOut(auth));
 
@@ -1938,7 +1948,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28y';
+const APP_V='2026-11-28z';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
