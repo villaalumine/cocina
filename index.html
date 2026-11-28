@@ -710,7 +710,7 @@ async function rvAccion(a,b,id){
     if(a==='rvEdit'){const r=S.res.find(x=>x.id===id);S.rvD=JSON.parse(JSON.stringify(r));delete S.rvD.id;S.rvId=id;render(true);scrollTo(0,0);return}
     if(a==='rvMenu'){S.rvD.menu=S.rvD.menu===id?'':id;render(true);return}
     if(a==='rvDiet'){S.rvD[id]=Math.max(0,num(S.rvD[id])+ +b.dataset.n);render(true);return}
-    if(a==='rvCerrar'){S.rvD=null;S.rvId=null;render(true);return}
+    if(a==='rvCerrar'){S.rvD=null;S.rvId=null;S.rvComps=false;S.rvCfgOn=false;render(true);scrollTo(0,0);return}
     if(a==='rvGuardar'){const d=S.rvD;
       if(!d.nombre.trim()){alert('Falta el nombre.');return}if(!d.fecha){alert('Falta el día.');return}
       const o={...d,celiaco:num(d.celiaco),vegetariano:num(d.vegetariano),vegano:num(d.vegano),nombre:d.nombre.trim(),personas:String(d.personas||'').trim(),tel:String(d.tel||'').trim(),sena:num(d.sena),precio:num(d.precio),consumo:num(d.consumo),local:'mara',editado:Date.now(),editadoPor:S.uid};
@@ -1545,7 +1545,7 @@ function render(force){
   const html=pid?vPedido(pid):{panel:vPanel,recetario:vRecetario,mant:vMant,pedir:vPedir,solicitudes:vSolicitudes,pedidos:vPedidos,stock:vStock,catalogo:vCatalogo,equipo:vEquipo,copia:vCopia,admin:vAdmin,ped:vPed,presup:vPresup,pe:vPe,eventos:vEventos,avisos:vAvisos,cartas:vCartas,ventas:vVentas,reservas:vReservas}[v]();
   $('#main').innerHTML=(v!=='panel'&&!pid?volverBtn():'')+(S.note?`<p class="note">${esc(S.note)}</p>`:'')+html;
 }
-const volverBtn=()=>location.hash.slice(1)==='pe'?'<a class="btn volver" href="#presup">‹ Presupuestos</a>':lvl()<=2&&location.hash.slice(1)==='solicitudes'?'<a class="btn volver" href="#avisos">‹ Solicitudes</a>':!soloVer()&&['pedir','pedidos'].includes(location.hash.slice(1))?'<a class="btn volver" href="#ped">‹ Pedidos</a>':esAdm()&&ADMIN_V.includes(location.hash.slice(1))?'<a class="btn volver" href="#admin">‹ Administración</a>':'<a class="btn volver" href="#panel">‹ Inicio</a>';
+const volverBtn=()=>location.hash.slice(1)==='reservas'&&(S.rvD||S.rvComps||S.rvCfgOn)?'<button class="btn volver" data-act="rvCerrar">‹ Reservas</button>':location.hash.slice(1)==='reservas'&&esAdm()?'<a class="btn volver" href="#admin">‹ Administración</a>':location.hash.slice(1)==='pe'?'<a class="btn volver" href="#presup">‹ Presupuestos</a>':lvl()<=2&&location.hash.slice(1)==='solicitudes'?'<a class="btn volver" href="#avisos">‹ Solicitudes</a>':!soloVer()&&['pedir','pedidos'].includes(location.hash.slice(1))?'<a class="btn volver" href="#ped">‹ Pedidos</a>':esAdm()&&ADMIN_V.includes(location.hash.slice(1))?'<a class="btn volver" href="#admin">‹ Administración</a>':'<a class="btn volver" href="#panel">‹ Inicio</a>';
 document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(S.pending&&!(a&&a.closest&&a.closest('#main')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))render()},50));
 addEventListener('hashchange',()=>{S.recOpen=null;S.note='';render(true);scrollTo(0,0)});
 $('#localSel').addEventListener('change',e=>{S.local=e.target.value;try{localStorage.setItem('cocina.local',S.local)}catch(x){}render(true)});
@@ -1845,7 +1845,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28g';
+const APP_V='2026-11-28h';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
