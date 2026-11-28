@@ -587,6 +587,7 @@ const RV_MENUS=[['carta','A la carta'],['finger','Finger food'],['pasos','Menú 
 const RV_DIET=[['celiaco','🌾','Sin TACC'],['vegetariano','🥕','Vegetariano'],['vegano','🌱','Vegano']];
 const rvMenuTxt=k=>(RV_MENUS.find(m=>m[0]===k)||[])[1]||'';
 const rvDietTxt=r=>RV_DIET.filter(([k])=>num(r[k])>0).map(([k,i,t])=>`${i} ${num(r[k])} ${t.toLowerCase()}`).join(' · ');
+const RV_QUIEN=['Mara Reservas','Matías Cochi','Mossstro','Quimey','Joni','Fran Ludueña','Manu','Leo Lucente','Fran Cochi','Polaco','Palomo'];
 const RV_TIPOS={resto:['🍽️','Restaurante'],vip:['🍾','Mesas boliche']};
 const RV_CFG0={sena:'',msgSena:'Hola {nombre}! Te escribimos de Mara Social Club por tu reserva del {fecha} a las {hora} para {personas} personas. Para dejarla confirmada te pedimos una seña de {seña}.\n{datos}\nCuando la hagas mandanos el comprobante por acá. ¡Gracias!',
   msgConf:'Hola {nombre}! 👋 Te escribimos de *Mara Social Club* para reconfirmar tu reserva:\n\n📅 {fecha}\n🕘 {hora}\n👥 {personas} personas\n\n¿Nos confirmás que vienen? Respondé este mensaje y listo.\n\n*A tener en cuenta:*\n🕛 A las 00:00 hs abre el boliche y se levantan las mesas y livings. Por eso te recomendamos llegar puntual a las {hora} para disfrutar la cena tranquilos. Después de las 00 hs podés dejar tus cosas en el guardarropas.\n🔞 No se admiten menores de 18 años en la cena.\n👔 Dress code: canchero-elegante. No se permiten capuchas, gorros, ropa deportiva, bermudas, ojotas ni disfraces.\n📍 Falucho 32, esquina La Costa (Cabo Corrientes). Ingreso por las escalinatas de La Costa.\n\n¡Te esperamos! 🥂',
@@ -635,7 +636,7 @@ function rvForm(){
   <div class="pe-g"><label>Día<input type="date" data-rv="fecha" value="${esc(d.fecha||'')}"></label>${vip?'':f('hora','Horario','Ej: 21:30')}
   ${f('nombre','Nombre y apellido','')}${f('personas','Personas','Ej: 4','n')}${f('tel','Teléfono (WhatsApp)','Ej: 223 555 1234','tel')}
   ${vip?f('precio','Precio de la mesa','Ej: $ 150.000','m')+f('consumo','Consumo incluido','Ej: $ 100.000','m'):f('sena','Seña a pedir','Ej: $ 20.000 (vacío si no pide)','m')}
-  ${f('de','¿Quién la pasó?','Ej: Matías, Recepción…')}</div>
+  <label>¿Quién la pasó?<select data-rv="de"><option value="">— Elegí —</option>${[...RV_QUIEN,...(d.de&&!RV_QUIEN.includes(d.de)?[d.de]:[])].map(n=>`<option ${d.de===n?'selected':''}>${esc(n)}</option>`).join('')}</select></label></div>
   ${vip?'':`<p class="rv-lbl">¿Qué van a comer?</p><div class="chips">${RV_MENUS.map(([k,t])=>`<button class="chip ${d.menu===k?'on':''}" data-act="rvMenu" data-id="${k}">${t}</button>`).join('')}</div>`}
   <p class="rv-lbl">Restricciones (cuántas personas)</p><div class="rv-diets">${RV_DIET.map(([k,i,t])=>`<div class="rv-dt2${num(d[k])>0?' on':''}"><span>${i} ${t}</span><span class="rv-stp"><button data-act="rvDiet" data-id="${k}" data-n="-1">−</button><b>${num(d[k])||0}</b><button data-act="rvDiet" data-id="${k}" data-n="1">+</button></span></div>`).join('')}</div>
   ${vip&&num(d.precio)?`<p class="meta" style="margin:6px 0 0">Ganancia de la mesa: <b>${money(num(d.precio)-num(d.consumo))}</b></p>`:''}
@@ -709,7 +710,7 @@ async function rvAccion(a,b,id){
   try{
     if(a==='rvTipo'){S.rvTipo=id;S.rvD=null;S.rvComps=false;render(true);return}
     if(a==='rvDia'){S.rvDia=id;render(true);return}
-    if(a==='rvNueva'){const T=S.rvTipo||'resto';S.rvD={tipo:T,fecha:rvDia()<dayKey(Date.now())?dayKey(Date.now()):rvDia(),hora:'',menu:'',nombre:'',personas:T==='vip'?'10':'',tel:'',sena:'',precio:'',consumo:'',de:me()?.nombre||(S.owner?'Matías':''),nota:''};S.rvId=null;location.hash='reservas';render(true);scrollTo(0,0);setTimeout(()=>$('[data-rv=nombre]')?.focus(),60);return}
+    if(a==='rvNueva'){const T=S.rvTipo||'resto';S.rvD={tipo:T,fecha:rvDia()<dayKey(Date.now())?dayKey(Date.now()):rvDia(),hora:'',menu:'',nombre:'',personas:T==='vip'?'10':'',tel:'',sena:'',precio:'',consumo:'',de:esRecep()?'Mara Reservas':S.owner?'Matías Cochi':(RV_QUIEN.find(n=>n.toLowerCase().startsWith(String(me()?.nombre||'~').toLowerCase()))||''),nota:''};S.rvId=null;location.hash='reservas';render(true);scrollTo(0,0);setTimeout(()=>$('[data-rv=nombre]')?.focus(),60);return}
     if(a==='rvEdit'){const r=S.res.find(x=>x.id===id);S.rvD=JSON.parse(JSON.stringify(r));delete S.rvD.id;S.rvId=id;render(true);scrollTo(0,0);return}
     if(a==='rvMenu'){S.rvD.menu=S.rvD.menu===id?'':id;render(true);return}
     if(a==='rvDiet'){S.rvD[id]=Math.max(0,num(S.rvD[id])+ +b.dataset.n);render(true);return}
@@ -1852,7 +1853,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28l';
+const APP_V='2026-11-28m';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
