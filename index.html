@@ -862,7 +862,7 @@ function peWA(){
   const p=S.pe;if(!String(p.cliente||'').trim()){S.note='Poné el nombre del cliente.';render(true);return}
   const pub=p.pub||randId(),tel=telWA(p.tel),nom=String(p.cliente).trim().split(/\s+/)[0];
   const msg=`Hola ${nom}! Te paso el presupuesto${p.titulo?` «${String(p.titulo).trim()}»`:''}${p.fecha?` para tu evento del ${fEv(p.fecha)}`:''}${p.sector?` en ${p.sector}`:''}:\n${linkPresup(pub)}\n\nAhí lo podés ver y descargar en PDF. Cualquier duda o cambio, escribime. ¡Gracias!\n\nTe dejo algunos detalles a tener en cuenta:\nEl presupuesto tiene una validez de 5 días corridos desde que te lo enviamos. Si para ese momento todavía no concretamos la reserva, lo revisamos con las tarifas vigentes cuando decidas avanzar.\nPara guardar la fecha, pedimos una seña de al menos el 50% del total. Una vez que se realiza el pago la reserva queda confirmada.\nEl ingreso el día del evento es por Falucho 32. El estacionamiento está a cargo de un servicio externo, así que se coordina y se abona aparte. Si el evento es de noche, el acceso a la discoteca MARA no está incluido en este presupuesto, y es un negocio ajeno al evento.\n\nCualquier duda que te vaya surgiendo, escribinos y la vemos juntos.`;
-  window.open((tel?`https://wa.me/${tel}`:'https://wa.me/')+'?text='+encodeURIComponent(msg),'_blank');
+  abrirWA((tel?`https://wa.me/${tel}`:'https://wa.me/')+'?text='+encodeURIComponent(msg));
   const now=Date.now();
   peGuardar({pub,estado:p.estado==='confirmado'?'confirmado':'enviado',enviadoT:now,seguirT:now+3*864e5,hist:[...(p.hist||[]),{t:now,txt:'Enviado por WhatsApp',por:S.uid}]},true).then(()=>{render(true);toast('Listo. Quedó como enviado: en 3 días te aviso para hacer el seguimiento.')}).catch(e=>{if(e.message!=='sin cliente'){S.note=errMsg(e);render(true)}});
 }
@@ -870,7 +870,7 @@ async function peSeguir(id){
   const p=id?S.presup.find(x=>x.id===id):S.pe;if(!p)return;
   const tel=telWA(p.tel),nom=String(p.cliente||'').trim().split(/\s+/)[0];
   const msg=`Hola ${nom}! ¿Cómo estás? ¿Pudiste ver el presupuesto que te mandamos${p.fecha?` para el ${fEv(p.fecha)}`:''}?${p.pub?`\n${linkPresup(p.pub)}`:''}\nSi querés ajustar algo, lo vemos. Te recuerdo que la fecha se reserva con la seña. ¡Quedo atento!`;
-  window.open((tel?`https://wa.me/${tel}`:'https://wa.me/')+'?text='+encodeURIComponent(msg),'_blank');
+  abrirWA((tel?`https://wa.me/${tel}`:'https://wa.me/')+'?text='+encodeURIComponent(msg));
   const now=Date.now();await updateDoc(doc(db,'presupuestos',id||S.peId),{seguirT:now+3*864e5,hist:[...(p.hist||[]),{t:now,txt:'Seguimiento por WhatsApp',por:S.uid}]});
   if(!id&&S.pe){S.pe.seguirT=now+3*864e5}
 }
@@ -1652,6 +1652,13 @@ async function darAlta(f){
 }
 
 /* ---------- eventos ---------- */
+const esIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),esMovil=esIOS||/Android/i.test(navigator.userAgent);
+function abrirWA(u){
+  if(esIOS){const m=u.match(/wa\.me\/(\d*)\/?(?:\?text=(.*))?$/);if(m){location.href='whatsapp://send?'+(m[1]?'phone='+m[1]+'&':'')+'text='+(m[2]||'');return}}
+  if(esMovil){location.href=u;return}
+  window.open(u,'_blank','noopener');
+}
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href^="https://wa.me/"]');if(!a)return;e.preventDefault();abrirWA(a.href)},true);
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,id=b.dataset.id;
   if(a==='closeSheet'){if(e.target!==b&&b.classList.contains('sheet'))return;if(b.tagName==='A'){setTimeout(()=>{$('#sheet').innerHTML=''},300);return}$('#sheet').innerHTML='';if(b.dataset.go)location.hash=b.dataset.go;return}
@@ -1709,7 +1716,7 @@ document.addEventListener('click',e=>{
   if(a==='recBorrarOk'){$('#sheet').innerHTML='';const rid0=S.recOpen;S.recOpen=null;S.recEdit=false;S.recDraft=null;deleteDoc(doc(db,'recetas',rid0)).then(()=>toast('Receta borrada.')).catch(e=>{S.note=errMsg(e)});render(true);return}
   if(a==='irA'){const f=b.dataset.f||'';if(f.startsWith('est:')){S.fEstado=f.slice(4);S.fProv='';S.fDia='';S.pVer=true;S.pOpen=null}if(f.startsWith('mant:'))S.fMant=f.slice(5);if(f.startsWith('pe:')){S.peF=f.slice(3);S.peElegir=false}location.hash=id;return}
   if(/^(pe|pl)[A-Z]/.test(a)){peAccion(a,b,id);return}
-  if(/^rv[A-Z]/.test(a)){if(a==='rvShare'){e.preventDefault();const u=b.getAttribute('href');let w=null;try{w=window.open(u,'_blank')}catch(x){}if(!w)location.href=u;return}if(a==='rvMsg'){e.preventDefault();const u=b.getAttribute('href');let w=null;try{w=window.open(u,'_blank')}catch(x){}if(!w)location.href=u;setTimeout(()=>{if(b.closest('#sheet'))$('#sheet').innerHTML='';rvAccion(a,b,id)},400);return}e.preventDefault?.();rvAccion(a,b,id);return}
+  if(/^rv[A-Z]/.test(a)){if(a==='rvShare')return;if(a==='rvMsg'){setTimeout(()=>{if(b.closest('#sheet'))$('#sheet').innerHTML='';rvAccion(a,b,id)},400);return}e.preventDefault?.();rvAccion(a,b,id);return}
   if(a==='calM'){S.calM=id;render(true);return}
   if(a==='calPerd'){S.calPerd=!S.calPerd;render(true);return}
   if(a==='cartaEd'){S.cartaEd=!S.cartaEd;S.cItem=null;render(true);return}
@@ -1879,7 +1886,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28o';
+const APP_V='2026-11-28p';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
