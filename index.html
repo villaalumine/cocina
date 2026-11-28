@@ -107,6 +107,9 @@ nav.tabs a{position:relative}.tabn{position:absolute;top:2px;right:2px;backgroun
 .rv-card{background:var(--card);border:1px solid var(--line);border-left:6px solid #e6b85c;border-radius:14px;margin-bottom:10px;overflow:hidden}.rv-card.rv-full{border-left-color:#1f7a3a}.rv-card.rv-can{opacity:.55;border-left-color:#999}
 .rv-top{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:0;border-radius:0;background:none;padding:12px 14px;font-size:17px}.rv-top small{color:#6b7280;font-size:13.5px}.rv-h{font-variant-numeric:tabular-nums}.rv-nota{color:#8a5a00!important}
 .rv-acts{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px}.rv-acts>*{padding:7px 12px;font-size:14px;min-height:0}.rv-ok{background:#e7f5ec;color:#1f7a3a;border-color:#9fd3b0}.rv-no{background:#fdf0d5;color:#8a5a00;border-color:#e6b85c}
+.rv-menu{font:600 12px Barlow,sans-serif;background:#efe7dd;color:#5b4636;border-radius:99px;padding:2px 8px;vertical-align:2px;white-space:nowrap}.rv-diet{color:#1f7a3a!important;font-weight:600}
+.rv-lbl{font-weight:600;margin:14px 0 6px}.rv-diets{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.rv-dt2{display:flex!important;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 8px 6px 12px;background:var(--card)}.rv-dt2.on{border-color:#1f7a3a;background:#e7f5ec}.rv-stp{display:flex;align-items:center;gap:8px}.rv-stp button{width:34px;height:34px;padding:0;min-height:0;font-size:20px;border-radius:50%}.rv-stp b{min-width:16px;text-align:center}
+.rv-cocina{background:#f6f1ea;border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:0 0 12px;font-size:14.5px;display:grid;gap:4px}
 .rv-up{background:#eef2ff;color:#3730a3;border-color:#c7d2fe;cursor:pointer}.rv-add{width:100%;margin:6px 0 18px;border-style:dashed}.rv-form label{display:block}
 .accesos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 22px}.acc2{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:16px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:96px}.acc2 .ai{font-size:28px;line-height:1}.acc2 b{font:700 22px "Barlow Condensed",sans-serif;margin-top:6px}.acc2 small{color:#1f7a3a;font-weight:600;font-size:13px}
 body[data-sec=villa] .acc2{border-left:6px solid #f93604}body[data-sec=mara] .acc2{border-left:6px solid #a17a57}body[data-sec=todos] .acc2{border-left:6px solid #24303f}
@@ -575,6 +578,10 @@ const RES_ROLES=['Administración','Gerente','Encargado/a','Recepción'];
 const canRes=()=>S.owner||RES_ROLES.includes(me()?.rol);
 const esRecep=()=>!S.owner&&me()?.rol==='Recepción';
 const canResCfg=()=>S.owner||me()?.rol==='Administración';
+const RV_MENUS=[['carta','A la carta'],['finger','Finger food'],['pasos','Menú pasos'],['sushi','Menú sushi']];
+const RV_DIET=[['celiaco','🌾','Sin TACC'],['vegetariano','🥕','Vegetariano'],['vegano','🌱','Vegano']];
+const rvMenuTxt=k=>(RV_MENUS.find(m=>m[0]===k)||[])[1]||'';
+const rvDietTxt=r=>RV_DIET.filter(([k])=>num(r[k])>0).map(([k,i,t])=>`${i} ${num(r[k])} ${t.toLowerCase()}`).join(' · ');
 const RV_TIPOS={resto:['🍽️','Restaurante'],vip:['🍾','Mesas boliche']};
 const RV_CFG0={sena:'',msgSena:'Hola {nombre}! Te escribimos de Mara Social Club por tu reserva del {fecha} a las {hora} para {personas} personas. Para dejarla confirmada te pedimos una seña de {seña}.\n{datos}\nCuando la hagas mandanos el comprobante por acá. ¡Gracias!',
   msgConf:'Hola {nombre}! Te escribimos de Mara Social Club para reconfirmar tu reserva del {fecha} a las {hora} para {personas} personas. ¿Nos confirmás que vienen? ¡Te esperamos!',
@@ -608,9 +615,10 @@ function rvCard(r){
     else if(num(r.sena)>0){b.push(r.senaOk?`<button class="rv-ok" data-act="rvTog" data-id="${r.id}" data-k="senaOk">✓ Seña ${money(r.sena)}</button>`:`${tel?`<a class="btn wa" href="${esc(rvWA(r,'sena'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="senaPedida">💬 Pedir seña</a>`:''}<button class="rv-no" data-act="rvTog" data-id="${r.id}" data-k="senaOk">💰 Recibí la seña</button>`)}
     b.push(r.conf?`<button class="rv-ok" data-act="rvTog" data-id="${r.id}" data-k="conf">✓ Reconfirmó</button>`:`${tel?`<a class="btn wa" href="${esc(rvWA(r,'conf'))}" target="_blank" rel="noopener" data-act="rvMsg" data-id="${r.id}" data-k="confPedida">💬 Reconfirmar</a>`:''}<button class="rv-no" data-act="rvTog" data-id="${r.id}" data-k="conf">✅ Ya reconfirmó</button>`);
   }
-  const info=[vip?'':r.hora?`<b class="rv-h">${esc(r.hora)}</b>`:'',`<b>${esc(r.nombre||'(sin nombre)')}</b>`,`${esc(r.personas||'?')} pers.`].filter(Boolean).join(' · ');
+  const info=[vip?'':r.hora?`<b class="rv-h">${esc(r.hora)}</b>`:'',`<b>${esc(r.nombre||'(sin nombre)')}</b>`,`${esc(r.personas||'?')} pers.`].filter(Boolean).join(' · ')+(!vip&&r.menu?` <span class="rv-menu">${esc(rvMenuTxt(r.menu))}</span>`:'');
+  const diet=rvDietTxt(r);
   const sub=[r.tel?`📞 ${esc(r.tel)}`:'',vip&&num(r.precio)?`Mesa ${money(r.precio)}${num(r.consumo)?` · consumo ${money(r.consumo)}`:''}`:'',r.de?`Pasó: ${esc(r.de)}`:'',r.senaPedida&&!r.senaOk&&!vip?'seña pedida':'',r.confPedida&&!r.conf?'reconfirmación enviada':'',r.comp?`comprobante subido por ${esc(nameOf(r.comp.por))} ${fecha(r.comp.t)} ${hora(r.comp.t)}`:''].filter(Boolean).join(' · ');
-  return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}"><span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${r.nota?`<small class="rv-nota">📝 ${esc(r.nota)}</small>`:''}</button>${b.length?`<div class="rv-acts">${b.join('')}</div>`:''}</div>`;
+  return `<div class="rv-card${can?' rv-can':''}${!can&&!rvPend(r)?' rv-full':''}"><button class="rv-top" data-act="rvEdit" data-id="${r.id}"><span>${info}${can?' <span class="badge b-dif">Cancelada</span>':''}</span><small>${sub}</small>${diet?`<small class="rv-diet">${diet}</small>`:''}${r.nota?`<small class="rv-nota">📝 ${esc(r.nota)}</small>`:''}</button>${b.length?`<div class="rv-acts">${b.join('')}</div>`:''}</div>`;
 }
 function rvForm(){
   const d=S.rvD,vip=d.tipo==='vip',f=(k,l,ph,t)=>`<label>${l}<input data-rv="${k}" value="${esc(d[k]??'')}" placeholder="${esc(ph||'')}"${t==='n'?' inputmode="numeric"':t==='tel'?' type="tel" inputmode="tel"':''}></label>`;
@@ -619,6 +627,8 @@ function rvForm(){
   ${f('nombre','Nombre y apellido','')}${f('personas','Personas','Ej: 4','n')}${f('tel','Teléfono (WhatsApp)','Ej: 223 555 1234','tel')}
   ${vip?f('precio','Precio de la mesa','Ej: 150000','n')+f('consumo','Consumo incluido','Ej: 100000','n'):f('sena','Seña a pedir','Ej: 20000 (vacío si no pide)','n')}
   ${f('de','¿Quién la pasó?','Ej: Matías, Recepción…')}</div>
+  ${vip?'':`<p class="rv-lbl">¿Qué van a comer?</p><div class="chips">${RV_MENUS.map(([k,t])=>`<button class="chip ${d.menu===k?'on':''}" data-act="rvMenu" data-id="${k}">${t}</button>`).join('')}</div>`}
+  <p class="rv-lbl">Restricciones (cuántas personas)</p><div class="rv-diets">${RV_DIET.map(([k,i,t])=>`<div class="rv-dt2${num(d[k])>0?' on':''}"><span>${i} ${t}</span><span class="rv-stp"><button data-act="rvDiet" data-id="${k}" data-n="-1">−</button><b>${num(d[k])||0}</b><button data-act="rvDiet" data-id="${k}" data-n="1">+</button></span></div>`).join('')}</div>
   ${vip&&num(d.precio)?`<p class="meta" style="margin:6px 0 0">Ganancia de la mesa: <b>${money(num(d.precio)-num(d.consumo))}</b></p>`:''}
   <label style="display:block;margin-top:8px">Nota (opcional)<textarea data-rv="nota" rows="2" placeholder="Ej: cumpleaños, silla de bebé, mesa afuera…">${esc(d.nota||'')}</textarea></label>
   <div class="row" style="margin-top:12px;flex-wrap:wrap"><button class="pri" data-act="rvGuardar">Guardar</button><button data-act="rvCerrar">Cancelar</button>
@@ -645,11 +655,14 @@ function vReservas(){
   const L=rvLista(T,dia).sort((a,b)=>(a.estado==='cancelada')-(b.estado==='cancelada')||(a.hora||'').localeCompare(b.hora||'')||(a.creado||0)-(b.creado||0)),A=rvActivas(L);
   const pers=A.reduce((s,r)=>s+num(r.personas),0),pend=A.filter(rvPend).length;
   const tot=T==='vip'?A.reduce((s,r)=>s+num(r.precio),0):0,gan=T==='vip'?A.reduce((s,r)=>s+num(r.precio)-num(r.consumo),0):0;
+  const menus=T==='vip'?'':RV_MENUS.map(([k,t])=>{const n=A.filter(r=>r.menu===k).reduce((s,r)=>s+num(r.personas),0);return n?`${t}: <b>${n}</b>`:''}).filter(Boolean).join(' · ');
+  const diets=RV_DIET.map(([k,i,t])=>{const n=A.reduce((s,r)=>s+num(r[k]),0);return n?`${i} ${t}: <b>${n}</b>`:''}).filter(Boolean).join(' · ');
   const prox=[...Array(7)].map((_,i)=>rvMas(hoy,i)).map(f=>[f,rvActivas(rvLista(T,f))]);
   return head+`<input type="search" placeholder="Buscar por nombre o teléfono…" value="" data-rvbus style="margin:10px 0">
   <div class="rv-dia"><button data-act="rvDia" data-id="${rvMas(dia,-1)}">‹</button><label class="rv-dt"><b>${esc(rvDiaTxt(dia))}</b><input type="date" data-rvdia value="${dia}"></label><button data-act="rvDia" data-id="${rvMas(dia,1)}">›</button></div>
   <div class="rv-sem">${prox.map(([f,l])=>{const [y,m,d]=f.split('-').map(Number);return `<button class="${f===dia?'on':''}" data-act="rvDia" data-id="${f}"><small>${new Date(y,m-1,d).toLocaleDateString('es-AR',{weekday:'short'})}</small><b>${d}</b><small>${l.length?l.length+(T==='vip'?' m':' r'):'–'}</small></button>`}).join('')}</div>
   <div class="rv-res"><span><b>${A.length}</b> ${T==='vip'?'mesa'+(A.length===1?'':'s'):'reserva'+(A.length===1?'':'s')}</span><span><b>${pers}</b> personas</span>${pend?`<span class="rv-pend"><b>${pend}</b> por confirmar</span>`:A.length?'<span class="rv-allok">Todo confirmado ✓</span>':''}${T==='vip'&&tot&&canResCfg()?`<span>Mesas <b>${money(tot)}</b> · ganancia <b>${money(gan)}</b></span>`:''}</div>
+  ${menus||diets?`<div class="rv-cocina">${menus?`<div>🍽️ ${menus} <small>(personas)</small></div>`:''}${diets?`<div>${diets}</div>`:''}</div>`:''}
   ${L.length?L.map(rvCard).join(''):`<p class="empty">No hay ${T==='vip'?'mesas vendidas':'reservas'} para este día.</p>`}
   ${dia<hoy?'':`<button class="rv-add" data-act="rvNueva">+ Agregar ${T==='vip'?'mesa':'reserva'} para ${esc(rvDiaTxt(dia).toLowerCase())}</button>`}`;
 }
@@ -687,12 +700,14 @@ async function rvAccion(a,b,id){
   try{
     if(a==='rvTipo'){S.rvTipo=id;S.rvD=null;S.rvComps=false;render(true);return}
     if(a==='rvDia'){S.rvDia=id;render(true);return}
-    if(a==='rvNueva'){const T=S.rvTipo||'resto';S.rvD={tipo:T,fecha:rvDia()<dayKey(Date.now())?dayKey(Date.now()):rvDia(),hora:'',nombre:'',personas:T==='vip'?'10':'',tel:'',sena:'',precio:'',consumo:'',de:me()?.nombre||(S.owner?'Matías':''),nota:''};S.rvId=null;location.hash='reservas';render(true);scrollTo(0,0);setTimeout(()=>$('[data-rv=nombre]')?.focus(),60);return}
+    if(a==='rvNueva'){const T=S.rvTipo||'resto';S.rvD={tipo:T,fecha:rvDia()<dayKey(Date.now())?dayKey(Date.now()):rvDia(),hora:'',menu:'',nombre:'',personas:T==='vip'?'10':'',tel:'',sena:'',precio:'',consumo:'',de:me()?.nombre||(S.owner?'Matías':''),nota:''};S.rvId=null;location.hash='reservas';render(true);scrollTo(0,0);setTimeout(()=>$('[data-rv=nombre]')?.focus(),60);return}
     if(a==='rvEdit'){const r=S.res.find(x=>x.id===id);S.rvD=JSON.parse(JSON.stringify(r));delete S.rvD.id;S.rvId=id;render(true);scrollTo(0,0);return}
+    if(a==='rvMenu'){S.rvD.menu=S.rvD.menu===id?'':id;render(true);return}
+    if(a==='rvDiet'){S.rvD[id]=Math.max(0,num(S.rvD[id])+ +b.dataset.n);render(true);return}
     if(a==='rvCerrar'){S.rvD=null;S.rvId=null;render(true);return}
     if(a==='rvGuardar'){const d=S.rvD;
       if(!d.nombre.trim()){alert('Falta el nombre.');return}if(!d.fecha){alert('Falta el día.');return}
-      const o={...d,nombre:d.nombre.trim(),personas:String(d.personas||'').trim(),tel:String(d.tel||'').trim(),sena:num(d.sena),precio:num(d.precio),consumo:num(d.consumo),local:'mara',editado:Date.now(),editadoPor:S.uid};
+      const o={...d,celiaco:num(d.celiaco),vegetariano:num(d.vegetariano),vegano:num(d.vegano),nombre:d.nombre.trim(),personas:String(d.personas||'').trim(),tel:String(d.tel||'').trim(),sena:num(d.sena),precio:num(d.precio),consumo:num(d.consumo),local:'mara',editado:Date.now(),editadoPor:S.uid};
       if(S.rvId){await updateDoc(doc(db,'reservas',S.rvId),o)}else{o.creado=Date.now();o.por=S.uid;o.estado='activa';await addDoc(collection(db,'reservas'),o)}
       S.rvDia=d.fecha;S.rvTipo=d.tipo;S.rvD=null;S.rvId=null;toast('Reserva guardada.');render(true);return}
     if(a==='rvCancelar'||a==='rvReactivar'){await updateDoc(doc(db,'reservas',S.rvId),{estado:a==='rvCancelar'?'cancelada':'activa',editado:Date.now(),editadoPor:S.uid});S.rvD=null;S.rvId=null;toast(a==='rvCancelar'?'Marcada como cancelada.':'Reserva reactivada.');render(true);return}
@@ -1817,7 +1832,7 @@ function subscribe(){
 }
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 // Versión de la app: si se publica una nueva, aparece el aviso para actualizar
-const APP_V='2026-11-28b';
+const APP_V='2026-11-28c';
 async function chequearVersion(){
   try{const t=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APP_V='([^']+)'/);
     if(m&&m[1]!==APP_V&&!document.querySelector('#nuevaV')){const d=document.createElement('button');d.id='nuevaV';d.dataset.act='recargar';d.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>';document.body.appendChild(d)}}catch(e){}
